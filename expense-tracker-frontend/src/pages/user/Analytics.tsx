@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
+import "dayjs/locale/vi";
+import "dayjs/locale/en";
 import isBetween from "dayjs/plugin/isBetween";
 import { useSettings } from "../../context/SettingsContext";
 import Layout from "./Layout";
@@ -13,12 +15,11 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import {
-  ChevronLeft,
-  ChevronRight,
-  TrendingUp,
-  Calendar as CalendarIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
+import LayoutSkeleton from "../LayoutSkeleton";
+import { getAnalyticsTransactions } from "../../services/transactionsService";
+import { useTranslation } from "../../hook/useTranslation";
+import { useNavigate } from "react-router-dom";
 
 ChartJS.register(
   CategoryScale,
@@ -31,16 +32,22 @@ ChartJS.register(
 dayjs.extend(isBetween);
 
 export default function Analytics() {
+  const [loading, setLoading] = useState(false);
   const { language, currency } = useSettings();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"week" | "month">("month");
   const [currentDate, setCurrentDate] = useState(dayjs());
 
-  const transactions = [
-    { date: "2026-03-12", amount: -150000, type: "expense" },
-    { date: "2026-03-12", amount: 500000, type: "income" },
-    { date: "2026-03-10", amount: -240000, type: "expense" },
-    { date: "2026-03-05", amount: 15000000, type: "income" },
-  ];
+  const [transactions, setTransactions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const locale = language === "vi" ? "vi" : "en";
+    dayjs.locale(locale);
+
+    // Cập nhật lại currentDate
+    setCurrentDate((prev) => prev.locale(locale));
+  }, [language]);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", {
@@ -74,59 +81,112 @@ export default function Analytics() {
     return days;
   }, [currentDate, viewMode]);
 
-  const getDailyStats = (date: dayjs.Dayjs) => {
-    const dayData = transactions.filter((t) =>
-      dayjs(t.date).isSame(date, "day"),
+  const formattedLabels = useMemo(() => {
+    return calendarDays.map((date) => {
+      if (viewMode === "week") return date.format("dd");
+      else
+        return language === "vi" ? date.format("DD/MM") : date.format("MMM DD");
+    });
+  }, [calendarDays, viewMode, language]);
+
+  const periodSummary = useMemo(() => {
+    const currentData = Array.isArray(transactions) ? transactions : [];
+
+    const dateSet = new Set(
+      calendarDays.map((date) => date.format("YYYY-MM-DD")),
     );
+
+    const periodTransactions = currentData.filter((t) =>
+      dateSet.has(dayjs(t.transactionDate).format("YYYY-MM-DD")),
+    );
+
+    const periodIncome = periodTransactions
+      .filter((t) => t.type === "income" || t.type === "borrow")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const periodExpense = periodTransactions
+      .filter((t) => t.type === "expense" || t.type === "lend")
+      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+
+    return { periodIncome, periodExpense };
+  }, [transactions, calendarDays]);
+
+  //TODO logic lấy dữ liệu từ back
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      setLoading(true);
+      try {
+        //Tính toán khoảng thời gian đang xem trên lịch
+        const start = calendarDays[0].format("YYYY-MM-DD");
+        const end = calendarDays[calendarDays.length - 1].format("YYYY-MM-DD");
+
+        const data = await getAnalyticsTransactions(start, end);
+        console.log("Data", data);
+        setTransactions(data?.items || []);
+      } catch (error) {
+        console.error(t.error.fetchData, error);
+        setTransactions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (calendarDays.length > 0) {
+      fetchAnalyticsData();
+    }
+  }, [currentDate, viewMode, calendarDays]);
+
+  //TODO Hàm tính toán stats
+  const getDailyStats = (date: dayjs.Dayjs) => {
+    const currentData = Array.isArray(transactions) ? transactions : [];
+
+    const calendarDateStr = date.format("YYYY-MM-DD");
+
+    const dayData = currentData.filter((t) => {
+      return dayjs(t.transactionDate).format("YYYY-MM-DD") === calendarDateStr;
+    });
+
     const income = dayData
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter((t) => t.type === "income" || t.type === "borrow")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
     const expense = dayData
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      .filter((t) => t.type === "expense" || t.type === "lend")
+      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+
     return { income, expense };
   };
+
+  //TODO Tính tổng tiết kiệm
+  const monthlySummary = useMemo(() => {
+    if (!transactions || !Array.isArray(transactions))
+      return { savings: 0, rate: 0 };
+
+    const currentMonthTransactions = transactions.filter((t) =>
+      dayjs(t.transactionDate).isSame(currentDate, "month"),
+    );
+
+    const income = currentMonthTransactions
+      .filter((t) => t.type === "income" || t.type === "borrow")
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const expense = currentMonthTransactions
+      .filter((t) => t.type === "expense" || t.type === "lend")
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    const savings = income - expense;
+    const rate = income > 0 ? Math.round((savings / income) * 100) : 0;
+
+    return { savings, rate };
+  }, [transactions, currentDate]);
+
+  if (loading) return <LayoutSkeleton />;
 
   return (
     <Layout>
       <div className="max-w-6xl mx-auto space-y-8 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {/*  HEADER */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
-              {language === "vi" ? "Phân tích" : "Analytics"}
-            </h1>
-            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-              {currentDate.format("MMMM, YYYY")}
-            </p>
-          </div>
-
-          <div className="flex bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-md p-1.5 rounded-2xl shadow-inner border border-white/20">
-            {["week", "month"].map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode as any)}
-                className={`px-6 py-2 text-[10px] font-black uppercase rounded-xl transition-all duration-300 ${
-                  viewMode === mode
-                    ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-xl scale-105"
-                    : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                {mode === "week"
-                  ? language === "vi"
-                    ? "Tuần"
-                    : "Week"
-                  : language === "vi"
-                    ? "Tháng"
-                    : "Month"}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/*  CALENDAR SECTION  */}
         <div className="bg-white dark:bg-[#111827] rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-2xl shadow-indigo-500/5 overflow-hidden">
-          <div className="px-8 py-6 border-b border-gray-50 dark:border-gray-800 flex justify-between items-center">
+          <div className="px-8 py-2 border-b border-gray-50 dark:border-gray-800 flex justify-between items-center">
             <div className="flex items-center gap-4">
               <button
                 onClick={() =>
@@ -136,9 +196,17 @@ export default function Analytics() {
               >
                 <ChevronLeft size={20} />
               </button>
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] dark:text-white">
-                {currentDate.format("MMMM YYYY")}
-              </h2>
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-[0.2em] dark:text-white">
+                  {currentDate.format("MMMM, YYYY")}
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {transactions.length} transactions .{" "}
+                  {formatMoney(periodSummary.periodIncome)} in .{" "}
+                  {formatMoney(periodSummary.periodExpense)} out
+                </p>
+              </div>
+
               <button
                 onClick={() => setCurrentDate(currentDate.add(1, viewMode))}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400"
@@ -146,66 +214,112 @@ export default function Analytics() {
                 <ChevronRight size={20} />
               </button>
             </div>
-            <CalendarIcon size={20} className="text-indigo-500 opacity-50" />
+            <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 backdrop-blur-md rounded-2xl shadow-inner border border-gray-200/50 dark:border-gray-700/30">
+              {["week", "month"].map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode as any)}
+                  className={`px-8 py-2 text-[10px] font-black uppercase rounded-xl transition-all duration-300 relative ${
+                    viewMode === mode
+                      ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-md scale-[1.02] z-10"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  }`}
+                >
+                  {mode === "week"
+                    ? language === "vi"
+                      ? "Tuần"
+                      : "Week"
+                    : language === "vi"
+                      ? "Tháng"
+                      : "Month"}
+                  {viewMode === mode && (
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="p-4 sm:p-6">
-            <div className="grid grid-cols-7 gap-3">
-              {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
+          <div className="p-4">
+            <div className="grid grid-cols-7 gap-2 mb-1">
+              {Array.from({ length: 7 }).map((_, i) => (
                 <div
-                  key={day}
-                  className="py-2 text-center text-[10px] font-black text-gray-300 uppercase"
+                  key={i}
+                  className="py-2 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]"
                 >
-                  {day}
+                  {/* dayjs().day(i) lấy ngày thứ i trong tuần 
+                    format("dd"): 2 chữ cái
+                  */}
+                  {dayjs().day(i).format("dd")}
                 </div>
               ))}
+            </div>
 
+            <div className="grid grid-cols-7 gap-1">
               {calendarDays.map((date, idx) => {
                 const { income, expense } = getDailyStats(date);
                 const isCurrentMonth = date.isSame(currentDate, "month");
                 const isToday = date.isSame(dayjs(), "day");
-                const hasData = income > 0 || expense > 0;
 
                 return (
                   <div
                     key={idx}
-                    className={`min-h-[80px] p-2.5 rounded-2xl border transition-all duration-300 ${
-                      !isCurrentMonth
-                        ? "opacity-10 pointer-events-none"
-                        : "hover:scale-105 hover:shadow-lg"
-                    } ${
-                      isToday
-                        ? "border-indigo-500 bg-indigo-50/30 dark:bg-indigo-500/5"
-                        : "border-transparent bg-gray-50/50 dark:bg-gray-800/30"
-                    } ${hasData ? "ring-1 ring-inset ring-gray-100 dark:ring-gray-700" : ""}`}
+                    onClick={() => {
+                      if (isCurrentMonth) {
+                        navigate(`/history?date=${date.format("YYYY-MM-DD")}`);
+                      }
+                    }}
+                    className={`min-h-[70px] p-1.5 rounded-xl border transition-all duration-300 relative group
+                      ${
+                        !isCurrentMonth
+                          ? "opacity-20 grayscale pointer-events-none"
+                          : "hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+                      }
+                      ${
+                        isToday
+                          ? "border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/10 ring-1 ring-indigo-500"
+                          : "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/50"
+                      }`}
                   >
-                    <div className="flex justify-between items-start">
+                    {/* Header của ô ngày */}
+                    <div className="flex justify-between items-center mb-1">
                       <span
-                        className={`text-[11px] font-black ${isToday ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400"}`}
+                        className={`text-xs font-bold ${
+                          isToday
+                            ? "text-indigo-600 dark:text-indigo-400"
+                            : "text-gray-500 dark:text-gray-400"
+                        }`}
                       >
                         {date.date()}
                       </span>
                       {isToday && (
-                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                        <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
                       )}
                     </div>
 
-                    <div className="mt-3 space-y-1">
+                    {/* Nội dung số tiền */}
+                    <div className="flex flex-col gap-[2px] pl-0.5">
                       {income > 0 && (
-                        <div className="bg-emerald-500/10 dark:bg-emerald-500/20 py-0.5 px-1.5 rounded-md">
-                          <p className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 truncate">
-                            +{formatMoney(income)}
+                        <div className="flex items-center gap-1 overflow-hidden">
+                          <div className="w-1 h-3 rounded-full bg-emerald-500 shrink-0" />
+                          <p className="text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                            {formatMoney(income)}
                           </p>
                         </div>
                       )}
                       {expense > 0 && (
-                        <div className="bg-rose-500/10 dark:bg-rose-500/20 py-0.5 px-1.5 rounded-md">
-                          <p className="text-[8px] font-black text-rose-600 dark:text-rose-400 truncate">
-                            -{formatMoney(expense)}
+                        <div className="flex items-center gap-1 overflow-hidden">
+                          <div className="w-1 h-3 rounded-full bg-rose-500 shrink-0" />
+                          <p className="text-[9px] font-bold text-rose-600 dark:text-rose-400 truncate">
+                            {formatMoney(expense)}
                           </p>
                         </div>
                       )}
                     </div>
+
+                    {isCurrentMonth && !isToday && (
+                      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 border border-indigo-200 dark:border-indigo-500/30 transition-opacity pointer-events-none" />
+                    )}
                   </div>
                 );
               })}
@@ -220,38 +334,60 @@ export default function Analytics() {
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
                 <TrendingUp size={16} className="text-emerald-500" />
-                {language === "vi" ? "Xu hướng thu chi" : "Growth Analysis"}
+                {t.analytics.growth}
               </h3>
             </div>
             <div className="h-[250px]">
               <Bar
                 data={{
-                  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+                  labels: formattedLabels,
                   datasets: [
                     {
-                      label: "Income",
-                      data: [15000, 22000, 18000, 25000, 21000, 30000],
+                      label: t.common.income,
+                      data: calendarDays.map((d) => getDailyStats(d).income),
                       backgroundColor: "#6366f1",
-                      borderRadius: 12,
-                      barThickness: 15,
+                      borderRadius: 8,
+                      barThickness: viewMode === "month" ? 6 : 20,
                     },
                     {
-                      label: "Expense",
-                      data: [10000, 15000, 12000, 18000, 14000, 20000],
+                      label: t.common.expense,
+                      data: calendarDays.map((d) => getDailyStats(d).expense),
                       backgroundColor: "#e2e8f0",
-                      borderRadius: 12,
-                      barThickness: 15,
+                      borderRadius: 8,
+                      barThickness: viewMode === "month" ? 6 : 20,
                     },
                   ],
                 }}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: (context) =>
+                          `${context.dataset.label}: ${formatMoney(context.parsed.y ?? 0)}`,
+                      },
+                    },
+                  },
                   scales: {
-                    x: { grid: { display: false }, border: { display: false } },
-                    y: {
+                    x: {
                       grid: { display: false },
+                      border: { display: false },
+                      ticks: {
+                        font: { size: 9, weight: "bold" },
+                        callback: function (val, index) {
+                          if (viewMode === "month") {
+                            return index % 5 === 0
+                              ? this.getLabelForValue(val as number)
+                              : "";
+                          }
+                          return this.getLabelForValue(val as number);
+                        },
+                      },
+                    },
+                    y: {
+                      grid: { color: "rgba(0,0,0,0.05)" },
                       border: { display: false },
                       ticks: { display: false },
                     },
@@ -267,10 +403,11 @@ export default function Analytics() {
 
             <div className="relative z-10">
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-100/60 mb-1">
-                {language === "vi" ? "Tiết kiệm tháng này" : "Monthly Savings"}
+                {t.analytics.savings}
               </p>
               <h2 className="text-4xl font-black text-white tracking-tighter">
-                +12,500,000
+                {monthlySummary.savings >= 0 ? "+" : ""}
+                {formatMoney(monthlySummary.savings)}
               </h2>
             </div>
 
