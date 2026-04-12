@@ -4,16 +4,16 @@ export interface CreateLoanPayload {
   counterPartyName: string;
   principalAmount: number;
   interestRate: number;
-  interestUnit: string;
+  interestUnit: "percentage_per_month" | "percentage_per_year" | "fixed_amount";
 
   duration: number;
-  durationUnit: string;
+  durationUnit: "days" | "months" | "years";
 
   startDate?: string;
-
-  type: "lend" | "borrow";
+  dueDate: string;
 
   accountId: number;
+  isLending: boolean;
   note?: string;
 }
 export const createLoan = async (data: CreateLoanPayload) => {

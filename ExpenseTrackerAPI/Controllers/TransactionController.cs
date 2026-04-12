@@ -26,7 +26,10 @@ public class TransactionsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, TransactionRequest request)
     {
-        try { return Ok(await _transService.UpdateTransactionAsync(id, request, GetUserId())); }
+        try
+        {
+            return Ok(await _transService.UpdateTransactionAsync(id, request, GetUserId()));
+        }
         catch (Exception ex) { return BadRequest(ex.Message); }
     }
 
@@ -56,5 +59,29 @@ public class TransactionsController : ControllerBase
     )
     {
         return Ok(await _transService.GetHistoryAsync(GetUserId(), accountId, type, categoryId, fromDate, toDate, searchQuery, null, page, pageSize));
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetTransactionById([FromQuery] int id)
+    {
+        return Ok(await _transService.GetTransactionByIdAsync(id, GetUserId()));
+    }
+
+    [HttpGet("chart")]
+    public async Task<IActionResult> GetChart([FromQuery] string range = "week")
+    {
+        var userId = GetUserId();
+
+        var result = await _transService.GetChartAsync(userId, range);
+
+        return Ok(result);
+    }
+
+    [HttpGet("chart/category")]
+    public async Task<IActionResult> GetCategoryChart([FromQuery] string range = "week")
+    {
+        var userId = GetUserId();
+        var result = await _transService.GetCategoryChartAsync(userId, range);
+        return Ok(result);
     }
 }

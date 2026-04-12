@@ -56,5 +56,6 @@ public class Transaction
 
     public int? LoanId { get; set; }
     [ForeignKey("LoanId")]
+    [JsonIgnore]
     public virtual Loan? Loan { get; set; }
 }

@@ -11,6 +11,7 @@ import LayoutSkeleton from "./pages/LayoutSkeleton";
 import CategoryManagement from "./pages/user/CategoryManagement";
 import AccountManagement from "./pages/user/AccountManagement";
 import { Toaster } from "react-hot-toast";
+import BudgetPage from "./pages/user/BudgetPage";
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
         <Route path="/history" element={<History />}></Route>
         <Route path="/categoryManager" element={<CategoryManagement />}></Route>
         <Route path="/accountManager" element={<AccountManagement />}></Route>
+        <Route path="/budget" element={<BudgetPage />}></Route>
         <Route path="/analytics" element={<Analytics />}></Route>
       </Routes>
     </BrowserRouter>

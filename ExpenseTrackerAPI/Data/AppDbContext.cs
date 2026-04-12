@@ -14,7 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Loan> Loans { get; set; }
     public DbSet<RepaymentSchedule> RepaymentSchedules { get; set; }
     public DbSet<UserSetting> UserSettings { get; set; }
-
+    public DbSet<Budget> Budgets { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -90,6 +90,12 @@ public class AppDbContext : DbContext
             entity.Property(s => s.DefaultCurrency).HasMaxLength(3);
             entity.Property(s => s.Language).HasMaxLength(10); // Tăng lên 10 cho an toàn (vi-VN)
             entity.Property(s => s.Theme).HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<Budget>(entity =>
+        {
+            entity.HasIndex(b => new { b.UserId, b.CategoryId, b.Month }).IsUnique();
+            entity.Property(b => b.Amount).HasColumnType("numeric(15,2)");
         });
 
         // --- Dữ liệu Category mặc định ---

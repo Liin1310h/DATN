@@ -1,4 +1,5 @@
 import { Percent, Timer, CircleDollarSign, Calculator } from "lucide-react";
+import { useTranslation } from "../../hook/useTranslation";
 
 interface LoanSectionProps {
   interestRate: string;
@@ -29,12 +30,14 @@ export default function LoanSection({
   currency,
   onOpenSchedule,
 }: LoanSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-5 animate-in slide-in-from-top-4">
       {/* Lãi suất */}
       <div className="space-y-2">
         <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-2 ml-2">
-          <Percent size={12} className="text-blue-600" /> Lãi suất hợp đồng
+          <Percent size={12} className="text-blue-600" /> {t.loan.interestRate}
         </label>
 
         <div className="flex gap-2">
@@ -55,9 +58,9 @@ export default function LoanSection({
             onChange={(e) => setInterestUnit(e.target.value)}
             className="flex-1 bg-blue-600 text-white px-4 rounded-2xl text-[10px] font-black uppercase outline-none shadow-lg"
           >
-            <option value="year">Mỗi Năm</option>
-            <option value="month">Mỗi Tháng</option>
-            <option value="day">Mỗi Ngày</option>
+            <option value="year">{t.loan.perYear}</option>
+            <option value="month">{t.loan.perMonth}</option>
+            <option value="day">{t.loan.perDay}</option>
           </select>
         </div>
       </div>
@@ -68,7 +71,7 @@ export default function LoanSection({
           {/* Thời hạn */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-gray-500 uppercase flex items-center gap-2">
-              <Timer size={12} /> Thời hạn vay
+              <Timer size={12} /> {t.loan.term}
             </label>
 
             <div className="flex gap-2">
@@ -84,9 +87,9 @@ export default function LoanSection({
                 onChange={(e) => setDurationUnit(e.target.value)}
                 className="flex-1 bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-800 px-4 rounded-xl text-[10px] font-bold uppercase"
               >
-                <option value="year">Năm</option>
-                <option value="month">Tháng</option>
-                <option value="day">Ngày</option>
+                <option value="year">{t.loan.year}</option>
+                <option value="month">{t.loan.month}</option>
+                <option value="day">{t.loan.day}</option>
               </select>
             </div>
           </div>
@@ -99,7 +102,7 @@ export default function LoanSection({
                 <div>
                   <p className="text-[9px] text-gray-400 uppercase font-black mb-1 flex items-center gap-1">
                     <CircleDollarSign size={10} className="text-emerald-400" />
-                    Trả định kỳ
+                    {t.loan.periodicPayment}
                   </p>
 
                   <p className="text-2xl font-black text-emerald-400">
@@ -110,7 +113,7 @@ export default function LoanSection({
 
                 <div className="text-right">
                   <p className="text-[9px] text-gray-400 uppercase font-black mb-1">
-                    Tổng lãi
+                    {t.loan.totalInterest}
                   </p>
                   <p className="text-lg font-black text-rose-400">
                     + {Math.round(schedule.totalInterest).toLocaleString()}
@@ -134,7 +137,7 @@ export default function LoanSection({
                 onClick={onOpenSchedule}
                 className="w-full mt-4 py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 flex items-center justify-center gap-2"
               >
-                <Calculator size={14} /> Xem bảng trả nợ chi tiết
+                <Calculator size={14} /> {t.loan.viewSchedule}
               </button>
             </div>
           )}

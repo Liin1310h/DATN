@@ -20,6 +20,7 @@ import LayoutSkeleton from "../LayoutSkeleton";
 import { getAnalyticsTransactions } from "../../services/transactionsService";
 import { useTranslation } from "../../hook/useTranslation";
 import { useNavigate } from "react-router-dom";
+import { formatMoney } from "../../utils/formatMoney";
 
 ChartJS.register(
   CategoryScale,
@@ -49,14 +50,6 @@ export default function Analytics() {
     setCurrentDate((prev) => prev.locale(locale));
   }, [language]);
 
-  const formatMoney = (amount: number) => {
-    return new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(Math.abs(amount));
-  };
-
   const calendarDays = useMemo(() => {
     const startOfMonth = currentDate.startOf("month");
     const endOfMonth = currentDate.endOf("month");
@@ -67,7 +60,7 @@ export default function Analytics() {
     let day = startOfCalendar;
 
     if (viewMode === "month") {
-      while (day.isBefore(endOfCalendar)) {
+      while (day.isBefore(endOfCalendar) || day.isSame(endOfCalendar, "day")) {
         days.push(day);
         day = day.add(1, "day");
       }
@@ -108,7 +101,11 @@ export default function Analytics() {
       .filter((t) => t.type === "expense" || t.type === "lend")
       .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
 
-    return { periodIncome, periodExpense };
+    return {
+      periodIncome,
+      periodExpense,
+      periodTransactionsCount: periodTransactions.length,
+    };
   }, [transactions, calendarDays]);
 
   //TODO logic lấy dữ liệu từ back
@@ -201,12 +198,11 @@ export default function Analytics() {
                   {currentDate.format("MMMM, YYYY")}
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {transactions.length} transactions .{" "}
+                  {periodSummary.periodTransactionsCount} transactions .{" "}
                   {formatMoney(periodSummary.periodIncome)} in .{" "}
                   {formatMoney(periodSummary.periodExpense)} out
                 </p>
               </div>
-
               <button
                 onClick={() => setCurrentDate(currentDate.add(1, viewMode))}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400"
@@ -310,7 +306,7 @@ export default function Analytics() {
                       {expense > 0 && (
                         <div className="flex items-center gap-1 overflow-hidden">
                           <div className="w-1 h-3 rounded-full bg-rose-500 shrink-0" />
-                          <p className="text-[9px] font-bold text-rose-600 dark:text-rose-400 truncate">
+                          <p className="text-[10px] sm:text-[11px] font-bold text-rose-600 dark:text-rose-400 truncate">
                             {formatMoney(expense)}
                           </p>
                         </div>
@@ -415,15 +411,17 @@ export default function Analytics() {
               <div className="bg-black/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
                 <div className="flex justify-between text-[10px] font-black text-white/80 uppercase mb-2">
                   <span>Saving Rate</span>
-                  <span>42%</span>
+                  <span>{monthlySummary.rate}%</span>
                 </div>
                 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-white w-[42%] rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                  <div
+                    className="h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                    style={{
+                      width: `${Math.max(0, Math.min(monthlySummary.rate, 100))}%`,
+                    }}
+                  />
                 </div>
               </div>
-              <p className="text-[10px] text-center font-bold text-indigo-100/50 italic px-4">
-                "Keep it up, Linh! You're 5% away from your goal."
-              </p>
             </div>
           </div>
         </div>

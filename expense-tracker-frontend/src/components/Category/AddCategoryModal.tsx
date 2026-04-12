@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { X, Palette, Search } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Palette, Search, Plus } from "lucide-react";
 import { DynamicIcon } from "../DynamicIcon";
 import {
   changeCategory,
@@ -7,6 +7,7 @@ import {
 } from "../../services/categoriesService";
 import type { Category } from "../../types/category";
 import toast from "react-hot-toast";
+import { HexColorPicker } from "react-colorful";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -80,6 +81,28 @@ export default function AddCategoryModal({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [showPicker, setShowPicker] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(event.target as Node)
+      ) {
+        setShowPicker(false);
+      }
+    };
+
+    if (showPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPicker]);
+
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
@@ -128,8 +151,14 @@ export default function AddCategoryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] h-[101%] flex items-end justify-center bg-black/40 backdrop-blur-sm p-4 -translate-y-8">
-      <div className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-[100] h-[101%] flex items-end justify-center bg-black/40 backdrop-blur-sm p-4 -translate-y-8"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-300 overflow-hidden flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex justify-between items-center mb-6 shrink-0">
           <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gray-800 dark:text-white">
@@ -137,7 +166,7 @@ export default function AddCategoryModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-full transition-colors"
           >
             <X size={20} />
           </button>
@@ -167,26 +196,62 @@ export default function AddCategoryModal({
               <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-2">
                 <Palette size={12} /> Chọn màu sắc
               </label>
-              <input
-                type="color"
-                value={selectedColor}
-                onChange={(e) => setSelectedColor(e.target.value)}
-                className="w-6 h-6 rounded-full border-none cursor-pointer bg-transparent"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2 px-2">
-              {AVAILABLE_COLORS.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => setSelectedColor(color)}
-                  className={`w-7 h-7 rounded-full border-2 transition-all ${
-                    selectedColor === color
-                      ? "border-gray-900 dark:border-white scale-110"
-                      : "border-transparent"
-                  }`}
-                  style={{ backgroundColor: color }}
+              <div className="relative w-7 h-7">
+                <input
+                  type="color"
+                  value={selectedColor}
+                  onChange={(e) => setSelectedColor(e.target.value)}
+                  className="absolute inset-0 w-full h-full cursor-pointer opacity-0 z-10"
                 />
-              ))}
+                <div
+                  className="w-full h-full rounded-full border-2 border-white dark:border-gray-800 shadow-sm transition-colors"
+                  style={{ backgroundColor: selectedColor }}
+                />
+              </div>
+            </div>
+
+            <div className="relative">
+              {/* LIST COLOR */}
+              <div
+                className="flex flex-nowrap gap-3 p-2 overflow-x-auto custom-scrollbar no-scrollbar scroll-smooth items-center"
+                style={{ WebkitOverflowScrolling: "touch" }}
+              >
+                {AVAILABLE_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`w-7 h-7 rounded-full border-2 transition-all flex-shrink-0 ${
+                      selectedColor === color
+                        ? "border-gray-900 dark:border-white scale-110 shadow-lg"
+                        : "border-transparent"
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+
+                {/* BUTTON PICKER */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPicker((prev) => !prev);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-full border border-dashed border-gray-300 dark:text-white dark:border-gray-400 flex-shrink-0 hover:scale-110 transition-all"
+                >
+                  <Plus />
+                </button>
+              </div>
+              {showPicker && (
+                <div
+                  ref={pickerRef}
+                  onClick={(e) => e.stopPropagation()}
+                  className="fixed bottom-[350px] right-[300px] z-[9999] bg-white dark:bg-gray-900 p-3 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700"
+                >
+                  <HexColorPicker
+                    color={selectedColor}
+                    onChange={setSelectedColor}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -205,12 +270,12 @@ export default function AddCategoryModal({
                 className="w-full bg-gray-100 dark:bg-gray-800 p-3 pl-10 rounded-xl text-xs font-bold outline-none"
               />
             </div>
-            <div className="grid grid-cols-6 gap-2 ">
+            <div className="grid grid-cols-7 gap-2 justify-items-center ">
               {filteredIcons.map((icon) => (
                 <button
                   key={icon}
                   onClick={() => setSelectedIcon(icon)}
-                  className={`aspect-square rounded-2xl flex items-center justify-center transition-all ${
+                  className={`w-full max-w-[48px] aspect-square rounded-2xl flex items-center justify-center transition-all ${
                     selectedIcon === icon
                       ? "bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-black scale-105 shadow-xl"
                       : "bg-gray-50 dark:bg-gray-900/50 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"

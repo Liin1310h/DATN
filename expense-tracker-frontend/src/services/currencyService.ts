@@ -6,7 +6,7 @@ export const convertCurrency = async (
   amount: number,
 ) => {
   const response = await API.get(
-    `/Currency/convert?from=${from}&to=${to}&amount=${amount}`,
+    `/currency/convert?from=${from}&to=${to}&amount=${amount}`,
   );
   return response.data;
 };

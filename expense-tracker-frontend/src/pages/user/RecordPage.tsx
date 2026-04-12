@@ -1,507 +1,77 @@
-import { useState, useEffect } from "react";
 import Layout from "./Layout";
-import {
-  Landmark,
-  Tag,
-  MessageSquare,
-  ArrowRight,
-  Banknote,
-} from "lucide-react";
-import { RepaymentModal } from "../../components/Transaction/RepaymentModal";
-import { DynamicIcon } from "../../components/DynamicIcon";
-import AIInputMenu from "../../components/AI/AIInputMenu";
-
-import { useSettings } from "../../context/SettingsContext";
-import { useLoanCalculator } from "../../hook/useLoanCalculator";
-import { getCategories } from "../../services/categoriesService";
-import AddCategoryModal from "../../components/Category/AddCategoryModal";
-import type { Category } from "../../types/category";
-import { getAccounts } from "../../services/accountsService";
-import type { Account } from "../../types/account";
-import AddAccountModal from "../../components/Account/AddAccountModal";
-import VoiceModal from "../../components/AI/VoiceModal";
-import CameraModal from "../../components/AI/CameraModal";
-import LoanSection from "../../components/Transaction/LoanSection";
-import SearchableSelect from "../../components/SearchableSelect";
-import {
-  formatInputByCurrency,
-  parseInputToNumber,
-} from "../../utils/currencyFormatter";
+import TransactionForm from "../../components/Transaction/TransactionForm";
 import { createTransaction } from "../../services/transactionsService";
 import toast from "react-hot-toast";
-import { getExchangeRate } from "../../services/currencyService";
+import { useState } from "react";
+import { useTranslation } from "../../hook/useTranslation";
+import { createLoan } from "../../services/loanService";
+import LayoutSkeleton from "../LayoutSkeleton";
 
 export default function RecordPage() {
-  const { currency } = useSettings();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
-  // ! Camera + Voice
-  const [isAIMenuOpen, setIsAIMenuOpen] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [showVoice, setShowVoice] = useState(false);
-
-  //! TRANSACTION DATA
-  const [type, setType] = useState("expense");
-  const [amount, setAmount] = useState("");
-  const [person, setPerson] = useState("");
-  const [note, setNote] = useState("");
-  const [selectedCurrency, setSelectedCurrency] = useState(currency);
-  const [rate, setRate] = useState(1);
-  const [rateLoading, setRateLoading] = useState(false);
-
-  // ! LOAN & INTEREST
-  const [interestRate, setInterestRate] = useState("");
-  const [interestUnit, setInterestUnit] = useState("year");
-  const [loanDuration, setLoanDuration] = useState("");
-  const [durationUnit, setDurationUnit] = useState("month");
-  const [showSchedule, setShowSchedule] = useState(false);
-
-  const isDebt = type === "lend" || type === "borrow";
-  const schedule = useLoanCalculator(
-    amount,
-    interestRate,
-    interestUnit,
-    loanDuration,
-    durationUnit,
-  );
-
-  // ! CATEGORY STATE
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    null,
-  );
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showAddCategory, setShowAddCategory] = useState(false);
-
-  // ! ACCOUNT STATE
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
-    null,
-  );
-  const [searchAccTerm, setSearchAccTerm] = useState("");
-  const [isAccFocused, setIsAccFocused] = useState(false);
-  const [isAccDropdownOpen, setIsAccDropdownOpen] = useState(false);
-  const [showAddAccount, setShowAddAccount] = useState(false);
-
-  // todo tìm đối tượng được chọn
-  const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
-  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
-  // TODO Load xử lý dữ liệu
-  const loadData = async () => {
+  const handleCreate = async (data: any) => {
     setLoading(true);
     try {
-      const [accData, catData] = await Promise.all([
-        getAccounts(),
-        getCategories(),
-      ]);
+      if (data.type === "lend" || data.type === "borrow") {
+        const beDurationUnit =
+          data.durationUnit === "day"
+            ? "days"
+            : data.durationUnit === "month"
+              ? "months"
+              : "years";
+        // Tính toán dueDate dựa trên duration và unit
+        const durationNum = Number(data.loanDuration) || 0;
+        const calcDueDate = new Date();
 
-      setAccounts(accData);
-      setCategories(catData);
+        if (data.durationUnit === "month")
+          calcDueDate.setMonth(calcDueDate.getMonth() + durationNum);
+        else if (data.durationUnit === "day")
+          calcDueDate.setDate(calcDueDate.getDate() + durationNum);
+        else calcDueDate.setFullYear(calcDueDate.getFullYear() + durationNum);
 
-      setSearchTerm("");
-      setSearchAccTerm("");
+        await createLoan({
+          counterPartyName: data.person,
+          principalAmount: data.amount,
+
+          interestRate: Number(data.interestRate) || 0,
+          interestUnit: data.interestUnit,
+
+          duration: durationNum,
+          durationUnit: beDurationUnit,
+
+          startDate: new Date().toISOString(),
+          dueDate: calcDueDate.toISOString(),
+
+          isLending: data.type === "lend",
+          accountId: data.accountId,
+          note: data.note,
+        });
+        toast.success(t.record.addLoanSuccess);
+      } else {
+        await createTransaction({
+          ...data,
+          transactionDate: new Date().toISOString(),
+        });
+
+        toast.success(t.record.addSuccess);
+      }
     } catch (error) {
-      console.log("Lỗi khi lấy danh mục: ", error);
+      console.error(error);
+      toast.error(t.common.error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [type]);
+  if (loading) return <LayoutSkeleton />;
 
-  const handleAddSuccess = () => {
-    loadData();
-  };
-
-  // TODO Lấy tỷ giá khi Currency hoặc Account thay đổi
-  useEffect(() => {
-    if (!selectedAccountId) return;
-    const selectedAcc = accounts.find((a) => a.id === selectedAccountId);
-    if (!selectedAcc) return;
-
-    // Nếu cùng loại tiền
-    if (selectedCurrency === selectedAcc.currency) {
-      setRate(1);
-      return;
-    }
-    const fetchRate = async () => {
-      setRateLoading(true);
-      try {
-        const res = await getExchangeRate(
-          selectedCurrency,
-          selectedAcc.currency,
-        );
-        setRate(res.rate);
-      } catch (error) {
-        console.error("Lỗi khi lấy tỷ giá:", error);
-        setRate(1);
-      } finally {
-        setRateLoading(false);
-      }
-    };
-    fetchRate();
-  }, [selectedCurrency, selectedAccountId, accounts]);
-
-  // TODO Hàm lưu
-  const handleSave = async () => {
-    const rawAmount = parseInputToNumber(amount, selectedCurrency);
-    if (!amount || rawAmount <= 0) {
-      toast.error("Vui lòng nhập số tiền hợp lệ");
-      return;
-    }
-    const selectedAcc = accounts.find((a) => a.id === selectedAccountId);
-    if (!selectedAcc) {
-      toast.error("Vui lòng chọn tài khoản");
-      return;
-    }
-    if (type === "expense" && !selectedCategoryId) {
-      toast.error("Vui lòng chọn danh mục chi tiêu");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const finalConvertedAmount =
-        selectedCurrency === selectedAcc.currency
-          ? rawAmount
-          : rawAmount * rate;
-
-      // Gọi API lưu giao dịch
-      const payload = {
-        accountId: selectedAccountId,
-        amount: rawAmount,
-        currency: selectedCurrency,
-        convertedAmount: finalConvertedAmount,
-        type,
-        note: note.trim(),
-        transactionDate: new Date().toISOString(),
-        fromAccountId:
-          type === "expense" || type === "lend" ? selectedAccountId : undefined,
-        toAccountId:
-          type === "income" || type === "borrow"
-            ? selectedAccountId
-            : undefined,
-        categoryId: !isDebt ? selectedCategoryId : undefined,
-        person: isDebt ? person : undefined,
-        interestRate: isDebt ? Number(interestRate) : 0,
-        interestUnit: isDebt ? interestUnit : undefined,
-        loanDuration: isDebt ? Number(loanDuration) : 0,
-        durationUnit: isDebt ? durationUnit : undefined,
-      };
-      console.log("Payload:", payload);
-      await createTransaction(payload);
-      toast.success("Giao dịch đã được lưu thành công!");
-      setAmount("");
-      setNote("");
-      setSelectedAccountId(null);
-      setSelectedCategoryId(null);
-      setPerson("");
-    } catch (error) {
-      console.log("Lỗi khi lưu giao dịch: ", error);
-    }
-  };
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto mb-24 animate-in fade-in duration-500">
-        <div className="flex p-1.5 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-8 shadow-inner">
-          {["expense", "income", "lend", "borrow"].map((id) => (
-            <button
-              key={id}
-              onClick={() => setType(id)}
-              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all duration-300 ${type === id ? (id === "expense" ? "bg-rose-500" : id === "income" ? "bg-emerald-500" : "bg-blue-600") + " text-white shadow-lg" : "text-gray-400"}`}
-            >
-              {id === "expense"
-                ? "Chi tiêu"
-                : id === "income"
-                  ? "Thu nhập"
-                  : id === "lend"
-                    ? "Cho vay"
-                    : "Vay nợ"}
-            </button>
-          ))}
-        </div>
-
-        <div className="group bg-white dark:bg-gray-900 rounded-[3rem] border border-gray-100 dark:border-gray-800 shadow-xl p-8 mb-8 relative overflow-hidden">
-          <div
-            className={`absolute top-0 left-0 w-1.5 h-full ${isDebt ? "bg-blue-600" : "bg-indigo-600"}`}
-          ></div>
-          <div className="flex items-center justify-center gap-3 py-5">
-            <input
-              type="text"
-              value={amount}
-              onChange={(e) => {
-                const formatted = formatInputByCurrency(
-                  e.target.value,
-                  selectedCurrency,
-                );
-                setAmount(formatted);
-              }}
-              placeholder="0"
-              inputMode="decimal"
-              className="w-full max-w-[350px] text-5xl md:text-6xl font-black text-center bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-300 transition-all"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const nextCurrency = selectedCurrency === "VND" ? "USD" : "VND";
-                setSelectedCurrency(nextCurrency);
-              }}
-              className="px-4 py-2 rounded-2xl bg-indigo-50 dark:bg-gray-800 text-indigo-600 font-black text-sm hover:scale-110 transition-transform shadow-sm border border-indigo-100"
-            >
-              {selectedCurrency}
-            </button>
-          </div>
-          {!rateLoading &&
-            selectedAccount &&
-            selectedCurrency !== selectedAccount.currency &&
-            parseInputToNumber(amount, selectedCurrency) > 0 && (
-              <div className="text-[11px] text-gray-500 mt-2 text-center animate-in fade-in">
-                Tương đương:{" "}
-                <span className="font-bold text-indigo-600">
-                  {new Intl.NumberFormat().format(
-                    parseInputToNumber(amount, selectedCurrency) * rate,
-                  )}{" "}
-                  {selectedAccount.currency}
-                </span>{" "}
-                (Tỷ giá: 1 {selectedCurrency} = {rate})
-              </div>
-            )}
-          {rateLoading && (
-            <div className="text-[10px] text-center mt-2">
-              Đang tính tỷ giá...
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase flex items-center gap-2 ml-2  text-gray-400">
-                <Landmark size={12} />
-                Tài khoản
-              </label>
-              <SearchableSelect
-                items={accounts}
-                value={selectedAccount || null}
-                onChange={(acc) => {
-                  setSelectedAccountId(acc.id);
-                  setSelectedCurrency(acc.currency);
-                  setAmount("");
-                }}
-                getLabel={(acc) => acc.name}
-                getKey={(acc) => acc.id}
-                searchValue={searchAccTerm}
-                setSearchValue={setSearchAccTerm}
-                isFocused={isAccFocused}
-                setIsFocused={setIsAccFocused}
-                isOpen={isAccDropdownOpen}
-                setIsOpen={setIsAccDropdownOpen}
-                onAdd={() => setShowAddAccount(true)}
-                // ICON
-                renderIcon={(acc) =>
-                  acc?.type === "Bank" ? (
-                    acc.logo ? (
-                      <img
-                        src={acc.logo}
-                        alt={acc.name}
-                        className="w-5 h-auto object-contain"
-                      />
-                    ) : (
-                      <Landmark size={20} className="text-blue-500" />
-                    )
-                  ) : (
-                    <Banknote size={20} className="text-emerald-500" />
-                  )
-                }
-                // ITEM UI
-                renderItem={(acc, selected) => (
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        acc.type === "Bank" ? "bg-blue-50" : "bg-emerald-50"
-                      }`}
-                    >
-                      {acc.type === "Bank" ? (
-                        acc.logo ? (
-                          <img
-                            src={acc.logo}
-                            alt={acc.name}
-                            className="w-5 h-auto object-contain"
-                          />
-                        ) : (
-                          <Landmark size={16} className="text-blue-500" />
-                        )
-                      ) : (
-                        <Banknote size={16} className="text-emerald-500" />
-                      )}
-                    </div>
-
-                    <div className="flex flex-col items-start">
-                      <span className="text-sm font-bold">{acc.name}</span>
-                      <span className="text-[9px] text-gray-400">
-                        {acc.balance?.toLocaleString()} {acc.currency}
-                      </span>
-                    </div>
-
-                    {selected && (
-                      <div className="ml-auto w-2 h-2 bg-indigo-600 rounded-full" />
-                    )}
-                  </div>
-                )}
-              />
-            </div>
-            {type !== "income" && (
-              <div className="space-y-2">
-                <label
-                  className={`text-[10px] font-black uppercase flex items-center gap-2 ml-2 ${isDebt ? "text-blue-600" : "text-gray-400"}`}
-                >
-                  {isDebt ? <Landmark size={12} /> : <Tag size={12} />}
-                  {isDebt
-                    ? type === "lend"
-                      ? "Cho ai vay?"
-                      : "Vay của ai?"
-                    : "Danh mục"}
-                </label>
-                {isDebt ? (
-                  <input
-                    type="text"
-                    value={person}
-                    onChange={(e) => setPerson(e.target.value)}
-                    placeholder="Tên người nhận/ cho vay..."
-                    className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-                  />
-                ) : (
-                  <SearchableSelect
-                    items={categories}
-                    value={selectedCategory || null}
-                    onChange={(cat) => {
-                      setSelectedCategoryId(cat.id);
-                    }}
-                    getLabel={(cat) => cat.name}
-                    getKey={(cat) => cat.id}
-                    searchValue={searchTerm}
-                    setSearchValue={setSearchTerm}
-                    isFocused={isFocused}
-                    setIsFocused={setIsFocused}
-                    isOpen={isDropdownOpen}
-                    setIsOpen={setIsDropdownOpen}
-                    onAdd={() => setShowAddCategory(true)}
-                    renderIcon={(cat) =>
-                      cat ? (
-                        <DynamicIcon
-                          name={cat.icon}
-                          size={20}
-                          color={cat.color}
-                        />
-                      ) : (
-                        <Tag size={20} className="text-gray-400" />
-                      )
-                    }
-                    renderItem={(cat, selected) => (
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: cat.color + "20" }}
-                        >
-                          <DynamicIcon
-                            name={cat.icon}
-                            size={16}
-                            color={cat.color}
-                          />
-                        </div>
-
-                        <span className="text-sm font-bold">{cat.name}</span>
-
-                        {selected && (
-                          <div className="ml-auto w-2 h-2 bg-indigo-600 rounded-full" />
-                        )}
-                      </div>
-                    )}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-
-          {isDebt && (
-            <LoanSection
-              interestRate={interestRate}
-              setInterestRate={setInterestRate}
-              interestUnit={interestUnit}
-              setInterestUnit={setInterestUnit}
-              loanDuration={loanDuration}
-              setLoanDuration={setLoanDuration}
-              durationUnit={durationUnit}
-              setDurationUnit={setDurationUnit}
-              schedule={schedule}
-              currency={currency}
-              onOpenSchedule={() => setShowSchedule(true)}
-            />
-          )}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-2 ml-2">
-              <MessageSquare size={12} className="text-indigo-500" /> Ghi chú
-            </label>
-            <textarea
-              rows={2}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Chi tiết ..."
-              className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm resize-none"
-            />
-          </div>
-
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className={`w-full py-4 rounded-[2.5rem] mt-1 shadow-2xl transition-all active:scale-[0.97] font-black text-white text-xs tracking-tight 
-              ${loading ? "opacity-70 cursor-not-allowed" : ""} 
-              ${isDebt ? "bg-gradient-to-r from-blue-600 to-indigo-700" : "bg-gradient-to-r from-indigo-600 to-violet-600"}`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              {loading ? (
-                <>ĐANG XỬ LÝ...</>
-              ) : (
-                <>
-                  LƯU GIAO DỊCH <ArrowRight size={20} />
-                </>
-              )}
-            </span>
-          </button>
-        </div>
+      <div className="max-w-2xl mx-auto p-4">
+        <TransactionForm onSubmit={handleCreate} loading={loading} />
       </div>
-
-      <AIInputMenu
-        isOpen={isAIMenuOpen}
-        setIsOpen={setIsAIMenuOpen}
-        onOpenCamera={() => setShowCamera(true)}
-        onOpenVoice={() => setShowVoice(true)}
-        position="right"
-      />
-      <RepaymentModal
-        isOpen={showSchedule}
-        onClose={() => setShowSchedule(false)}
-        schedule={schedule}
-        currency={currency}
-      />
-      <AddCategoryModal
-        isOpen={showAddCategory}
-        onClose={() => setShowAddCategory(false)}
-        onSuccess={handleAddSuccess}
-      />
-      <AddAccountModal
-        isOpen={showAddAccount}
-        onClose={() => setShowAddAccount(false)}
-        onSuccess={handleAddSuccess}
-      />
-      <CameraModal isOpen={showCamera} onClose={() => setShowCamera(false)} />
-
-      <VoiceModal isOpen={showVoice} onClose={() => setShowVoice(false)} />
     </Layout>
   );
 }

@@ -8,6 +8,8 @@ import { formatInputByCurrency } from "../../utils/currencyFormatter";
 import { Banknote, Landmark } from "lucide-react";
 import SearchableSelect from "../SearchableSelect";
 import toast from "react-hot-toast";
+import { useTranslation } from "../../hook/useTranslation";
+import { formatMoney } from "../../utils/formatMoney";
 
 export default function TransferModal({
   isOpen,
@@ -20,6 +22,7 @@ export default function TransferModal({
   accounts: Account[];
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [fromAccountId, setFromAccountId] = useState<number | null>(null);
   const [toAccountId, setToAccountId] = useState<number | null>(null);
   const [amount, setAmount] = useState<string>("");
@@ -56,14 +59,6 @@ export default function TransferModal({
     () => accounts.find((acc) => acc.id === toAccountId),
     [toAccountId, accounts],
   );
-
-  // TODO Hiện tỷ giá
-  const formatMoney = (amount: number, currencyCode: string) => {
-    return new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", {
-      style: "currency",
-      currency: currencyCode,
-    }).format(amount);
-  };
 
   //TODO Lấy tỷ giá khi chọn tài khoản
   useEffect(() => {
@@ -111,52 +106,19 @@ export default function TransferModal({
   // TODO Hàm validate
   const validate = () => {
     if (!fromAccountId || !toAccountId) {
-      toast.error(t.selectBothAccounts);
+      toast.error(t.transfer.selectBothAccounts);
       return false;
     }
     if (fromAccountId === toAccountId) {
-      toast.error(t.cannotTransferToSameAccount);
+      toast.error(t.transfer.cannotTransferToSameAccount);
       return false;
     }
     if (Number(amount) <= 0) {
-      toast.error(t.amountMustBeGreaterThanZero);
+      toast.error(t.transfer.amountMustBeGreaterThanZero);
       return false;
     }
     return true;
   };
-
-  const text = {
-    en: {
-      transfer: "Transfer",
-      from: "From",
-      to: "To",
-      amount: "Amount",
-      note: "Note",
-      cancel: "Cancel",
-      submit: "Submit",
-      selectBothAccounts: "Please select both source and destination accounts.",
-      cannotTransferToSameAccount:
-        "Source and destination accounts cannot be the same.",
-      amountMustBeGreaterThanZero: "Amount must be greater than zero.",
-      transferSuccessful: "Transfer successful!",
-    },
-    vi: {
-      transfer: "Chuyển khoản",
-      from: "Từ tài khoản",
-      to: "Đến tài khoản",
-      amount: "Số tiền",
-      note: "Ghi chú",
-      cancel: "Hủy",
-      submit: "Xác nhận",
-      selectBothAccounts: "Vui lòng chọn cả tài khoản nguồn và đích.",
-      cannotTransferToSameAccount:
-        "Tài khoản nguồn và đích không thể giống nhau.",
-      amountMustBeGreaterThanZero: "Số tiền phải lớn hơn 0.",
-      transferSuccessful: "Chuyển khoản thành công!",
-    },
-  };
-
-  const t = text[language as "en" | "vi"] || text.vi;
 
   // Tự động xoá lỗi sau 5s
   useEffect(() => {
@@ -170,15 +132,15 @@ export default function TransferModal({
   // TODO Hàm submit
   const handleSubmit = async () => {
     if (!fromAccountId || !toAccountId) {
-      toast.error(t.selectBothAccounts);
+      toast.error(t.transfer.selectBothAccounts);
       return;
     }
     if (fromAccountId === toAccountId) {
-      toast.error(t.cannotTransferToSameAccount);
+      toast.error(t.transfer.cannotTransferToSameAccount);
       return;
     }
     if (Number(amount) <= 0) {
-      toast.error(t.amountMustBeGreaterThanZero);
+      toast.error(t.transfer.amountMustBeGreaterThanZero);
       return;
     }
     if (!validate()) return;
@@ -193,7 +155,7 @@ export default function TransferModal({
         transactionDate: new Date(),
       };
       await transferBetweenAccounts(payload);
-      toast.success(t.transferSuccessful);
+      toast.success(t.transfer.transferSuccessful);
       onSuccess();
       onClose();
 
@@ -228,17 +190,20 @@ export default function TransferModal({
       />
       {/* MODAL */}
       <div className="flex flex-col relative bg-white dark:bg-gray-900 w-[700px] p-6 rounded-2xl shadow-2xl gap-4">
-        <h2 className="text-2xl font-bold text-center mb-6">Chuyển tiền</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">
+          {t.transfer.title}
+        </h2>
         <div className="grid grid-cols-3 gap-6 items-start min-w-0">
           {/* LEFT (Tài khoản nguồn) */}
           <div className="space-y-3 min-w-0">
             <label className="text-[11px] font-bold uppercase flex items-center gap-2 ml-2  text-gray-400">
               <Landmark size={12} />
-              Tài khoản nguồn
+              {t.transfer.sourceAccount}
             </label>
             <SearchableSelect
               items={accounts}
               value={fromAccount || null}
+              placeholder={t.common.select}
               onChange={(acc) => {
                 setFromAccountId(acc.id);
               }}
@@ -308,16 +273,22 @@ export default function TransferModal({
             {fromAccount && (
               <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs space-y-1">
                 <div className="flex justify-between">
-                  <span>Hiện tại</span>
+                  <span>{t.transfer.currentBalance}</span>
                   <span>
-                    {formatMoney(fromAccount.balance, fromAccount.currency)}
+                    {formatMoney(
+                      fromAccount.balance,
+                      fromAccount.currency,
+                      language,
+                    )}
                   </span>
                 </div>
 
                 {Number(amount) > 0 && (
                   <div className="flex justify-between text-rose-500">
-                    <span>Sau chuyển</span>
-                    <span>{formatMoney(fromAfter, fromAccount.currency)}</span>
+                    <span>{t.transfer.afterTransfer}</span>
+                    <span>
+                      {formatMoney(fromAfter, fromAccount.currency, language)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -355,16 +326,14 @@ export default function TransferModal({
                   rawValue === currentRawAmount &&
                   inputValue.length > amount.length
                 ) {
-                  setError("Vui lòng chỉ nhập số!");
+                  setError(t.transfer.onlyNumbersError);
                   return;
                 }
 
                 // Nếu đang nhập thêm và vượt quá số dư
                 if (fromAccount && rawValue > fromAccount.balance) {
                   // Không làm gì cả
-                  setError(
-                    "Số tiền không được vượt quá số dư tài khoản nguồn!",
-                  );
+                  setError(t.transfer.insufficientBalance);
                   return;
                 }
                 const formatted = formatInputByCurrency(
@@ -374,7 +343,7 @@ export default function TransferModal({
                 setAmount(formatted);
               }}
               className="w-full h-14 text-center text-xs font-bold p-3 border rounded-xl"
-              placeholder="Nhập số tiền muốn chuyển..."
+              placeholder={t.transfer.amountPlaceholder}
             />
             {error && (
               <div className="text-rose-500 text-[10px] font-medium text-center animate-pulse">
@@ -388,7 +357,7 @@ export default function TransferModal({
                 {fromAccount.currency !== toAccount.currency && (
                   <div className="text-[10px] text-gray-400">
                     {rateLoading
-                      ? "Đang lấy tỷ giá..."
+                      ? t.rate.rating
                       : `1 ${fromAccount.currency} = ${rate} ${toAccount.currency}`}
                   </div>
                 )}
@@ -400,11 +369,12 @@ export default function TransferModal({
           <div className="space-y-3 min-w-0">
             <label className="text-[10px] font-black uppercase flex items-center gap-2 ml-2  text-gray-400">
               <Landmark size={12} />
-              Tài khoản đích
+              {t.transfer.destinationAccount}
             </label>
             <SearchableSelect
               items={accounts}
               value={toAccount || null}
+              placeholder={t.common.select}
               onChange={(acc) => {
                 setToAccountId(acc.id);
               }}
@@ -472,7 +442,7 @@ export default function TransferModal({
             {toAccount && (
               <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs space-y-1">
                 <div className="flex justify-between">
-                  <span>Hiện tại</span>
+                  <span>{t.transfer.currentBalance}</span>
                   <span>
                     {formatMoney(toAccount.balance, toAccount.currency)}
                   </span>
@@ -480,7 +450,7 @@ export default function TransferModal({
 
                 {Number(amount) > 0 && (
                   <div className="flex justify-between text-emerald-500">
-                    <span>Sau nhận</span>
+                    <span>{t.transfer.afterReceive}</span>
                     <span>{formatMoney(toAfter, toAccount.currency)}</span>
                   </div>
                 )}
@@ -492,7 +462,7 @@ export default function TransferModal({
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Ghi chú..."
+          placeholder={t.common.note}
           className="w-full p-3 border rounded-xl"
         />
 
@@ -510,7 +480,7 @@ export default function TransferModal({
             disabled={loading}
             className="flex-1 py-3 bg-indigo-600 text-white rounded-xl"
           >
-            {loading ? "Đang chuyển..." : "Xác nhận"}
+            {loading ? t.transfer.processing : t.transfer.confirm}
           </button>
         </div>
       </div>

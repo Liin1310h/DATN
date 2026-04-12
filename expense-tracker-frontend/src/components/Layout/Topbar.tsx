@@ -13,15 +13,19 @@ import { useLocation } from "react-router-dom";
 import { useSettings } from "../../context/SettingsContext";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../../hook/useTranslation";
+import { CURRENCIES } from "../../constants/currencies";
 
 export default function Topbar({ toggleSidebar }: any) {
   const { user } = useAuth();
   const { language, theme, currency, setLanguage, setTheme, setCurrency } =
     useSettings();
+  const { t } = useTranslation();
   const location = useLocation();
 
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -37,31 +41,21 @@ export default function Topbar({ toggleSidebar }: any) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [dropdownRef]);
-  // 1. Định nghĩa từ điển tiêu đề theo Pathname
-  const titles: Record<string, { en: string; vi: string }> = {
-    "/dashboard": { en: "Dashboard", vi: "Tổng quan" },
-    "/addExpense": { en: "Add Record", vi: "Ghi chép mới" },
-    "/accountManager": { en: "Account Manager", vi: "Quản lý tài khoản" },
-    "/categoryManager": { en: "Category Manager", vi: "Quản lý danh mục" },
-    "/history": { en: "History", vi: "Lịch sử giao dịch" },
-    "/analytics": { en: "Analytics", vi: "Phân tích thu chi" },
+
+  //TODO Xử lý tiêu đề động
+  const getTitle = () => {
+    const pathMap: Record<string, string> = {
+      "/dashboard": t.nav.dashboard,
+      "/addExpense": t.nav.addExpense,
+      "/accountManager": t.nav.accountManager,
+      "/categoryManager": t.nav.categoryManager,
+      "/budget": t.nav.budget,
+      "/history": t.nav.history,
+      "/analytics": t.nav.analytics,
+    };
+    return pathMap[location.pathname] || t.nav.dashboard;
   };
 
-  // 2. Lấy tiêu đề dựa trên route hiện tại
-  const currentTitle =
-    titles[location.pathname]?.[language as "en" | "vi"] || "Dashboard";
-
-  // 3. Hàm chuyển đổi đơn vị tiền tệ
-  const currencies = [
-    { code: "VND", symbol: "₫", label: "Vietnamese Dong" },
-    { code: "USD", symbol: "$", label: "US Dollar" },
-    { code: "EUR", symbol: "€", label: "Euro" },
-    { code: "JPY", symbol: "¥", label: "Japanese Yen" },
-    { code: "GBP", symbol: "£", label: "British Pound" },
-    { code: "AUD", symbol: "A$", label: "Australian Dollar" },
-    { code: "CAD", symbol: "C$", label: "Canadian Dollar" },
-    { code: "CNY", symbol: "¥", label: "Chinese Yuan" },
-  ];
   return (
     <div className="flex items-center justify-between h-16 px-6 bg-white/70 dark:bg-[#161E2E]/70 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800/50 sticky top-0 z-40 transition-colors duration-300">
       {/* LEFT */}
@@ -73,7 +67,7 @@ export default function Topbar({ toggleSidebar }: any) {
           <Menu size={24} />
         </button>
         <h1 className="text-lg font-black text-gray-800 dark:text-white leading-none animate-in fade-in duration-300">
-          {currentTitle}
+          {getTitle()}
         </h1>
       </div>
 
@@ -109,10 +103,10 @@ export default function Topbar({ toggleSidebar }: any) {
           {isCurrencyOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1C2636] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
               <div className="px-3 py-1 mb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                Chọn đơn vị
+                {t.common.selectCurrency}
               </div>
               <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                {currencies.map((c) => (
+                {CURRENCIES.map((c) => (
                   <button
                     key={c.code}
                     onClick={() => {
@@ -171,17 +165,15 @@ export default function Topbar({ toggleSidebar }: any) {
         opacity-0 group-hover:opacity-100 transition-all duration-200
         whitespace-nowrap pointer-events-none"
         >
-          {language === "en" ? "Switch to Vietnamese" : "Chuyển sang tiếng Anh"}
+          {language === "en"
+            ? t.common.switchToVietnamese
+            : t.common.switchToEnglish}
         </div>
 
         {/* Chuyển theme sáng tối*/}
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          title={
-            theme === "dark"
-              ? "Chuyển sang giao diện sáng"
-              : "Chuyển sang giao diện tối"
-          }
+          title={theme === "dark" ? t.common.lightMode : t.common.darkMode}
           className="p-2 text-gray-400 hover:text-indigo-500 dark:text-white transition-colors rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >
           {theme === "dark" ? (
@@ -198,7 +190,7 @@ export default function Topbar({ toggleSidebar }: any) {
           <User size={18} strokeWidth={2.5} />
 
           <span className="absolute -bottom-10 right-0 p-2 bg-gray-900 text-white text-[10px] font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-            {user?.name || "Profile"}
+            {user?.name || t.common.profile}
           </span>
         </button>
       </div>

@@ -14,6 +14,7 @@ public class TransactionRequest
     required
     public int AccountId
     { get; set; }
+    public DateTime? TransactionDate { get; set; }
     public int? CategoryId { get; set; }
     public int? LoanId { get; set; }
 }

@@ -1,5 +1,6 @@
 // components/RepaymentModal.tsx
 import { X } from "lucide-react";
+import { useTranslation } from "../../hook/useTranslation";
 
 export const RepaymentModal = ({
   isOpen,
@@ -7,6 +8,7 @@ export const RepaymentModal = ({
   schedule,
   currency,
 }: any) => {
+  const { t } = useTranslation();
   if (!isOpen || !schedule) return null;
 
   return (
@@ -21,9 +23,11 @@ export const RepaymentModal = ({
 
         <div className="px-8 pb-6 flex justify-between items-center border-b border-gray-50 dark:border-gray-800">
           <div>
-            <h2 className="text-xl font-black uppercase">Lịch trả nợ</h2>
+            <h2 className="text-xl font-black uppercase">
+              {t.loan.scheduleTitle}
+            </h2>
             <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
-              Dư nợ giảm dần
+              {t.loan.reducingBalance}
             </p>
           </div>
           <button
@@ -36,10 +40,12 @@ export const RepaymentModal = ({
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
           <div className="grid grid-cols-5 px-4 text-[9px] font-black uppercase text-gray-400 mb-2">
-            <span>Kỳ</span>
-            <span className="text-right">Gốc</span>
-            <span className="text-right">Lãi</span>
-            <span className="col-span-2 text-right">Dư nợ còn lại</span>
+            <span>{t.loan.period}</span>
+            <span className="text-right">{t.loan.principal}</span>
+            <span className="text-right">{t.loan.interest}</span>
+            <span className="col-span-2 text-right">
+              {t.loan.reducingBalance}
+            </span>
           </div>
           {schedule.rows.map((row: any) => (
             <div
@@ -66,7 +72,7 @@ export const RepaymentModal = ({
         <div className="p-8 bg-gray-50 dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-4">
           <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-sm text-center">
             <p className="text-[8px] font-black text-gray-400 uppercase mb-1">
-              Mỗi tháng trả
+              {t.loan.monthlyPaymentAmount}
             </p>
             <p className="text-lg font-black text-emerald-500">
               {Math.round(schedule.monthlyPayment).toLocaleString()}
@@ -74,7 +80,7 @@ export const RepaymentModal = ({
           </div>
           <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-sm text-center">
             <p className="text-[8px] font-black text-gray-400 uppercase mb-1">
-              Tổng cộng nợ
+              {t.loan.totalPayable}
             </p>
             <p className="text-lg font-black text-blue-600">
               {Math.round(schedule.totalPayable).toLocaleString()}

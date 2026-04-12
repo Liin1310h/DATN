@@ -14,6 +14,7 @@ import {
 import ConfirmCurrencyModal from "../ConfirmCurrencyModal";
 import CurrencyConvertModal from "../CurrencyConvertModal";
 import toast from "react-hot-toast";
+import { CURRENCIES } from "../../constants/currencies";
 
 export default function AddAccountModal({
   isOpen,
@@ -43,7 +44,7 @@ export default function AddAccountModal({
   const [showConvert, setShowConvert] = useState(false);
   const [pendingCurrency, setPendingCurrency] = useState<string>("");
 
-  // 1. Khởi tạo dữ liệu
+  //TODO 1. Khởi tạo dữ liệu
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
@@ -126,10 +127,18 @@ export default function AddAccountModal({
     }
   };
 
+  //TODO
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 top-[-25px] z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={handleOverlayClick}
+    >
       <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-20">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -138,7 +147,7 @@ export default function AddAccountModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+            className="p-2 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
           >
             <X size={20} />
           </button>
@@ -232,8 +241,15 @@ export default function AddAccountModal({
                 }}
                 className="bg-transparent text-[10px] font-black text-indigo-500 outline-none"
               >
-                <option value="VND">VND (₫)</option>
-                <option value="USD">USD ($)</option>
+                {CURRENCIES.map((curr) => (
+                  <option
+                    key={curr.code}
+                    value={curr.code}
+                    className="bg-white dark:bg-gray-900 text-gray-800 dark:text-white"
+                  >
+                    {curr.code} ({curr.symbol})
+                  </option>
+                ))}
               </select>
             </div>
             <input

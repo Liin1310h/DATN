@@ -1,5 +1,4 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useSettings } from "../../context/SettingsContext";
 import {
   LayoutDashboard,
   PlusCircle,
@@ -13,6 +12,7 @@ import {
   Menu,
 } from "lucide-react";
 import { useEffect } from "react";
+import { useTranslation } from "../../hook/useTranslation";
 
 export default function Sidebar({
   collapsed,
@@ -22,47 +22,20 @@ export default function Sidebar({
   setCollapsed: (val: boolean) => void;
 }) {
   const navigate = useNavigate();
-  const { language } = useSettings();
-
+  const { t } = useTranslation();
   const logout = () => {
     localStorage.removeItem("token");
     navigate("/");
   };
 
-  const text = {
-    en: {
-      dashboard: "Dashboard",
-      openSidebar: "Open sidebar",
-      closeSidebar: "Close sidebar",
-      addExpense: "Add Record",
-      accountManager: "Account Manager",
-      categoryManager: "Category Manager",
-      history: "History",
-      analytics: "Analytics",
-      logout: "Sign Out",
-    },
-    vi: {
-      dashboard: "Tổng quan",
-      openSidebar: "Mở menu",
-      closeSidebar: "Thu gọn",
-      addExpense: "Ghi chép mới",
-      accountManager: "Quản lý tài khoản",
-      categoryManager: "Quản lý danh mục",
-      history: "Lịch sử",
-      analytics: "Phân tích",
-      logout: "Đăng xuất",
-    },
-  };
-
-  const t = text[language as "en" | "vi"] || text.vi;
-
   const menuItems = [
-    { to: "/dashboard", icon: LayoutDashboard, label: t.dashboard },
-    { to: "/addExpense", icon: PlusCircle, label: t.addExpense },
-    { to: "/accountManager", icon: UserCircle, label: t.accountManager },
-    { to: "/categoryManager", icon: FolderTree, label: t.categoryManager },
-    { to: "/history", icon: History, label: t.history },
-    { to: "/analytics", icon: PieChart, label: t.analytics },
+    { to: "/dashboard", icon: LayoutDashboard, label: t.nav.dashboard },
+    { to: "/addExpense", icon: PlusCircle, label: t.nav.addExpense },
+    { to: "/accountManager", icon: UserCircle, label: t.nav.accountManager },
+    { to: "/categoryManager", icon: FolderTree, label: t.nav.categoryManager },
+    { to: "/budget", icon: FolderTree, label: t.nav.budget },
+    { to: "/history", icon: History, label: t.nav.history },
+    { to: "/analytics", icon: PieChart, label: t.nav.analytics },
   ];
 
   useEffect(() => {
@@ -77,7 +50,7 @@ export default function Sidebar({
   return (
     <div
       className={`h-full bg-indigo-600 dark:bg-[#161E2E] text-white flex flex-col transition-all duration-300 ${
-        collapsed ? "w-20" : "w-64"
+        collapsed ? "w-20" : "w-60"
       }`}
     >
       {/* HEADER */}
@@ -100,7 +73,7 @@ export default function Sidebar({
         {/* TOGGLE BUTTON */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? t.openSidebar : t.closeSidebar}
+          title={collapsed ? t.nav.openSidebar : t.nav.closeSidebar}
           className="p-2 hover:bg-white/10 rounded-lg transition-all duration-200"
         >
           {collapsed ? <Menu size={18} /> : <PanelLeftClose size={18} />}
@@ -147,13 +120,13 @@ export default function Sidebar({
       <div className="p-2 mt-auto">
         <button
           onClick={logout}
-          title={collapsed ? t.logout : undefined}
+          title={collapsed ? t.nav.logout : undefined}
           className={`w-full flex items-center ${
             collapsed ? "justify-center" : "gap-3 justify-center"
           } bg-red-500/10 hover:bg-red-500 text-red-200 hover:text-white py-3 rounded-xl transition text-xs font-bold`}
         >
           <LogOut size={16} />
-          {!collapsed && t.logout}
+          {!collapsed && t.nav.logout}
         </button>
       </div>
     </div>

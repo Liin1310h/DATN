@@ -11,11 +11,25 @@ export interface GetTransactionsParams {
   page?: number;
   pageSize?: number;
 }
+
 export const getTransactions = async (params: GetTransactionsParams) => {
   const response = await API.get("/transactions", { params });
   return response.data;
 };
 
+export const getAnalyticsTransactions = async (
+  startDate: string,
+  endDate: string,
+) => {
+  const response = await API.get("/transactions", {
+    params: {
+      fromDate: startDate,
+      toDate: endDate,
+      pageSize: 1000,
+    },
+  });
+  return response.data;
+};
 export const createTransaction = async (data: any) => {
   const response = await API.post("/transactions", data);
   return response.data;

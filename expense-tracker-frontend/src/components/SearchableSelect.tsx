@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "../hook/useTranslation";
 
 interface SearchableSelectProps<T> {
   items: T[];
@@ -32,7 +33,7 @@ export default function SearchableSelect<T>({
   onChange,
   getLabel,
   getKey,
-  placeholder = "Select...",
+  placeholder = "Select ...",
 
   renderItem,
   renderIcon,
@@ -46,6 +47,7 @@ export default function SearchableSelect<T>({
 
   onAdd,
 }: SearchableSelectProps<T>) {
+  const { t } = useTranslation();
   // Filter
   const filteredItems = useMemo(() => {
     return items.filter((item) =>
@@ -119,7 +121,7 @@ export default function SearchableSelect<T>({
             ) : (
               <div className="p-6 text-center">
                 <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
-                  Không tìm thấy
+                  {t.common.notFound}
                 </p>
               </div>
             )}

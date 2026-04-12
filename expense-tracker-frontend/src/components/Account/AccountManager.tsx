@@ -17,8 +17,12 @@ import type { Account } from "../../types/account";
 import ConfirmModal from "../Modal";
 import TransferModal from "./TransferModal";
 import toast from "react-hot-toast";
+import { useTranslation } from "../../hook/useTranslation";
+import { replaceVar } from "../../locales";
+import { formatMoney } from "../../utils/formatMoney";
 
 export default function AccountManager() {
+  const { t } = useTranslation();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,49 +37,6 @@ export default function AccountManager() {
   // Lấy cấu hình từ Settings
   const { language } = useSettings();
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-
-  const formatMoney = (amount: number, currencyCode: string) => {
-    return new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", {
-      style: "currency",
-      currency: currencyCode,
-    }).format(amount);
-  };
-
-  const t = useMemo(() => {
-    const translations = {
-      en: {
-        totalAssets: "Total Balance",
-        accounts: "accounts",
-        addAccount: "Add Account",
-        noAccounts: "No accounts yet. Add one to get started!",
-        listCounts: "Your Accounts",
-        bank: "Bank Account",
-        cash: "Cash Wallet",
-        loading: "Connecting...",
-        empty: "No accounts yet. Add one to get started!",
-        searchPlaceholder: "Search accounts...",
-        deleteConfirm:
-          "Deleting this account will affect related transactions. Are you sure?",
-        errorDelete: "Error {error} when deleting account.",
-      },
-      vi: {
-        totalAssets: "Tổng tài sản",
-        accounts: "tài khoản",
-        addAccount: "Thêm ví",
-        noAccounts: "Chưa có tài khoản nào. Hãy thêm ví để bắt đầu!",
-        listCounts: "Danh sách tài khoản",
-        bank: "Tài khoản ngân hàng",
-        cash: "Tiền mặt",
-        loading: "Đang kết nối ...",
-        empty: "Chưa có tài khoản nào. Hãy thêm ví để bắt đầu!",
-        searchPlaceholder: "Tìm kiếm tài khoản...",
-        deleteConfirm:
-          "Xóa tài khoản này sẽ ảnh hưởng đến các giao dịch liên quan. Bạn chắc chắn chứ?",
-        errorDelete: "Lỗi {error} khi xóa tài khoản.",
-      },
-    };
-    return translations[language as "en" | "vi"] || translations.vi;
-  }, [language]);
 
   const loadAccounts = async () => {
     setLoading(true);
@@ -108,7 +69,9 @@ export default function AccountManager() {
       await deleteAccount(accountIdToDelete);
       loadAccounts();
     } catch (error) {
-      toast.error(t.errorDelete.replace("{error}", (error as Error).message));
+      toast.error(
+        replaceVar(t.account.errorDelete, { error: (error as Error).message }),
+      );
     } finally {
       setIsDeleteModalOpen(false);
       setAccountIdToDelete(null);
@@ -128,7 +91,7 @@ export default function AccountManager() {
             />
             <input
               type="text"
-              placeholder={t.searchPlaceholder}
+              placeholder={t.account.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full max-w-xs bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-[1.2rem] p-3 pl-11 text-xs font-bold outline-none focus:border-indigo-500/20 transition-all"
@@ -187,7 +150,7 @@ export default function AccountManager() {
       {/* CONTENT */}
       {loading ? (
         <div className="text-center py-20 font-black text-gray-300 uppercase text-xs animate-pulse">
-          {t.loading}
+          {t.common.loading}
         </div>
       ) : (
         <div
@@ -205,12 +168,10 @@ export default function AccountManager() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
-                  {t.empty}
+                  {t.account.empty}
                 </p>
                 <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">
-                  {language === "vi"
-                    ? "Bắt đầu quản lý chi tiêu ngay"
-                    : "Start managing your expenses now"}
+                  {t.account.managePrompt}
                 </p>
               </div>
               {/* Nút thêm nhanh nếu muốn */}
@@ -218,7 +179,7 @@ export default function AccountManager() {
                 onClick={() => setIsModalOpen(true)}
                 className="mt-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 underline underline-offset-4"
               >
-                {t.addAccount}
+                {t.account.addAccount}
               </button>
             </div>
           ) : (
@@ -282,7 +243,7 @@ export default function AccountManager() {
                     </h4>
 
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest opacity-60">
-                      {acc.type === "Bank" ? t.bank : t.cash}
+                      {acc.type === "Bank" ? t.account.bank : t.account.cash}
                     </p>
                   </div>
                 </div>
@@ -293,10 +254,20 @@ export default function AccountManager() {
 
                   <div className="text-[10px] flex gap-2 justify-end">
                     <span className="text-emerald-500">
-                      + {formatMoney(acc.totalIncome || 0, acc.currency)}
+                      +{" "}
+                      {formatMoney(
+                        acc.totalIncome || 0,
+                        acc.currency,
+                        language,
+                      )}
                     </span>
                     <span className="text-rose-500">
-                      - {formatMoney(acc.totalExpense || 0, acc.currency)}
+                      -{" "}
+                      {formatMoney(
+                        acc.totalExpense || 0,
+                        acc.currency,
+                        language,
+                      )}
                     </span>
                   </div>
                 </div>
@@ -347,10 +318,10 @@ export default function AccountManager() {
           setAccountIdToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title={language === "vi" ? "Xác nhận xóa ví?" : "Delete Wallet?"}
-        description={t.deleteConfirm}
-        confirmText={language === "vi" ? "Xóa ngay" : "Delete"}
-        cancelText={language === "vi" ? "Hủy bỏ" : "Cancel"}
+        title={t.account.confirmDeleteTitle}
+        description={t.account.deleteConfirm}
+        confirmText={t.common.delete}
+        cancelText={t.common.cancel}
         variant="danger"
       />
 

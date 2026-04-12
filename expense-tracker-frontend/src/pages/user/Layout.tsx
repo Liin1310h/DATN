@@ -8,13 +8,13 @@ export default function Layout({ children }: any) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-[#0B0F1A] transition-colors duration-300 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 dark:bg-[#0B0F1A] transition-colors duration-300 overflow-hidden overscroll-none">
       {/* Sidebar */}
       <aside
         className={`fixed z-50 inset-y-0 left-0 transform
                     ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
                     transition-all duration-300 ease-in-out lg:translate-x-0 lg:static
-                    ${collapsed ? "w-20" : "w-64"}
+                    ${collapsed ? "w-20" : "w-60"}
                     bg-white dark:bg-[#161E2E] border-r border-gray-200 dark:border-gray-800/60
                     flex flex-col h-full`}
       >
@@ -30,7 +30,7 @@ export default function Layout({ children }: any) {
       )}
       {/* Vùng bên phải: Header + Nội dung */}
       <div
-        className={`flex-1 flex flex-col min-w-0 h-full transition-all duration-300 ${
+        className={`flex-1 flex flex-col min-w-0 h-full transition-all duration-300 overflow-hidden ${
           sidebarOpen ? "blur-sm" : "blur-0"
         }`}
       >
@@ -38,9 +38,9 @@ export default function Layout({ children }: any) {
           <Topbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         </header>
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-transparent">
-          <div className="p-4 lg:p-8">
-            <div className="max-w-7xl mx-auto">{children}</div>
+        <main className="flex-1 overflow-x-hidden bg-transparent">
+          <div className="p-4">
+            <div className=" mx-auto">{children}</div>
           </div>
         </main>
       </div>

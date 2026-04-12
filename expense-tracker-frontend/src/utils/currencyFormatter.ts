@@ -14,10 +14,15 @@ export const formatDisplayCurrency = (amount: number, currencyCode: string) => {
 // TODO Format khi đang nhập
 export const formatInputByCurrency = (value: string, currencyCode: string) => {
   if (!value) return "";
-  const config = CURRENCY_CONFIG[currencyCode as keyof typeof CURRENCY_CONFIG];
+  const config =
+    CURRENCY_CONFIG[currencyCode as keyof typeof CURRENCY_CONFIG] ||
+    CURRENCY_CONFIG.VND;
 
   // Loại bỏ tất cả ký tự không phải số và dấu thập phân của loại tiền đó
-  const regex = new RegExp(`[^0-9${config.decimalSeparator}]`, "g");
+  const escapedSeparator =
+    config.decimalSeparator === "." ? "\\." : config.decimalSeparator;
+  const regex = new RegExp(`[^0-9${escapedSeparator}]`, "g");
+
   const cleanValue = value.replace(regex, "");
 
   // Tách phần nguyên và phần thập phân
@@ -28,7 +33,7 @@ export const formatInputByCurrency = (value: string, currencyCode: string) => {
 
   // Giới hạn 1 dấu thập phân
   return parts.length > 1
-    ? `${parts[0]}${config.decimalSeparator}${parts[1]}`
+    ? `${parts[0]}${config.decimalSeparator}${parts[1].slice(0, 2)}` //Giới hạn 2 chữ số sau dấu ,
     : parts[0];
 };
 
