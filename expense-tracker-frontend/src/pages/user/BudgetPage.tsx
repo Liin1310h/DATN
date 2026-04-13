@@ -124,12 +124,12 @@ export default function BudgetPage() {
             placeholder={t.common.search}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full md:w-72 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full md:w-72 px-4 py-2 rounded-xl bg-gray-100 dark:text-white dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
           />
 
           {/* MONTH + ADD */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-2 bg-white dark:text-white dark:bg-gray-800 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
               <button
                 onClick={() =>
                   setCurrentMonth(currentMonth.subtract(1, "month"))
@@ -143,7 +143,7 @@ export default function BudgetPage() {
                 onClick={() =>
                   (document.getElementById("month-picker") as any)?.showPicker()
                 }
-                className="px-3 py-1.5 text-sm font-bold cursor-pointer"
+                className="px-3 py-1.5 text-sm font-bold  cursor-pointer"
               >
                 {currentMonth.format("MMM YYYY")}
               </div>

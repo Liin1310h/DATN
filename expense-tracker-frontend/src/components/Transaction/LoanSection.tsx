@@ -46,7 +46,7 @@ export default function LoanSection({
               type="number"
               value={interestRate}
               onChange={(e) => setInterestRate(e.target.value)}
-              className="w-full bg-white dark:bg-gray-900 border-2 border-blue-50 dark:border-blue-900/20 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+              className="w-full bg-white dark:text-white dark:bg-gray-900 border-2 border-blue-50 dark:border-blue-900/20 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
               %
@@ -70,7 +70,7 @@ export default function LoanSection({
         <div className="p-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-[2.5rem] border border-blue-100 dark:border-blue-900/30 space-y-6">
           {/* Thời hạn */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-500 uppercase flex items-center gap-2">
+            <label className="text-[10px] font-black text-gray-500 dark:text-white uppercase flex items-center gap-2">
               <Timer size={12} /> {t.loan.term}
             </label>
 
@@ -79,7 +79,7 @@ export default function LoanSection({
                 type="number"
                 value={loanDuration}
                 onChange={(e) => setLoanDuration(e.target.value)}
-                className="flex-[2] bg-white dark:bg-gray-900 p-4 rounded-xl text-sm font-bold outline-none ring-1 ring-blue-100 dark:ring-blue-900 focus:ring-2 focus:ring-blue-500"
+                className="flex-[2] bg-white dark:text-white dark:bg-gray-900 p-4 rounded-xl text-sm font-bold outline-none ring-1 ring-blue-100 dark:ring-blue-900 focus:ring-2 focus:ring-blue-500"
               />
 
               <select

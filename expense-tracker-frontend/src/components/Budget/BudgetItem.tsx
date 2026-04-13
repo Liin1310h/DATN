@@ -148,6 +148,7 @@ export default function BudgetItem({
 
                 setShowMenu(true);
               }}
+              className="dark:text-white"
             >
               <MoreHorizontal size={20} />
             </button>
@@ -168,16 +169,16 @@ export default function BudgetItem({
                       top: menuPos.top,
                       left: menuPos.left,
                     }}
-                    className="z-[9999] w-44 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+                    className="z-[9999] w-44 bg-white  dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
                   >
                     <button
                       onClick={() => {
                         onEdit(item);
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-3 text-left text-xs font-black flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="w-full px-4 py-3 text-left text-xs text-indigo-500 font-black flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
-                      <Edit2 size={14} className="text-indigo-500" />
+                      <Edit2 size={14} />
                       {t.common.edit}
                     </button>
 

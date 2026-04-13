@@ -5,7 +5,7 @@ import { transferBetweenAccounts } from "../../services/transactionsService";
 import { useSettings } from "../../context/SettingsContext";
 import { getExchangeRate } from "../../services/currencyService";
 import { formatInputByCurrency } from "../../utils/currencyFormatter";
-import { Banknote, Landmark } from "lucide-react";
+import { ArrowRight, Banknote, Landmark } from "lucide-react";
 import SearchableSelect from "../SearchableSelect";
 import toast from "react-hot-toast";
 import { useTranslation } from "../../hook/useTranslation";
@@ -190,7 +190,7 @@ export default function TransferModal({
       />
       {/* MODAL */}
       <div className="flex flex-col relative bg-white dark:bg-gray-900 w-[700px] p-6 rounded-2xl shadow-2xl gap-4">
-        <h2 className="text-2xl font-bold text-center mb-6">
+        <h2 className="text-2xl font-bold text-center mb-6 dark:text-white">
           {t.transfer.title}
         </h2>
         <div className="grid grid-cols-3 gap-6 items-start min-w-0">
@@ -297,7 +297,9 @@ export default function TransferModal({
 
           {/* CENTER */}
           <div className="flex flex-col items-center justify-center gap-2">
-            <div className="h-5  flex items-center justify-center">→</div>
+            <div className="h-5  flex items-center justify-center dark:text-white">
+              <ArrowRight size={24} />
+            </div>
 
             <input
               type="text"
@@ -463,7 +465,7 @@ export default function TransferModal({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={t.common.note}
-          className="w-full p-3 border rounded-xl"
+          className="w-full bg-white dark:text-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none shadow-sm"
         />
 
         {/* ACTION */}

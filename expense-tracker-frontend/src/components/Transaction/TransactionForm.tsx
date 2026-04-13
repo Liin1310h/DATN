@@ -427,7 +427,7 @@ export default function TransactionForm({
                     value={person}
                     onChange={(e) => setPerson(e.target.value)}
                     placeholder={t.common["lend/borrowWho"]}
-                    className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                    className="w-full bg-white dark:text-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   />
                 ) : (
                   <SearchableSelect
@@ -508,7 +508,7 @@ export default function TransactionForm({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t.common.detail}
-              className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm resize-none"
+              className="w-full bg-white dark:text-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm resize-none"
             />
           </div>
 

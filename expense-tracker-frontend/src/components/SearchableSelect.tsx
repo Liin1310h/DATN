@@ -110,7 +110,7 @@ export default function SearchableSelect<T>({
                   <button
                     key={getKey(item)}
                     onMouseDown={() => onChange(item)}
-                    className={`w-full max-w-full px-4 py-3 text-left overflow-hidden hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors ${
+                    className={`w-full max-w-full px-4 py-3 text-left overflow-hidden hover:bg-indigo-50 dark:text-white dark:hover:bg-indigo-900/20 transition-colors ${
                       isSelected ? "bg-indigo-50/50" : ""
                     }`}
                   >
