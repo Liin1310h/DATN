@@ -17,19 +17,6 @@ export const getTransactions = async (params: GetTransactionsParams) => {
   return response.data;
 };
 
-export const getAnalyticsTransactions = async (
-  startDate: string,
-  endDate: string,
-) => {
-  const response = await API.get("/transactions", {
-    params: {
-      fromDate: startDate,
-      toDate: endDate,
-      pageSize: 1000,
-    },
-  });
-  return response.data;
-};
 export const createTransaction = async (data: any) => {
   const response = await API.post("/transactions", data);
   return response.data;

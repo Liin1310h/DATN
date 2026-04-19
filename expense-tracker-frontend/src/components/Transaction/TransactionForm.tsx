@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Landmark,
   Tag,
@@ -6,9 +6,10 @@ import {
   ArrowRight,
   Banknote,
   ChevronDown,
+  CalendarDays,
 } from "lucide-react";
-import { RepaymentModal } from "../../components/Transaction/RepaymentModal";
-import { DynamicIcon } from "../../components/DynamicIcon";
+import { RepaymentModal } from "../Loan/RepaymentModal";
+import { DynamicIcon } from "../Base/DynamicIcon";
 import AIInputMenu from "../../components/AI/AIInputMenu";
 
 import { useSettings } from "../../context/SettingsContext";
@@ -22,7 +23,7 @@ import AddAccountModal from "../../components/Account/AddAccountModal";
 import VoiceModal from "../../components/AI/VoiceModal";
 import CameraModal from "../../components/AI/CameraModal";
 import LoanSection from "../../components/Transaction/LoanSection";
-import SearchableSelect from "../../components/SearchableSelect";
+import SearchableSelect from "../Base/SearchableSelect";
 import {
   formatInputByCurrency,
   parseInputToNumber,
@@ -32,9 +33,29 @@ import { getExchangeRate } from "../../services/currencyService";
 import { useTranslation } from "../../hook/useTranslation";
 import { CURRENCIES } from "../../constants/currencies";
 
-// Interface
+type TransactionType = "expense" | "income" | "lend" | "borrow";
+
+interface LoanFormPayload {
+  counterPartyName: string;
+  interestRate: number;
+  interestUnit: string;
+  duration: number;
+  durationUnit?: "day" | "month" | "year";
+}
+export interface TransactionFormSubmitData {
+  accountId: number;
+  amount: number;
+  currency: string;
+  type: TransactionType;
+  note: string;
+  transactionFromDate: string;
+  transactionToDate: string | null;
+  categoryId?: number;
+  loan?: LoanFormPayload;
+}
+
 interface TransactionFormProps {
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: TransactionFormSubmitData) => Promise<void>;
   loading: boolean;
   initialData?: any;
   isEdit?: boolean;
@@ -42,13 +63,13 @@ interface TransactionFormProps {
 
 export default function TransactionForm({
   onSubmit,
-  loading: externalLoading,
+  loading,
   initialData,
   isEdit,
 }: TransactionFormProps) {
   const { t } = useTranslation();
   const { currency } = useSettings();
-  const loading = externalLoading;
+  // const loading = externalLoading;
   // ! Camera + Voice
   const [isAIMenuOpen, setIsAIMenuOpen] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
@@ -67,17 +88,10 @@ export default function TransactionForm({
   const [interestRate, setInterestRate] = useState("");
   const [interestUnit, setInterestUnit] = useState("year");
   const [loanDuration, setLoanDuration] = useState("");
-  const [durationUnit, setDurationUnit] = useState("month");
-  const [showSchedule, setShowSchedule] = useState(false);
-
-  const isDebt = type === "lend" || type === "borrow";
-  const schedule = useLoanCalculator(
-    amount,
-    interestRate,
-    interestUnit,
-    loanDuration,
-    durationUnit,
+  const [durationUnit, setDurationUnit] = useState<"day" | "month" | "year">(
+    "month",
   );
+  const [showSchedule, setShowSchedule] = useState(false);
 
   // ! CATEGORY STATE
   const [categories, setCategories] = useState<Category[]>([]);
@@ -99,9 +113,44 @@ export default function TransactionForm({
   const [isAccDropdownOpen, setIsAccDropdownOpen] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
 
+  const isDebt = type === "lend" || type === "borrow";
+
   // todo tìm đối tượng được chọn
-  const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
-  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const selectedCategory = useMemo(
+    () => categories.find((c) => c.id === selectedCategoryId),
+    [categories, selectedCategoryId],
+  );
+  const selectedAccount = useMemo(
+    () => accounts.find((a) => a.id === selectedAccountId),
+    [accounts, selectedAccountId],
+  );
+
+  const schedule = useLoanCalculator(
+    parseInputToNumber(amount, selectedCurrency),
+    interestRate !== "" ? Number(interestRate) : 0,
+    interestUnit,
+    loanDuration !== "" ? Number(loanDuration) : 0,
+    durationUnit,
+  );
+
+  const getNowLocal = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 16);
+  };
+
+  const [transactionFromDate, setTransactionFromDate] = useState(getNowLocal());
+  const [transactionToDate, setTransactionToDate] = useState("");
+
+  //TODO tính time lệch
+  const toLocalInput = (utcString: string) => {
+    const date = new Date(utcString);
+
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60000);
+
+    return local.toISOString().slice(0, 16);
+  };
   // TODO Load xử lý dữ liệu
   const loadData = async () => {
     try {
@@ -117,12 +166,13 @@ export default function TransactionForm({
       setSearchAccTerm("");
     } catch (error) {
       console.log(t.category.error, error);
+      toast.error(t.common.error);
     }
   };
 
   useEffect(() => {
     loadData();
-  }, [type]);
+  }, []);
 
   const handleAddSuccess = () => {
     loadData();
@@ -155,83 +205,145 @@ export default function TransactionForm({
       }
     };
     fetchRate();
-  }, [selectedCurrency, selectedAccountId, accounts]);
+  }, [selectedCurrency, selectedAccountId, accounts, t.rate.error]);
 
   // TODO Xử lý khi sửa tran
   useEffect(() => {
     if (initialData && accounts.length && categories.length) {
-      console.log(initialData);
       //Chờ đến khi load xong acc và cat
-      setAmount(initialData.amount.toString());
-      setType(initialData.type);
+      setAmount(initialData.amount ? initialData.amount.toString() : "");
+      setSelectedCurrency(initialData.currency || currency);
+      setType(initialData.type || "expense");
       setSelectedAccountId(
         initialData.fromAccountId || initialData.toAccountId || null,
       );
       setSelectedCategoryId(initialData.categoryId || null);
+      setTransactionFromDate(
+        initialData.transactionFromDate
+          ? toLocalInput(initialData.transactionFromDate)
+          : initialData.transactionDate
+            ? toLocalInput(initialData.transactionDate)
+            : getNowLocal(),
+      );
+      setTransactionToDate(
+        initialData.transactionToDate
+          ? toLocalInput(initialData.transactionToDate)
+          : initialData.loan?.dueDate
+            ? toLocalInput(initialData.loan.dueDate)
+            : "",
+      );
+      if (initialData.loan) {
+        setPerson(initialData.loan.counterPartyName || "");
+        setInterestRate(initialData.loan.interestRate?.toString() || "");
+        setInterestUnit(initialData.loan.interestUnit || "percent_per_month");
+
+        if (initialData.loan.startDate && initialData.loan.dueDate) {
+          const start = new Date(initialData.loan.startDate);
+          const end = new Date(initialData.loan.dueDate);
+
+          const totalMonths =
+            (end.getFullYear() - start.getFullYear()) * 12 +
+            (end.getMonth() - start.getMonth());
+
+          if (totalMonths > 0) {
+            setLoanDuration(totalMonths.toString());
+            setDurationUnit("month");
+          }
+        }
+      }
       setNote(initialData.note);
     }
-  }, [initialData, accounts, categories]);
+  }, [initialData, accounts, categories, currency]);
+
+  //TODO Hàm resetForm
+  const resetForm = () => {
+    setAmount("");
+    setPerson("");
+    setNote("");
+    setInterestRate("");
+    setLoanDuration("");
+    setSelectedAccountId(null);
+    setSelectedCategoryId(null);
+    setTransactionFromDate(getNowLocal());
+    setTransactionToDate("");
+  };
+
+  //TODO Validate dữ liệu
+  const validateForm = (rawAmount: number) => {
+    if (!amount || rawAmount <= 0) {
+      toast.error(t.transaction.errorInput);
+      return false;
+    }
+    if (!selectedAccountId) {
+      toast.error(t.transaction.errorSelectAccount);
+      return false;
+    }
+    if (isDebt && !person.trim()) {
+      toast.error(t.transaction.errorPerson);
+      return false;
+    }
+    const from = new Date(transactionFromDate);
+    if (Number.isNaN(from.getTime())) {
+      toast.error("Ngày bắt đầu không hợp lệ.");
+      return false;
+    }
+
+    if (isDebt && transactionToDate) {
+      const to = new Date(transactionToDate);
+
+      if (Number.isNaN(to.getTime())) {
+        toast.error("Ngày kết thúc khoản vay không hợp lệ.");
+        return false;
+      }
+
+      if (to < from) {
+        toast.error("Ngày kết thúc khoản vay phải sau ngày bắt đầu.");
+        return false;
+      }
+    }
+
+    // if (isDebt && loanDuration === "") {
+    //   toast.error("Vui lòng nhập thời gian khoản vay");
+    //   return;
+    // }
+    return true;
+  };
 
   // TODO Hàm lưu
   const handleSave = async () => {
     const rawAmount = parseInputToNumber(amount, selectedCurrency);
-    if (!amount || rawAmount <= 0) {
-      toast.error(t.transaction.errorInput);
-      return;
-    }
-    const selectedAcc = accounts.find((a) => a.id === selectedAccountId);
-    if (!selectedAcc) {
-      toast.error(t.transaction.errorSelectAccount);
-      return;
-    }
-    if (type === "expense" && !selectedCategoryId) {
-      toast.error(t.transaction.errorSelectCategory);
-      return;
-    }
+    if (!validateForm(rawAmount)) return;
 
-    // setLoading(true);
     try {
-      const finalConvertedAmount =
-        selectedCurrency === selectedAcc.currency
-          ? rawAmount
-          : rawAmount * rate;
-
       // Gọi API lưu giao dịch
-      const payload = {
-        accountId: selectedAccountId,
+      const payload: TransactionFormSubmitData = {
+        accountId: selectedAccountId!,
         amount: rawAmount,
         currency: selectedCurrency,
-        convertedAmount: finalConvertedAmount,
         type,
         note: note.trim(),
 
-        transactionDate: new Date().toISOString(),
-        fromAccountId:
-          type === "expense" || type === "lend" ? selectedAccountId : undefined,
-        toAccountId:
-          type === "income" || type === "borrow"
-            ? selectedAccountId
-            : undefined,
-        categoryId: !isDebt ? selectedCategoryId : undefined,
+        transactionFromDate: new Date(transactionFromDate).toISOString(),
+        transactionToDate:
+          isDebt && transactionToDate
+            ? new Date(transactionToDate).toISOString()
+            : null,
+        categoryId: !isDebt ? (selectedCategoryId ?? undefined) : undefined,
 
-        person: isDebt ? person : undefined,
-        interestRate: isDebt ? Number(interestRate) : 0,
-        interestUnit: isDebt ? interestUnit : undefined,
-
-        duration: isDebt ? Number(loanDuration) : 0,
-        durationUnit: isDebt ? durationUnit : undefined,
-        loanDuration: isDebt ? Number(loanDuration) : 0,
+        loan: isDebt
+          ? {
+              counterPartyName: person.trim(),
+              interestRate: interestRate !== "" ? Number(interestRate) : 0,
+              interestUnit,
+              duration: Number(loanDuration),
+              durationUnit: loanDuration !== "" ? durationUnit : undefined,
+            }
+          : undefined,
       };
 
       await onSubmit(payload);
       if (!isEdit) {
-        setAmount("");
-        setNote("");
-        setSelectedAccountId(null);
-        setSelectedCategoryId(null);
-        setPerson("");
-        setInterestRate("");
-        setLoanDuration("");
+        resetForm();
       }
     } catch (error) {
       console.log(t.transaction.errorSave, error);
@@ -241,21 +353,23 @@ export default function TransactionForm({
     <>
       <div className="max-w-4xl mx-auto mb-24  p-2 rounded-2xl animate-in fade-in duration-500">
         <div className="flex p-1.5 border-none  mb-2 ">
-          {["expense", "income", "lend", "borrow"].map((id) => (
-            <button
-              key={id}
-              onClick={() => setType(id)}
-              className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase transition-all duration-300 ${type === id ? (id === "expense" ? "bg-rose-500" : id === "income" ? "bg-emerald-500" : "bg-blue-600") + " text-white shadow-lg" : "text-gray-400"}`}
-            >
-              {id === "expense"
-                ? t.common.expense
-                : id === "income"
-                  ? t.common.income
-                  : id === "lend"
-                    ? t.common.lend
-                    : t.common.borrow}
-            </button>
-          ))}
+          {(["expense", "income", "lend", "borrow"] as TransactionType[]).map(
+            (id) => (
+              <button
+                key={id}
+                onClick={() => setType(id)}
+                className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase transition-all duration-300 ${type === id ? (id === "expense" ? "bg-rose-500" : id === "income" ? "bg-emerald-500" : "bg-blue-600") + " text-white shadow-lg" : "text-gray-400"}`}
+              >
+                {id === "expense"
+                  ? t.common.expense
+                  : id === "income"
+                    ? t.common.income
+                    : id === "lend"
+                      ? t.common.lend
+                      : t.common.borrow}
+              </button>
+            ),
+          )}
         </div>
 
         <div className="group bg-white dark:bg-gray-900 rounded-[1.25rem] border border-gray-100 dark:border-gray-800 shadow-xl p-4 mb-4 relative overflow-hidden">
@@ -483,6 +597,35 @@ export default function TransactionForm({
             )}
           </div>
 
+          <div className="space-y-2 dark:text-gray-400">
+            <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-2">
+              <CalendarDays size={12} />
+              {t.filter.fromDate}
+            </label>
+
+            <input
+              type="datetime-local"
+              value={transactionFromDate}
+              onChange={(e) => setTransactionFromDate(e.target.value)}
+              className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          {isDebt && (
+            <div className="space-y-2 dark:text-gray-400">
+              <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-2">
+                <CalendarDays size={12} />
+                {t.filter.toDate}
+              </label>
+
+              <input
+                type="datetime-local"
+                value={transactionToDate}
+                onChange={(e) => setTransactionToDate(e.target.value)}
+                className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          )}
+
           {isDebt && (
             <LoanSection
               interestRate={interestRate}
@@ -494,10 +637,11 @@ export default function TransactionForm({
               durationUnit={durationUnit}
               setDurationUnit={setDurationUnit}
               schedule={schedule}
-              currency={currency}
+              currency={selectedCurrency}
               onOpenSchedule={() => setShowSchedule(true)}
             />
           )}
+
           <div className="space-y-2">
             <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-2 ml-2">
               <MessageSquare size={12} className="text-indigo-500" />{" "}
@@ -544,7 +688,7 @@ export default function TransactionForm({
         isOpen={showSchedule}
         onClose={() => setShowSchedule(false)}
         schedule={schedule}
-        currency={currency}
+        currency={selectedCurrency}
       />
       <AddCategoryModal
         isOpen={showAddCategory}

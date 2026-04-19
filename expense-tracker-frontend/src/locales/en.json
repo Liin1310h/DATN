@@ -41,7 +41,9 @@
     "date": "Date",
     "amount": "Amount",
     "actions": "Actions",
-    "currency": "Currency"
+    "currency": "Currency",
+    "week": "Week",
+    "month": "Month"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -51,6 +53,7 @@
     "budget": "Budget",
     "history": "Transaction History",
     "analytics": "Spending Analytics",
+    "loan": "Loan Management",
     "logout": "Logout",
     "openSidebar": "Open sidebar",
     "closeSidebar": "Close sidebar"
@@ -115,6 +118,7 @@
     "errorAdd": "Error adding transaction: ",
     "errorChange": "Error editing transaction: ",
     "errorDelete": "Error deleting transaction: ",
+    "errorPerson": "Please enter a name of borrower/lender",
     "successSave": "Transaction saved successfully!",
     "successAdd": "Transaction added successfully!",
     "successChange": "Transaction updated successfully!",
@@ -123,6 +127,10 @@
     "save": "Save Transaction"
   },
   "loan": {
+    "loanManager": "Loan Management",
+    "searchLoan": "Search loans ...",
+    "active": "Active",
+    "completed": "Settled",
     "interestRate": "Interest Rate",
     "perYear": "per year",
     "perMonth": "per month",
@@ -137,6 +145,7 @@
     "scheduleTitle": "Repayment Schedule",
     "reducingBalance": "Reducing Balance",
     "period": "Period",
+    "repay": "Repay",
     "principal": "Principal",
     "interest": "Interest",
     "remainingBalance": "Remaining Balance",

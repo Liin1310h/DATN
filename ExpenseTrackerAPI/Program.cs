@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using ExpenseTrackerAPI.Data;
+using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using ExpenseTrackerAPI.Services;
+using ExpenseTrackerAPI.Application.Interfaces;
+using ExpenseTrackerAPI.Application.Services;
+using ExpenseTrackerAPI.Infrastructure.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,15 +52,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Phân quyền
 builder.Services.AddAuthorization();
 // Đăng ký service
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
-builder.Services.AddHttpClient<CurrencyService>();
+builder.Services.AddHttpClient<ICurrencyService, CurrencyService>();
 builder.Services.AddScoped<ILoanService, LoanService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
-builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

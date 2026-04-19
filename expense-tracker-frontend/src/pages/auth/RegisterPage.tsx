@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register } from "../../services/authService";
-
+import authBgImage from "../../assets/authBgImage.png";
 export default function RegisterPage() {
   const navigate = useNavigate();
 
@@ -27,6 +27,7 @@ export default function RegisterPage() {
       navigate("/");
     } catch (err) {
       setError("Register failed");
+      console.log(err);
     } finally {
       setLoading(false);
     }
@@ -34,8 +35,10 @@ export default function RegisterPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center 
-    bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500"
+      className="min-h-screen flex items-center justify-center"
+      style={{
+        backgroundImage: `url(${authBgImage})`,
+      }}
     >
       <div
         className="bg-white dark:bg-gray-900 

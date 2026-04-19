@@ -41,7 +41,9 @@
     "date": "Ngày",
     "amount": "Số tiền",
     "actions": "Hành động",
-    "currency": "Loại tiền tệ"
+    "currency": "Loại tiền tệ",
+    "week": "Tuần",
+    "month": "Tháng"
   },
   "nav": {
     "dashboard": "Tổng quan",
@@ -51,6 +53,7 @@
     "budget": "Ngân sách",
     "history": "Lịch sử giao dịch",
     "analytics": "Phân tích thu chi",
+    "loan": "Quản lý các khoản vay",
     "logout": "Đăng xuất",
     "openSidebar": "Mở sidebar",
     "closeSidebar": "Đóng sidebar"
@@ -119,10 +122,15 @@
     "successAdd": "Thêm giao dịch thành công!",
     "successChange": "Sửa giao dịch thành công!",
     "successDelete": "Xoá giao dịch thành công!",
+    "errorPerson": "Vui lòng nhập tên người vay hoặc cho vay",
     "update": "Cập nhật giao dịch",
     "save": "Lưu giao dịch"
   },
   "loan": {
+    "loanManager": "Quản lý các khoản vay",
+    "searchLoan": "Tìm kiếm khoản vay ...",
+    "active": "Đang nợ",
+    "completed": "Đã trả",
     "interestRate": "Lãi suất hợp đồng",
     "perYear": "mỗi năm",
     "perMonth": "mỗi tháng",
@@ -137,6 +145,7 @@
     "scheduleTitle": "Lịch trả nợ",
     "reducingBalance": "Dư nợ giảm dần",
     "period": "Kỳ",
+    "repay": "Trả",
     "principal": "Gốc",
     "interest": "Lãi",
     "remainingBalance": "Dư nợ còn lại",

@@ -39,7 +39,7 @@ export default function Layout({ children }: any) {
         </header>
 
         <main className="flex-1 overflow-x-hidden bg-transparent">
-          <div className="p-4">
+          <div className="pt-4 px-4">
             <div className=" mx-auto">{children}</div>
           </div>
         </main>

@@ -11,8 +11,8 @@ import {
   parseInputToNumber,
   formatInputByCurrency,
 } from "../../utils/currencyFormatter";
-import ConfirmCurrencyModal from "../ConfirmCurrencyModal";
-import CurrencyConvertModal from "../CurrencyConvertModal";
+import ConfirmCurrencyModal from "../Currency/ConfirmCurrencyModal";
+import CurrencyConvertModal from "../Currency/CurrencyConvertModal";
 import toast from "react-hot-toast";
 import { CURRENCIES } from "../../constants/currencies";
 

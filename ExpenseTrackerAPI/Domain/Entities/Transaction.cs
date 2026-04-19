@@ -1,0 +1,90 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+
+namespace ExpenseTrackerAPI.Domain.Entities;
+
+public class Transaction
+{
+    [Key]
+    public int Id { get; set; }
+    /// <summary>
+    /// Tiền tệ trước khi đổi
+    /// </summary>
+    [Required]
+    [MaxLength(5)]
+    public string Currency { get; set; } = "VND";
+    /// <summary>
+    /// Tiền tệ sau khi đổi
+    /// </summary>
+    [MaxLength(5)]
+    public string? ConvertedCurrency { get; set; }
+    /// <summary>
+    /// Tiền gốc
+    /// </summary>
+    [Required]
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal Amount { get; set; }
+    /// <summary>
+    /// Tiền sau khi đổi (nếu khác tiền tệ)
+    /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? ConvertedAmount { get; set; }
+    /// <summary>
+    /// Số dư của fromAccount trước khi giao dịch
+    /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal BalanceBefore { get; set; }
+    /// <summary>
+    /// Số dư sau khi giao dịch
+    /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal BalanceAfter { get; set; }
+    /// <summary>
+    /// Note
+    /// </summary>
+    public string Note { get; set; } = string.Empty;
+    /// <summary>
+    /// Ngày giao dịch
+    /// </summary>
+    [Required]
+    public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Link ảnh
+    /// </summary>
+    public string ImageUrl { get; set; } = string.Empty; // Ảnh hóa đơn
+    /// <summary>
+    /// Loại giao dịch
+    /// "expense", "income", "lend", "borrow", "transfer"
+    /// </summary>
+    [Required]
+    [MaxLength(20)]
+    public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Khoá ngoại
+    /// </summary>
+    [Required]
+    public int UserId { get; set; }
+
+    [ForeignKey("UserId")]
+    [JsonIgnore]
+    public virtual User? User { get; set; }
+
+    public int? FromAccountId { get; set; }
+    [ForeignKey("FromAccountId")]
+    public virtual Account? FromAccount { get; set; }
+
+    public int? ToAccountId { get; set; }
+    [ForeignKey("ToAccountId")]
+    public virtual Account? ToAccount { get; set; }
+
+    public int? CategoryId { get; set; }
+    [ForeignKey("CategoryId")]
+    public virtual Category? Category { get; set; }
+
+    public int? LoanId { get; set; }
+    [ForeignKey("LoanId")]
+    [JsonIgnore]
+    public virtual Loan? Loan { get; set; }
+}

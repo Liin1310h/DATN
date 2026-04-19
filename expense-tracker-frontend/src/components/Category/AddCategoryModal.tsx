@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Palette, Search, Plus } from "lucide-react";
-import { DynamicIcon } from "../DynamicIcon";
+import { DynamicIcon } from "../Base/DynamicIcon";
 import {
   changeCategory,
   createCategory,

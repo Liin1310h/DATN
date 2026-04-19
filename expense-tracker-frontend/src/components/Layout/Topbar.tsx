@@ -50,6 +50,7 @@ export default function Topbar({ toggleSidebar }: any) {
       "/accountManager": t.nav.accountManager,
       "/categoryManager": t.nav.categoryManager,
       "/budget": t.nav.budget,
+      "/loan": t.nav.loan,
       "/history": t.nav.history,
       "/analytics": t.nav.analytics,
     };

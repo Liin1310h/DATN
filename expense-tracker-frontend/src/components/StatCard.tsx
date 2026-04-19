@@ -14,7 +14,7 @@ export default function StatCard({ title, value, icon, className }: Props) {
     <div
       className={`
         relative overflow-hidden
-        p-6 rounded-[2rem] 
+        p-4 rounded-[2rem] 
         flex items-center justify-between
         transition-all duration-300
         hover:shadow-xl hover:-translate-y-1 active:scale-[0.98]
@@ -25,7 +25,7 @@ export default function StatCard({ title, value, icon, className }: Props) {
       {/* Background Decor  */}
       <div className="absolute -top-6 -right-6 w-16 h-16 bg-white/10 rounded-full blur-2xl" />
 
-      <div className="relative z-10">
+      <div className="relative z-10 ml-1">
         <p
           className={`
           text-[10px] font-black uppercase tracking-[0.15em] mb-1
@@ -35,14 +35,14 @@ export default function StatCard({ title, value, icon, className }: Props) {
           {title}
         </p>
 
-        <h2
+        <div
           className={`
-          text-2xl font-black tracking-tight
+          text-xl font-black tracking-tight
           ${isHighlight ? "text-white" : "text-gray-800 dark:text-white"}
         `}
         >
           {value}
-        </h2>
+        </div>
       </div>
 
       {/* Icon Box */}

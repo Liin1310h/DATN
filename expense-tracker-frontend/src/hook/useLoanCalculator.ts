@@ -1,31 +1,34 @@
 // hooks/useLoanCalculator.ts
 export const useLoanCalculator = (
-  amount: string,
-  rate: string,
+  amount: number,
+  rate: number,
   iUnit: string,
-  duration: string,
+  duration: number,
   dUnit: string,
 ) => {
-  const p = parseFloat(amount) || 0;
-  const r = parseFloat(rate) || 0;
-  const t = parseInt(duration) || 0;
+  const p = amount || 0;
+  const r = rate || 0;
+  const t = duration || 0;
 
   if (p <= 0 || r <= 0 || t <= 0) return null;
 
-  let monthlyRate =
+  //Chuẩn hoá lãi suất về tháng
+  const monthlyRate =
     iUnit === "year"
       ? r / 12 / 100
       : iUnit === "month"
         ? r / 100
         : (r * 30) / 100;
-  let totalMonths =
+
+  // Chuẩn hoá thời gian về tháng
+  const totalMonths =
     dUnit === "year" ? t * 12 : dUnit === "day" ? Math.ceil(t / 30) : t;
 
   const emi =
     (p * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
     (Math.pow(1 + monthlyRate, totalMonths) - 1);
 
-  let rows = [];
+  const rows = [];
   let remainingBalance = p;
   let totalInterest = 0;
 

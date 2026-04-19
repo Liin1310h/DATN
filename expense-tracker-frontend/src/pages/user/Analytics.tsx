@@ -17,10 +17,10 @@ import {
 } from "chart.js";
 import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import LayoutSkeleton from "../LayoutSkeleton";
-import { getAnalyticsTransactions } from "../../services/transactionsService";
 import { useTranslation } from "../../hook/useTranslation";
 import { useNavigate } from "react-router-dom";
 import { formatMoney } from "../../utils/formatMoney";
+import { getDailySummary } from "../../services/analyticsService";
 
 ChartJS.register(
   CategoryScale,
@@ -33,148 +33,129 @@ ChartJS.register(
 dayjs.extend(isBetween);
 
 export default function Analytics() {
-  const [loading, setLoading] = useState(false);
   const { language, currency } = useSettings();
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"week" | "month">("month");
   const [currentDate, setCurrentDate] = useState(dayjs());
 
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
 
+  //TODO Đồng bộ ngôn ngữ
   useEffect(() => {
-    const locale = language === "vi" ? "vi" : "en";
-    dayjs.locale(locale);
-
-    // Cập nhật lại currentDate
-    setCurrentDate((prev) => prev.locale(locale));
+    dayjs.locale(language === "vi" ? "vi" : "en");
   }, [language]);
 
+  //TODO Tính toán các ngày hiển thị trong lịch
   const calendarDays = useMemo(() => {
-    const startOfMonth = currentDate.startOf("month");
-    const endOfMonth = currentDate.endOf("month");
-    const startOfCalendar = startOfMonth.startOf("week");
-    const endOfCalendar = endOfMonth.endOf("week");
-
-    const days = [];
-    let day = startOfCalendar;
-
-    if (viewMode === "month") {
-      while (day.isBefore(endOfCalendar) || day.isSame(endOfCalendar, "day")) {
-        days.push(day);
-        day = day.add(1, "day");
-      }
-    } else {
-      let weekDay = currentDate.startOf("week");
-      for (let i = 0; i < 7; i++) {
-        days.push(weekDay);
-        weekDay = weekDay.add(1, "day");
-      }
+    if (viewMode === "week") {
+      const start = currentDate.startOf("week");
+      return Array.from({ length: 7 }, (_, i) => start.add(i, "day"));
     }
+
+    const start = currentDate.startOf("month").startOf("week");
+    const end = currentDate.endOf("month").endOf("week");
+    const days = [];
+    let d = start;
+
+    while (d.isBefore(end) || d.isSame(end, "day")) {
+      days.push(d);
+      d = d.add(1, "day");
+    }
+
     return days;
   }, [currentDate, viewMode]);
 
-  const formattedLabels = useMemo(() => {
-    return calendarDays.map((date) => {
-      if (viewMode === "week") return date.format("dd");
-      else
-        return language === "vi" ? date.format("DD/MM") : date.format("MMM DD");
-    });
-  }, [calendarDays, viewMode, language]);
-
-  const periodSummary = useMemo(() => {
-    const currentData = Array.isArray(transactions) ? transactions : [];
-
-    const dateSet = new Set(
-      calendarDays.map((date) => date.format("YYYY-MM-DD")),
+  //TODO Các ngày trong tuần
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }).map((_, i) =>
+      dayjs().day(i).locale(language).format("dd"),
     );
+  }, [language]);
 
-    const periodTransactions = currentData.filter((t) =>
-      dateSet.has(dayjs(t.transactionDate).format("YYYY-MM-DD")),
-    );
+  //TODO Chế độ hiển thị
+  const viewModes = [
+    {
+      key: "week",
+      label: t.common.week,
+    },
+    {
+      key: "month",
+      label: t.common.month,
+    },
+  ];
 
-    const periodIncome = periodTransactions
-      .filter((t) => t.type === "income" || t.type === "borrow")
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const periodExpense = periodTransactions
-      .filter((t) => t.type === "expense" || t.type === "lend")
-      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
-
-    return {
-      periodIncome,
-      periodExpense,
-      periodTransactionsCount: periodTransactions.length,
-    };
-  }, [transactions, calendarDays]);
-
-  //TODO logic lấy dữ liệu từ back
+  //TODO Fetch API
   useEffect(() => {
-    const fetchAnalyticsData = async () => {
+    if (!currency || calendarDays.length === 0) return;
+
+    const fetchData = async () => {
       setLoading(true);
       try {
-        //Tính toán khoảng thời gian đang xem trên lịch
-        const start = calendarDays[0].format("YYYY-MM-DD");
-        const end = calendarDays[calendarDays.length - 1].format("YYYY-MM-DD");
+        const fromDate = calendarDays[0].toDate();
+        const toDate = calendarDays[calendarDays.length - 1].toDate();
 
-        const data = await getAnalyticsTransactions(start, end);
-        console.log("Data", data);
-        setTransactions(data?.items || []);
-      } catch (error) {
-        console.error(t.error.fetchData, error);
-        setTransactions([]);
+        const data = await getDailySummary(currency, fromDate, toDate);
+
+        setSummary({
+          dates: data?.labels || [],
+          incomes: data?.incomes || [],
+          expenses: data?.expenses || [],
+        });
+      } catch (err) {
+        console.error(err);
+        setSummary(null);
       } finally {
         setLoading(false);
       }
     };
-    if (calendarDays.length > 0) {
-      fetchAnalyticsData();
-    }
-  }, [currentDate, viewMode, calendarDays]);
 
-  //TODO Hàm tính toán stats
+    fetchData();
+  }, [calendarDays, currency]);
+
+  //TODO Map dữ liệu để truy xuất
   const getDailyStats = (date: dayjs.Dayjs) => {
-    const currentData = Array.isArray(transactions) ? transactions : [];
-
-    const calendarDateStr = date.format("YYYY-MM-DD");
-
-    const dayData = currentData.filter((t) => {
-      return dayjs(t.transactionDate).format("YYYY-MM-DD") === calendarDateStr;
-    });
-
-    const income = dayData
-      .filter((t) => t.type === "income" || t.type === "borrow")
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    const expense = dayData
-      .filter((t) => t.type === "expense" || t.type === "lend")
-      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
-
-    return { income, expense };
+    const dateStr = date.format("YYYY-MM-DD");
+    if (!summary) return { income: 0, expense: 0 };
+    const index = summary.dates.indexOf(dateStr);
+    if (index === -1) return { income: 0, expense: 0 };
+    return {
+      income: summary.incomes[index] || 0,
+      expense: summary.expenses[index] || 0,
+    };
   };
 
-  //TODO Tính tổng tiết kiệm
-  const monthlySummary = useMemo(() => {
-    if (!transactions || !Array.isArray(transactions))
-      return { savings: 0, rate: 0 };
-
-    const currentMonthTransactions = transactions.filter((t) =>
-      dayjs(t.transactionDate).isSame(currentDate, "month"),
+  //TODO Labels
+  const labels = useMemo(() => {
+    return calendarDays.map((d) =>
+      viewMode === "week"
+        ? d.format("dd")
+        : language === "vi"
+          ? d.format("DD/MM")
+          : d.format("MMM DD"),
     );
+  }, [calendarDays, viewMode, language]);
 
-    const income = currentMonthTransactions
-      .filter((t) => t.type === "income" || t.type === "borrow")
-      .reduce((sum, t) => sum + t.amount, 0);
+  //TODO Monthly summary
+  const monthlySummary = useMemo(() => {
+    if (!summary) return { savings: 0, rate: 0 };
 
-    const expense = currentMonthTransactions
-      .filter((t) => t.type === "expense" || t.type === "lend")
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-
-    const savings = income - expense;
-    const rate = income > 0 ? Math.round((savings / income) * 100) : 0;
+    const totalIncome = summary.incomes.reduce(
+      (a: number, b: number) => a + b,
+      0,
+    );
+    const totalExpense = summary.expenses.reduce(
+      (a: number, b: number) => a + b,
+      0,
+    );
+    const savings = totalIncome - totalExpense;
+    const rate =
+      totalIncome > 0 ? Math.round((savings / totalIncome) * 100) : 0;
 
     return { savings, rate };
-  }, [transactions, currentDate]);
+  }, [summary]);
 
   if (loading) return <LayoutSkeleton />;
 
@@ -193,16 +174,9 @@ export default function Analytics() {
               >
                 <ChevronLeft size={20} />
               </button>
-              <div>
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] dark:text-white">
-                  {currentDate.format("MMMM, YYYY")}
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {periodSummary.periodTransactionsCount} transactions .{" "}
-                  {formatMoney(periodSummary.periodIncome)} in .{" "}
-                  {formatMoney(periodSummary.periodExpense)} out
-                </p>
-              </div>
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] dark:text-white">
+                {currentDate.locale(language).format("MMMM, YYYY")}
+              </h2>
               <button
                 onClick={() => setCurrentDate(currentDate.add(1, viewMode))}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400"
@@ -211,26 +185,17 @@ export default function Analytics() {
               </button>
             </div>
             <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 backdrop-blur-md rounded-2xl shadow-inner border border-gray-200/50 dark:border-gray-700/30">
-              {["week", "month"].map((mode) => (
+              {viewModes.map((mode) => (
                 <button
-                  key={mode}
-                  onClick={() => setViewMode(mode as any)}
+                  key={mode.key}
+                  onClick={() => setViewMode(mode.key as any)}
                   className={`px-8 py-2 text-[10px] font-black uppercase rounded-xl transition-all duration-300 relative ${
-                    viewMode === mode
+                    viewMode === mode.key
                       ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-md scale-[1.02] z-10"
                       : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   }`}
                 >
-                  {mode === "week"
-                    ? language === "vi"
-                      ? "Tuần"
-                      : "Week"
-                    : language === "vi"
-                      ? "Tháng"
-                      : "Month"}
-                  {viewMode === mode && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
-                  )}
+                  {mode.label}
                 </button>
               ))}
             </div>
@@ -238,15 +203,12 @@ export default function Analytics() {
 
           <div className="p-4">
             <div className="grid grid-cols-7 gap-2 mb-1">
-              {Array.from({ length: 7 }).map((_, i) => (
+              {weekDays.map((d, i) => (
                 <div
                   key={i}
                   className="py-2 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]"
                 >
-                  {/* dayjs().day(i) lấy ngày thứ i trong tuần 
-                    format("dd"): 2 chữ cái
-                  */}
-                  {dayjs().day(i).format("dd")}
+                  {d}
                 </div>
               ))}
             </div>
@@ -299,7 +261,7 @@ export default function Analytics() {
                         <div className="flex items-center gap-1 overflow-hidden">
                           <div className="w-1 h-3 rounded-full bg-emerald-500 shrink-0" />
                           <p className="text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 truncate">
-                            {formatMoney(income)}
+                            {formatMoney(income, currency)}
                           </p>
                         </div>
                       )}
@@ -307,7 +269,7 @@ export default function Analytics() {
                         <div className="flex items-center gap-1 overflow-hidden">
                           <div className="w-1 h-3 rounded-full bg-rose-500 shrink-0" />
                           <p className="text-[10px] sm:text-[11px] font-bold text-rose-600 dark:text-rose-400 truncate">
-                            {formatMoney(expense)}
+                            {formatMoney(expense, currency)}
                           </p>
                         </div>
                       )}
@@ -336,7 +298,7 @@ export default function Analytics() {
             <div className="h-[250px]">
               <Bar
                 data={{
-                  labels: formattedLabels,
+                  labels: labels,
                   datasets: [
                     {
                       label: t.common.income,
@@ -362,7 +324,7 @@ export default function Analytics() {
                     tooltip: {
                       callbacks: {
                         label: (context) =>
-                          `${context.dataset.label}: ${formatMoney(context.parsed.y ?? 0)}`,
+                          `${context.dataset.label}: ${formatMoney(context.parsed.y ?? 0, currency)}`,
                       },
                     },
                   },
@@ -403,7 +365,7 @@ export default function Analytics() {
               </p>
               <h2 className="text-4xl font-black text-white tracking-tighter">
                 {monthlySummary.savings >= 0 ? "+" : ""}
-                {formatMoney(monthlySummary.savings)}
+                {formatMoney(monthlySummary.savings, currency)}
               </h2>
             </div>
 

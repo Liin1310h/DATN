@@ -14,12 +14,13 @@ import { getAccounts, deleteAccount } from "../../services/accountsService";
 import { useSettings } from "../../context/SettingsContext";
 import AddAccountModal from "./AddAccountModal";
 import type { Account } from "../../types/account";
-import ConfirmModal from "../Modal";
+import ConfirmModal from "../Base/Modal";
 import TransferModal from "./TransferModal";
 import toast from "react-hot-toast";
 import { useTranslation } from "../../hook/useTranslation";
 import { replaceVar } from "../../locales";
 import { formatMoney } from "../../utils/formatMoney";
+import SearchInput from "../Base/SearchInput";
 
 export default function AccountManager() {
   const { t } = useTranslation();
@@ -82,68 +83,63 @@ export default function AccountManager() {
     <div className="w-full max-w-full space-y-8 animate-in fade-in duration-700">
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-2">
-        <div className="flex w-full items-center gap-3">
-          {/* SEARCH */}
-          <div className="relative group flex-1 sm:w-64">
-            <Search
-              size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors"
-            />
-            <input
-              type="text"
-              placeholder={t.account.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full max-w-xs bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-[1.2rem] p-3 pl-11 text-xs font-bold outline-none focus:border-indigo-500/20 transition-all"
-            />
-          </div>
+        <div className="flex w-full items-center justify-between gap-3">
+          {/* SEARCH (LEFT)*/}
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder={t.common.search}
+            className="flex-1 min-w-0 max-w-sm"
+          />
+          {/* RIGHT */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* VIEW MODE */}
+            <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-[1.2rem]">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2.5 rounded-xl transition-all ${
+                  viewMode === "grid"
+                    ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                <LayoutGrid size={18} />
+              </button>
 
-          {/* VIEW MODE */}
-          <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-[1.2rem]">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2.5 rounded-xl transition-all ${
+                  viewMode === "list"
+                    ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                <List size={18} />
+              </button>
+            </div>
+
+            {/* ADD */}
             <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2.5 rounded-xl transition-all ${
-                viewMode === "grid"
-                  ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
+              onClick={() => {
+                setSelectedAccount(null);
+                setIsModalOpen(true);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-[1.2rem] shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
             >
-              <LayoutGrid size={18} />
+              <Plus size={20} strokeWidth={3} />
             </button>
 
+            {/* TRANSFER */}
             <button
-              onClick={() => setViewMode("list")}
-              className={`p-2.5 rounded-xl transition-all ${
-                viewMode === "list"
-                  ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
+              onClick={() => {
+                console.log("Chuyển khoản giữa các ví");
+                setShowTransferModal(true);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-[1.2rem] shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
             >
-              <List size={18} />
+              <RefreshCw size={20} strokeWidth={3} />
             </button>
           </div>
-
-          {/* ADD */}
-          <button
-            onClick={() => {
-              setSelectedAccount(null);
-              setIsModalOpen(true);
-            }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-[1.2rem] shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
-          >
-            <Plus size={20} strokeWidth={3} />
-          </button>
-
-          {/* TRANSFER */}
-          <button
-            onClick={() => {
-              console.log("Chuyển khoản giữa các ví");
-              setShowTransferModal(true);
-            }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-[1.2rem] shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
-          >
-            <RefreshCw size={20} strokeWidth={3} />
-          </button>
         </div>
       </div>
 

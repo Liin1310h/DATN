@@ -6,7 +6,7 @@ import { useSettings } from "../../context/SettingsContext";
 import { getExchangeRate } from "../../services/currencyService";
 import { formatInputByCurrency } from "../../utils/currencyFormatter";
 import { ArrowRight, Banknote, Landmark } from "lucide-react";
-import SearchableSelect from "../SearchableSelect";
+import SearchableSelect from "../Base/SearchableSelect";
 import toast from "react-hot-toast";
 import { useTranslation } from "../../hook/useTranslation";
 import { formatMoney } from "../../utils/formatMoney";

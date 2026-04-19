@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import {
   getDashboard,
   getRecentTransactions,
-  getChart,
-  getCategoriesChart,
 } from "../../services/dashboardService";
+import { getCategoriesChart, getChart } from "../../services/analyticsService";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "../../context/SettingsContext";
 import Layout from "./Layout";
@@ -56,7 +55,8 @@ export default function Dashboard() {
   const { currency } = useSettings();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [timeRange, setTimeRange] = useState("week");
+  const [timeLineRange, setTimeLineRange] = useState("week");
+  const [timeCategoryRange, setTimeCategoryRange] = useState("week");
 
   const [chartData, setChartData] = useState<any>(null);
   const [categoryChart, setCategoryChart] = useState<any>(null);
@@ -69,13 +69,14 @@ export default function Dashboard() {
     return <Icon size={20} className={color} />;
   };
   useEffect(() => {
+    if (!currency) return;
     const fetchData = async () => {
       try {
         const [dashboard, recent, chart, category] = await Promise.all([
-          getDashboard(),
+          getDashboard(currency),
           getRecentTransactions(),
-          getChart(timeRange),
-          getCategoriesChart(timeRange),
+          getChart(currency, timeLineRange),
+          getCategoriesChart(currency, timeCategoryRange),
         ]);
         setDashboardData(dashboard);
         setRecentTransactions(recent || []);
@@ -89,7 +90,7 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, [timeRange]);
+  }, [timeLineRange, timeCategoryRange, currency]);
 
   const dynamicLineData = {
     labels: chartData?.labels || [],
@@ -161,9 +162,9 @@ export default function Dashboard() {
         </div>
 
         {/* 2. Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white dark:bg-[#161E2E] p-4 rounded-[1.25rem] border border-gray-100 dark:border-gray-800/50">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-3 bg-white dark:bg-[#161E2E] p-3 rounded-[1.25rem] border border-gray-100 dark:border-gray-800/50">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">
                 {t.dashboard.spendingTrend}
               </h3>
@@ -171,9 +172,9 @@ export default function Dashboard() {
                 {["day", "week", "month"].map((range) => (
                   <button
                     key={range}
-                    onClick={() => setTimeRange(range)}
+                    onClick={() => setTimeLineRange(range)}
                     className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                      timeRange === range
+                      timeLineRange === range
                         ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
                         : "text-gray-400 hover:text-gray-600"
                     }`}
@@ -221,10 +222,27 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#161E2E] p-8 rounded-[1.25rem] border border-gray-100 dark:border-gray-800/50 flex flex-col items-center">
-            <h3 className="w-full text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-8">
-              {t.dashboard.categorySplit}
-            </h3>
+          <div className="lg:col-span-2 bg-white dark:bg-[#161E2E] p-3 rounded-[1.25rem] border border-gray-100 dark:border-gray-800/50 flex flex-col items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">
+                {t.dashboard.categorySplit}
+              </h3>
+              <div className="flex bg-gray-50 dark:bg-gray-800/50 p-1 rounded-xl">
+                {["day", "week", "month"].map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setTimeCategoryRange(range)}
+                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                      timeCategoryRange === range
+                        ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
+                        : "text-gray-400 hover:text-gray-600"
+                    }`}
+                  >
+                    {t.dashboard[range as keyof typeof t.dashboard]}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="h-[220px] w-full">
               <Doughnut
                 data={doughnutData}
@@ -363,7 +381,7 @@ export default function Dashboard() {
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={`w-16 h-16 rounded-[2rem] shadow-2xl flex items-center justify-center transition-all duration-300 z-50 ${
             isMenuOpen
-              ? "bg-gray-800 dark:bg-white text-white dark:text-white rotate-45"
+              ? "bg-gray-800 dark:bg-white text-white dark:text-indigo-600 rotate-45"
               : "bg-indigo-600 text-white hover:scale-110 shadow-indigo-400"
           }`}
         >

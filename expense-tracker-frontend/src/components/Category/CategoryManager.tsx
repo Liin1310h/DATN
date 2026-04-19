@@ -4,11 +4,15 @@ import {
   getCategories,
   deleteCategory,
 } from "../../services/categoriesService";
-import { DynamicIcon } from "../DynamicIcon";
+import { DynamicIcon } from "../Base/DynamicIcon";
 import AddCategoryModal from "./AddCategoryModal";
 import type { Category } from "../../types/category";
+import SearchInput from "../Base/SearchInput";
+import { useTranslation } from "../../hook/useTranslation";
 
 export default function CategoryManager() {
+  const { t } = useTranslation();
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,57 +45,52 @@ export default function CategoryManager() {
 
   return (
     <div className="w-full max-w-full space-y-8 animate-in fade-in duration-700">
-      {/* 1. Header & Search Bar */}
+      {/* Header & Search Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-2">
-        <div className="flex w-full items-center gap-3">
-          {/* Thanh tìm kiếm */}
-          <div className="relative group flex-1 sm:w-64">
-            <Search
-              size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors"
-            />
-            <input
-              type="text"
-              placeholder="Tìm kiếm..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full max-w-xs bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-[1.2rem] p-3 pl-11 text-xs font-bold outline-none focus:border-indigo-500/20 transition-all"
-            />
-          </div>
+        <div className="flex w-full items-center justify-between gap-3">
+          {/* Thanh tìm kiếm (Left) */}
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t.common.search}
+            className="flex-1 min-w-0 max-w-sm"
+          />
 
-          {/* 2. NÚT CHUYỂN ĐỔI CHẾ ĐỘ XEM */}
-          <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-[1.2rem]">
+          <div className="flex items-center gap-3 shrink-0">
+            {/* NÚT CHUYỂN ĐỔI CHẾ ĐỘ XEM */}
+            <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-[1.2rem]">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2.5 rounded-xl transition-all ${
+                  viewMode === "grid"
+                    ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                <LayoutGrid size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2.5 rounded-xl transition-all ${
+                  viewMode === "list"
+                    ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                <List size={18} />
+              </button>
+            </div>
+
             <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2.5 rounded-xl transition-all ${
-                viewMode === "grid"
-                  ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
+              onClick={() => {
+                setSelectedCategory(null);
+                setIsModalOpen(true);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-[1.2rem] shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
             >
-              <LayoutGrid size={18} />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2.5 rounded-xl transition-all ${
-                viewMode === "list"
-                  ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              <List size={18} />
+              <Plus size={20} strokeWidth={3} />
             </button>
           </div>
-
-          <button
-            onClick={() => {
-              setSelectedCategory(null);
-              setIsModalOpen(true);
-            }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-[1.2rem] shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
-          >
-            <Plus size={20} strokeWidth={3} />
-          </button>
         </div>
       </div>
 

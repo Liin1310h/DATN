@@ -5,7 +5,7 @@ export const formatMoney = (
 ) => {
   return new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", {
     style: "currency",
-    currency: itemCurrency,
+    currency: itemCurrency || "VND",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);

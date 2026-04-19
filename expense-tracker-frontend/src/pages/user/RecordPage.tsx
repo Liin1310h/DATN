@@ -1,5 +1,7 @@
 import Layout from "./Layout";
-import TransactionForm from "../../components/Transaction/TransactionForm";
+import TransactionForm, {
+  type TransactionFormSubmitData,
+} from "../../components/Transaction/TransactionForm";
 import { createTransaction } from "../../services/transactionsService";
 import toast from "react-hot-toast";
 import { useState } from "react";
@@ -11,48 +13,36 @@ export default function RecordPage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
-  const handleCreate = async (data: any) => {
+  const handleCreate = async (data: TransactionFormSubmitData) => {
     setLoading(true);
     try {
       if (data.type === "lend" || data.type === "borrow") {
-        const beDurationUnit =
-          data.durationUnit === "day"
-            ? "days"
-            : data.durationUnit === "month"
-              ? "months"
-              : "years";
-        // Tính toán dueDate dựa trên duration và unit
-        const durationNum = Number(data.loanDuration) || 0;
-        const calcDueDate = new Date();
-
-        if (data.durationUnit === "month")
-          calcDueDate.setMonth(calcDueDate.getMonth() + durationNum);
-        else if (data.durationUnit === "day")
-          calcDueDate.setDate(calcDueDate.getDate() + durationNum);
-        else calcDueDate.setFullYear(calcDueDate.getFullYear() + durationNum);
-
         await createLoan({
-          counterPartyName: data.person,
+          counterPartyName: data.loan?.counterPartyName ?? "",
           principalAmount: data.amount,
+          currency: data.currency,
 
-          interestRate: Number(data.interestRate) || 0,
-          interestUnit: data.interestUnit,
+          interestRate: data.loan?.interestRate ?? 0,
+          interestUnit: data.loan?.interestUnit ?? "percent_per_month",
 
-          duration: durationNum,
-          durationUnit: beDurationUnit,
-
-          startDate: new Date().toISOString(),
-          dueDate: calcDueDate.toISOString(),
+          startDate: data.transactionFromDate,
+          dueDate: data.transactionToDate ?? null,
 
           isLending: data.type === "lend",
           accountId: data.accountId,
           note: data.note,
         });
+
         toast.success(t.record.addLoanSuccess);
       } else {
         await createTransaction({
-          ...data,
-          transactionDate: new Date().toISOString(),
+          accountId: data.accountId,
+          amount: data.amount,
+          currency: data.currency,
+          type: data.type,
+          note: data.note,
+          transactionDate: data.transactionFromDate,
+          categoryId: data.categoryId,
         });
 
         toast.success(t.record.addSuccess);
@@ -69,8 +59,10 @@ export default function RecordPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto p-4">
-        <TransactionForm onSubmit={handleCreate} loading={loading} />
+      <div className="w-full">
+        <div className="max-w-3xl mx-auto">
+          <TransactionForm onSubmit={handleCreate} loading={loading} />
+        </div>
       </div>
     </Layout>
   );

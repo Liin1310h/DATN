@@ -1,6 +1,8 @@
 import { Percent, Timer, CircleDollarSign, Calculator } from "lucide-react";
 import { useTranslation } from "../../hook/useTranslation";
 
+type DurationUnit = "day" | "month" | "year";
+
 interface LoanSectionProps {
   interestRate: string;
   setInterestRate: (val: string) => void;
@@ -10,7 +12,7 @@ interface LoanSectionProps {
   loanDuration: string;
   setLoanDuration: (val: string) => void;
   durationUnit: string;
-  setDurationUnit: (val: string) => void;
+  setDurationUnit: (val: DurationUnit) => void;
 
   schedule: any;
   currency: string;

@@ -10,6 +10,7 @@ import {
   FolderTree,
   PanelLeftClose,
   Menu,
+  HandCoins,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "../../hook/useTranslation";
@@ -34,6 +35,7 @@ export default function Sidebar({
     { to: "/accountManager", icon: UserCircle, label: t.nav.accountManager },
     { to: "/categoryManager", icon: FolderTree, label: t.nav.categoryManager },
     { to: "/budget", icon: Wallet, label: t.nav.budget },
+    { to: "/loan", icon: HandCoins, label: t.nav.loan },
     { to: "/history", icon: History, label: t.nav.history },
     { to: "/analytics", icon: PieChart, label: t.nav.analytics },
   ];

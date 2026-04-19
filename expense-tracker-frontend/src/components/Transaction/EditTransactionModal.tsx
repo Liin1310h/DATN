@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import TransactionForm from "./TransactionForm"; // Đường dẫn tới file form của bạn
+import TransactionForm from "./TransactionForm";
 import { updateTransaction } from "../../services/transactionsService";
 import toast from "react-hot-toast";
 import { useTranslation } from "../../hook/useTranslation";
@@ -8,8 +8,8 @@ import { useTranslation } from "../../hook/useTranslation";
 interface EditTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  transactionData: any; // Dữ liệu giao dịch cũ truyền từ danh sách vào
-  onSuccess: () => void; // Callback để load lại danh sách sau khi sửa xong
+  transactionData: any;
+  onSuccess: () => void;
 }
 
 export default function EditTransactionModal({
@@ -21,7 +21,6 @@ export default function EditTransactionModal({
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
-  // Nếu modal đóng hoặc không có dữ liệu thì không render gì cả
   if (!isOpen || !transactionData) return null;
 
   const handleUpdate = async (payload: any) => {
@@ -42,10 +41,10 @@ export default function EditTransactionModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-gray-950 w-full max-w-2xl h-[90vh] sm:h-auto sm:max-h-[95vh] overflow-y-auto rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl relative">
+      <div className="bg-white dark:bg-gray-950 w-full max-w-2xl h-[90vh] sm:h-auto sm:max-h-[95vh] overflow-y-auto rounded-[2rem] shadow-2xl relative">
         {/* Header Modal */}
-        <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md p-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-black uppercase tracking-tight ml-2">
+        <div className="sticky top-0 z-10 text-black dark:text-white bg-white/80 dark:bg-gray-950/80 backdrop-blur-md p-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg uppercase font-bold tracking-tight ml-2">
             {t.transaction.update}
           </h2>
           <button
@@ -62,7 +61,7 @@ export default function EditTransactionModal({
             onSubmit={handleUpdate}
             loading={loading}
             initialData={transactionData}
-            isEdit={true} // Đánh dấu đây là chế độ sửa
+            isEdit={true}
           />
         </div>
       </div>
