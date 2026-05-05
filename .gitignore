@@ -19,3 +19,80 @@ obj/
 
 # logs
 *.log
+
+# ======================
+# PYTHON (ML + OCR)
+# ======================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# virtual env
+venv/
+.venv/
+env/
+
+# pip cache
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+
+# ======================
+# FASTAPI / UVICORN
+# ======================
+
+*.db
+*.sqlite3
+
+# ======================
+# OCR / ML FILES (QUAN TRỌNG)
+# ======================
+
+# PaddleOCR model cache
+.paddleocr/
+paddleocr/
+*.pdparams
+*.pdmodel
+
+# Torch (nếu từng dùng)
+*.pt
+*.pth
+
+# VietOCR (nếu còn sót)
+weights/
+checkpoints/
+
+# ======================
+# IMAGE / TEMP FILES
+# ======================
+
+uploads/
+tmp/
+temp/
+*.jpg
+*.jpeg
+*.png
+
+# ======================
+# LOGS
+# ======================
+
+logs/
+*.log
+
+# ======================
+# DOCKER
+# ======================
+
+*.tar
+*.gz
+
+# ======================
+# OS
+# ======================
+
+.DS_Store
+Thumbs.db
