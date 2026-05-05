@@ -1,4 +1,8 @@
-export default function CameraModal({ isOpen, onClose }) {
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+export default function CameraModal({ isOpen, onClose }: ModalProps) {
   if (!isOpen) return null;
 
   return (

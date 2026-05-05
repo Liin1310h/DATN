@@ -26,9 +26,18 @@ export const updateTransaction = async (id: number, data: any) => {
   const response = await API.put(`/transactions/${id}`, data);
   return response.data;
 };
+
 export const deleteTransaction = async (id: number) => {
   await API.delete(`/transactions/${id}`);
 };
 export const transferBetweenAccounts = async (data: any) => {
   await API.post("/transactions/transfer", data);
+};
+export const exportTransactions = async (params: GetTransactionsParams) => {
+  const response = await API.get("/transactions/export", {
+    params,
+    responseType: "blob",
+  });
+
+  return response.data;
 };

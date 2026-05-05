@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import Layout from "./Layout";
+import Layout from "../Layout";
 import { useTranslation } from "../../hook/useTranslation";
 import { useSettings } from "../../context/SettingsContext";
 import {
@@ -214,11 +214,7 @@ export default function BudgetPage() {
 
   const handleDeleteBudget = async (budgetId?: number) => {
     if (!budgetId) {
-      toast.error(
-        language === "vi"
-          ? "Danh mục này chưa có ngân sách để xóa."
-          : "No budget to delete.",
-      );
+      toast.error(t.budget.noBudgetToDelete);
       return;
     }
 
@@ -264,11 +260,7 @@ export default function BudgetPage() {
     const budgetsToApply = rows.filter((r) => r.originalAmount > 0);
 
     if (budgetsToApply.length === 0) {
-      toast.error(
-        language === "vi"
-          ? "Không có ngân sách nào để áp dụng."
-          : "No budgets to apply.",
-      );
+      toast.error(t.budget.noBudgetToApply);
       return;
     }
 
@@ -286,11 +278,7 @@ export default function BudgetPage() {
         ),
       );
 
-      toast.success(
-        language === "vi"
-          ? "Đã áp dụng chế độ chi tiêu."
-          : "Spending mode applied.",
-      );
+      toast.success(t.budget.spendingModeApplied);
       setSpendingMode("normal");
       await fetchData();
     } catch (error) {
@@ -393,7 +381,7 @@ export default function BudgetPage() {
 
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                    {language === "vi" ? "Tổng quan tháng" : "Monthly overview"}
+                    {t.budget.monthlyOverview}
                   </p>
                   <p className="text-xl lg:text-2xl font-black tracking-tight truncate">
                     {formatMoney(totalSpent)} / {formatMoney(totalBudget)}
@@ -404,9 +392,7 @@ export default function BudgetPage() {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <span className="text-sm font-bold text-white/80">
-                    {language === "vi"
-                      ? "Mức sử dụng ngân sách"
-                      : "Budget usage"}
+                    {t.budget.budgetUsage}
                   </span>
                   <span className="text-base lg:text-lg font-black">
                     {totalPercent.toFixed(0)}%
@@ -424,7 +410,7 @@ export default function BudgetPage() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-white/10 p-3">
                   <p className="text-[10px] uppercase text-white/70 font-bold">
-                    {language === "vi" ? "Ngân sách" : "Budget"}
+                    {t.common.budget}
                   </p>
 
                   <p className="text-sm font-black break-words">
@@ -434,7 +420,7 @@ export default function BudgetPage() {
 
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-white/10 p-3">
                   <p className="text-[10px] uppercase text-white/70 font-bold">
-                    {language === "vi" ? "Đã chi" : "Spent"}
+                    {t.budget.spentLabel}
                   </p>
                   <p className="text-sm font-black break-words">
                     {formatMoney(totalSpent)}
@@ -443,7 +429,7 @@ export default function BudgetPage() {
 
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-white/10 p-3">
                   <p className="text-[10px] uppercase text-white/70 font-bold">
-                    {language === "vi" ? "Còn lại" : "Remaining"}
+                    {t.budget.remaining}
                   </p>
                   <p className="text-sm font-black break-words">
                     {formatMoney(totalRemaining)}
@@ -457,7 +443,7 @@ export default function BudgetPage() {
               <div className="rounded-2xl bg-white/10 p-3 text-center flex flex-col justify-center">
                 <TriangleAlert className="mx-auto mb-2" size={18} />
                 <p className="text-[10px] uppercase text-white/70 font-bold">
-                  {language === "vi" ? "Cảnh báo" : "Warning"}
+                  {t.budget.warning}
                 </p>
                 <p className="text-lg font-black mt-1">{warningCount}</p>
               </div>
@@ -465,7 +451,7 @@ export default function BudgetPage() {
               <div className="rounded-2xl bg-white/10 p-3 text-center flex flex-col justify-center">
                 <Flame className="mx-auto mb-2" size={18} />
                 <p className="text-[10px] uppercase text-white/70 font-bold">
-                  {language === "vi" ? "Vượt mức" : "Exceeded"}
+                  {t.budget.exceeded}
                 </p>
                 <p className="text-lg font-black mt-1">{dangerCount}</p>
               </div>
@@ -473,7 +459,7 @@ export default function BudgetPage() {
               <div className="rounded-2xl bg-white/10 p-3 text-center flex flex-col justify-center">
                 <CheckCircle2 className="mx-auto mb-2" size={18} />
                 <p className="text-[10px] uppercase text-white/70 font-bold">
-                  {language === "vi" ? "An toàn" : "Safe"}
+                  {t.budget.safe}
                 </p>
                 <p className="text-lg font-black mt-1">{safeCount}</p>
               </div>
@@ -485,12 +471,7 @@ export default function BudgetPage() {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <p className="text-sm font-black text-gray-900 dark:text-white">
-                {language === "vi" ? "Chế độ chi tiêu" : "Spending mode"}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {language === "vi"
-                  ? "Tự động preview tăng/giảm ngân sách toàn bộ danh mục"
-                  : "Preview automatic increase/decrease across all categories"}
+                {t.budget.spendingMode}
               </p>
             </div>
 
@@ -514,13 +495,7 @@ export default function BudgetPage() {
                 disabled={bulkApplying || spendingMode === "normal"}
                 className="px-4 py-3 rounded-2xl bg-indigo-600 text-white text-sm font-black disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {bulkApplying
-                  ? language === "vi"
-                    ? "Đang áp dụng..."
-                    : "Applying..."
-                  : language === "vi"
-                    ? "Áp dụng toàn bộ"
-                    : "Apply to all"}
+                {bulkApplying ? t.budget.applying : t.budget.applyAll}
               </button>
             </div>
           </div>
@@ -529,9 +504,7 @@ export default function BudgetPage() {
         <div className="bg-white dark:bg-[#111827] rounded-[1.5rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
             <h2 className="text-base font-black text-gray-900 dark:text-white">
-              {language === "vi"
-                ? "Ngân sách theo danh mục"
-                : "Budgets by category"}
+              {t.budget.budgetByCategory}
             </h2>
           </div>
 

@@ -14,7 +14,10 @@ import AIInputMenu from "../../components/AI/AIInputMenu";
 
 import { useSettings } from "../../context/SettingsContext";
 import { useLoanCalculator } from "../../hook/useLoanCalculator";
-import { getCategories } from "../../services/categoriesService";
+import {
+  createCategory,
+  getCategories,
+} from "../../services/categoriesService";
 import AddCategoryModal from "../../components/Category/AddCategoryModal";
 import type { Category } from "../../types/category";
 import { getAccounts } from "../../services/accountsService";
@@ -32,6 +35,7 @@ import toast from "react-hot-toast";
 import { getExchangeRate } from "../../services/currencyService";
 import { useTranslation } from "../../hook/useTranslation";
 import { CURRENCIES } from "../../constants/currencies";
+import { uploadImages } from "../../services/mediaService";
 
 type TransactionType = "expense" | "income" | "lend" | "borrow";
 
@@ -41,6 +45,9 @@ interface LoanFormPayload {
   interestUnit: string;
   duration: number;
   durationUnit?: "day" | "month" | "year";
+  isRecurringReminder: boolean;
+  reminderBeforeDays: number;
+  reminderFrequency: string;
 }
 export interface TransactionFormSubmitData {
   accountId: number;
@@ -52,6 +59,8 @@ export interface TransactionFormSubmitData {
   transactionToDate: string | null;
   categoryId?: number;
   loan?: LoanFormPayload;
+  files?: File[];
+  imageUrls?: string[];
 }
 
 interface TransactionFormProps {
@@ -79,6 +88,9 @@ export default function TransactionForm({
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
   const [person, setPerson] = useState("");
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [newPreviews, setNewPreviews] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState(currency);
   const [rate, setRate] = useState(1);
@@ -92,7 +104,9 @@ export default function TransactionForm({
     "month",
   );
   const [showSchedule, setShowSchedule] = useState(false);
-
+  const [isRecurringReminder, setIsRecurringReminder] = useState(false);
+  const [reminderBeforeDays, setReminderBeforeDays] = useState("");
+  const [reminderFrequency, setReminderFrequency] = useState("Monthly");
   // ! CATEGORY STATE
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
@@ -232,6 +246,15 @@ export default function TransactionForm({
             ? toLocalInput(initialData.loan.dueDate)
             : "",
       );
+      if (initialData.imageUrls) {
+        setExistingImages(initialData.imageUrls);
+      }
+      // fallback nếu API cũ
+      else if (initialData.transactionImages) {
+        const urls = initialData.transactionImages.map((i) => i.imageUrl);
+        setExistingImages(urls);
+      }
+
       if (initialData.loan) {
         setPerson(initialData.loan.counterPartyName || "");
         setInterestRate(initialData.loan.interestRate?.toString() || "");
@@ -250,6 +273,11 @@ export default function TransactionForm({
             setDurationUnit("month");
           }
         }
+        setIsRecurringReminder(initialData.loan.isRecurringReminder || false);
+        setReminderBeforeDays(
+          initialData.loan.reminderBeforeDays?.toString() || "",
+        );
+        setReminderFrequency(initialData.loan.reminderFrequency || "Monthly");
       }
       setNote(initialData.note);
     }
@@ -262,6 +290,10 @@ export default function TransactionForm({
     setNote("");
     setInterestRate("");
     setLoanDuration("");
+    setDurationUnit("month");
+    setIsRecurringReminder(false);
+    setReminderBeforeDays("");
+    setReminderFrequency("Monthly");
     setSelectedAccountId(null);
     setSelectedCategoryId(null);
     setTransactionFromDate(getNowLocal());
@@ -301,13 +333,33 @@ export default function TransactionForm({
         return false;
       }
     }
-
-    // if (isDebt && loanDuration === "") {
-    //   toast.error("Vui lòng nhập thời gian khoản vay");
-    //   return;
-    // }
     return true;
   };
+
+  // TODO Handle chọn file và preview
+  const handleSelectFiles = (e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const previews = selectedFiles.map((file) => URL.createObjectURL(file));
+
+    setFiles((prev) => [...prev, ...selectedFiles]);
+    setNewPreviews((prev) => [...prev, ...previews]);
+  };
+
+  // TODO Xoá ảnh
+  const handleRemoveExisting = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveNew = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  useEffect(() => {
+    return () => {
+      newPreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [newPreviews]);
 
   // TODO Hàm lưu
   const handleSave = async () => {
@@ -315,6 +367,23 @@ export default function TransactionForm({
     if (!validateForm(rawAmount)) return;
 
     try {
+      let uploadedUrls: string[] = [];
+
+      //Upload ảnh mới
+      if (files.length > 0) {
+        try {
+          uploadedUrls = await uploadImages(files, (percent) => {
+            console.log("Uploading:", percent + "%");
+          });
+        } catch (err) {
+          console.error(err);
+          toast.error("Upload ảnh thất bại");
+          return;
+        }
+      }
+      //Merge ảnh cũ và mới
+      const finalImageUrls = [...existingImages, ...uploadedUrls];
+
       // Gọi API lưu giao dịch
       const payload: TransactionFormSubmitData = {
         accountId: selectedAccountId!,
@@ -330,6 +399,9 @@ export default function TransactionForm({
             : null,
         categoryId: !isDebt ? (selectedCategoryId ?? undefined) : undefined,
 
+        // Thêm imageUrls - lọc bỏ các blob URLs tạm thời, giữ lại URL thật
+        imageUrls: finalImageUrls,
+
         loan: isDebt
           ? {
               counterPartyName: person.trim(),
@@ -337,6 +409,10 @@ export default function TransactionForm({
               interestUnit,
               duration: Number(loanDuration),
               durationUnit: loanDuration !== "" ? durationUnit : undefined,
+              isRecurringReminder,
+              reminderBeforeDays:
+                reminderBeforeDays !== "" ? Number(reminderBeforeDays) : 0,
+              reminderFrequency,
             }
           : undefined,
       };
@@ -344,6 +420,9 @@ export default function TransactionForm({
       await onSubmit(payload);
       if (!isEdit) {
         resetForm();
+        setFiles([]);
+        setNewPreviews([]);
+        setExistingImages([]);
       }
     } catch (error) {
       console.log(t.transaction.errorSave, error);
@@ -596,6 +675,59 @@ export default function TransactionForm({
               </div>
             )}
           </div>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-2">
+                Ảnh đính kèm
+              </label>
+
+              <label className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus-within:ring-2 focus-within:ring-indigo-500 shadow-sm cursor-pointer flex flex-col items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                <span className="text-gray-400 text-xs">
+                  Chọn ảnh hoặc kéo thả
+                </span>
+
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleSelectFiles}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {(existingImages.length > 0 || newPreviews.length > 0) && (
+              <div className="grid grid-cols-3 gap-3">
+                {/* ẢNH CŨ */}
+                {existingImages.map((src, index) => (
+                  <div key={`old-${index}`} className="relative group">
+                    <img src={src} className="w-full h-24 object-cover" />
+
+                    <button
+                      onClick={() => handleRemoveExisting(index)}
+                      className="absolute top-1 right-1 bg-black/60 text-white px-2 py-1 rounded"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+
+                {/* ẢNH MỚI */}
+                {newPreviews.map((src, index) => (
+                  <div key={`new-${index}`} className="relative group">
+                    <img src={src} className="w-full h-24 object-cover" />
+
+                    <button
+                      onClick={() => handleRemoveNew(index)}
+                      className="absolute top-1 right-1 bg-black/60 text-white px-2 py-1 rounded"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="space-y-2 dark:text-gray-400">
             <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-2">
@@ -607,7 +739,7 @@ export default function TransactionForm({
               type="datetime-local"
               value={transactionFromDate}
               onChange={(e) => setTransactionFromDate(e.target.value)}
-              className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-white dark:bg-gray-900 font-bold border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm  outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           {isDebt && (
@@ -636,6 +768,12 @@ export default function TransactionForm({
               setLoanDuration={setLoanDuration}
               durationUnit={durationUnit}
               setDurationUnit={setDurationUnit}
+              isRecurringReminder={isRecurringReminder}
+              setIsRecurringReminder={setIsRecurringReminder}
+              reminderBeforeDays={reminderBeforeDays}
+              setReminderBeforeDays={setReminderBeforeDays}
+              reminderFrequency={reminderFrequency}
+              setReminderFrequency={setReminderFrequency}
               schedule={schedule}
               currency={selectedCurrency}
               onOpenSchedule={() => setShowSchedule(true)}
@@ -694,6 +832,10 @@ export default function TransactionForm({
         isOpen={showAddCategory}
         onClose={() => setShowAddCategory(false)}
         onSuccess={handleAddSuccess}
+        initialData={null}
+        onSubmit={async (payload) => {
+          await createCategory(payload);
+        }}
       />
       <AddAccountModal
         isOpen={showAddAccount}

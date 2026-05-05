@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import Layout from "./Layout";
+import Layout from "../Layout";
 import { useTranslation } from "../../hook/useTranslation";
 import { useSettings } from "../../context/SettingsContext";
 import { formatMoney } from "../../utils/formatMoney";

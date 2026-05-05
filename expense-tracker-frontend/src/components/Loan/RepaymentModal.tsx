@@ -23,15 +23,14 @@ export const RepaymentModal = ({
       <div className="absolute inset-0 flex items-end md:items-center justify-center p-4">
         {/* Modal */}
         <div className="relative w-full max-w-2xl p-2 bg-white dark:bg-gray-900 shadow-2xl rounded-t-[2.5rem] md:rounded-[2rem] max-h-[90vh] flex flex-col animate-in slide-in-from-bottom-10 md:zoom-in-95">
-          {/* Drag indicator (mobile) */}
           <div className="flex justify-center py-3 md:hidden">
             <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full" />
           </div>
 
           {/* Header */}
-          <div className="px-6 pb-4 flex justify-between items-center border-b border-gray-100 dark:border-gray-800">
+          <div className="px-6 py-2 flex justify-between items-center border-b border-gray-100 dark:border-gray-800">
             <div>
-              <h2 className="text-lg md:text-xl font-black uppercase">
+              <h2 className="text-lg md:text-xl font-black dark:text-white uppercase">
                 {t.loan.scheduleTitle}
               </h2>
               <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
@@ -41,7 +40,7 @@ export const RepaymentModal = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              className="p-2 rounded-xl hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 transition"
             >
               <X size={18} />
             </button>
@@ -63,9 +62,7 @@ export const RepaymentModal = ({
             {schedule.rows.map((row: any) => (
               <div
                 key={row.period}
-                className="grid grid-cols-5 items-center p-3 md:p-4 
-                           bg-gray-50 dark:bg-gray-800/50 rounded-xl border 
-                           border-gray-100 dark:border-gray-800"
+                className="grid grid-cols-5 items-center p-3 md:p-4 dark:text-white bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800"
               >
                 <span className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-900 rounded-full text-[10px] font-black">
                   {row.period}

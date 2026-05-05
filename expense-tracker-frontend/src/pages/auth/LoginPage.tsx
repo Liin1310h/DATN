@@ -1,9 +1,17 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { login } from "../../services/authService";
 import authBgImage from "../../assets/authBgImage.png";
+import {
+  getRoleFromToken,
+  setToken,
+  isAuthenticated,
+} from "../../utils/authToken";
+import { registerPushNotification } from "../../services/notification/pushService";
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,18 +19,56 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Nếu đã login thì redirect đi
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const params = new URLSearchParams(location.search);
+      const redirect =
+        params.get("redirect") ||
+        sessionStorage.getItem("pendingRedirect") ||
+        "/dashboard";
+      sessionStorage.removeItem("pendingRedirect");
+      navigate(redirect.startsWith("/") ? redirect : "/dashboard", {
+        replace: true,
+      });
+    }
+  }, [location]);
+
   const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter email or password");
+      return;
+    }
     try {
       setLoading(true);
       setError("");
 
-      const data = await login(email, password);
+      const data = await login(email.trim(), password);
+      setToken(data.token);
 
-      localStorage.setItem("token", data.token);
+      const params = new URLSearchParams(location.search);
+      let redirect =
+        params.get("redirect") ||
+        sessionStorage.getItem("pendingRedirect") ||
+        "/dashboard";
+      sessionStorage.removeItem("pendingRedirect");
 
-      navigate("/dashboard");
+      try {
+        await registerPushNotification();
+      } catch (error) {
+        console.log("Push notification register fail:", error);
+      }
+
+      if (!redirect.startsWith("/")) {
+        redirect = "/dashboard";
+      }
+
+      const role = getRoleFromToken(data.token);
+      if (role === "Admin") navigate("/admin");
+      else navigate(redirect);
     } catch (err) {
-      setError("Invalid email or password", err);
+      console.log(err);
+      setError("Invalid email or password");
     } finally {
       setLoading(false);
     }

@@ -54,6 +54,9 @@ export async function updateLoan(
     interestRate?: number;
     interestUnit?: string;
     dueDate?: string | null;
+    isRecurringReminder?: boolean;
+    reminderBeforeDays?: number;
+    reminderFrequency?: string;
     note?: string;
   },
 ) {

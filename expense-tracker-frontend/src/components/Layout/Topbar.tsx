@@ -8,15 +8,30 @@ import {
   Coins,
   ChevronDown,
   Check,
+  Shield,
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSettings } from "../../context/SettingsContext";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../hook/useTranslation";
 import { CURRENCIES } from "../../constants/currencies";
+import {
+  getNotifications,
+  getUnreadNotificationCount,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+  type NotificationItem,
+} from "../../services/notification/notificationService";
+import { startNotificationConnection } from "../../services/notification/signalService";
 
-export default function Topbar({ toggleSidebar }: any) {
+export default function Topbar({
+  toggleSidebar,
+  mode = "user",
+}: {
+  toggleSidebar: () => void;
+  mode?: "user" | "admin";
+}) {
   const { user } = useAuth();
   const { language, theme, currency, setLanguage, setTheme, setCurrency } =
     useSettings();
@@ -26,25 +41,17 @@ export default function Topbar({ toggleSidebar }: any) {
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Đóng dropdown khi click ra ngoài
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsCurrencyOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dropdownRef]);
+  const navigate = useNavigate();
+
+  // Notification states
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   //TODO Xử lý tiêu đề động
   const getTitle = () => {
-    const pathMap: Record<string, string> = {
+    const userPathMap: Record<string, string> = {
       "/dashboard": t.nav.dashboard,
       "/addExpense": t.nav.addExpense,
       "/accountManager": t.nav.accountManager,
@@ -54,8 +61,97 @@ export default function Topbar({ toggleSidebar }: any) {
       "/history": t.nav.history,
       "/analytics": t.nav.analytics,
     };
-    return pathMap[location.pathname] || t.nav.dashboard;
+    const adminPathMap: Record<string, string> = {
+      "/admin": t.nav.adminDashboard,
+      "/admin/users": t.nav.adminUserManagement,
+      "/admin/categories": t.nav.adminCategoryManagement,
+    };
+    if (mode === "admin")
+      return adminPathMap[location.pathname || t.nav.adminDashboard];
+    else return userPathMap[location.pathname] || t.nav.dashboard;
   };
+
+  //TODO Xử lý thông báo
+  const loadNotifications = async () => {
+    try {
+      const [notiData, count] = await Promise.all([
+        getNotifications(),
+        getUnreadNotificationCount(),
+      ]);
+
+      setNotifications(notiData);
+      setUnreadCount(count);
+    } catch (error) {
+      console.error("Load notifications error:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  //TODO Kết nối SignalR để nhận thông báo real-time
+  useEffect(() => {
+    const conn = startNotificationConnection((notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+    });
+
+    return () => {
+      conn?.stop();
+    };
+  }, []);
+
+  //TODO Xử lý click vào thông báo
+  const handleNotificationClick = async (item: NotificationItem) => {
+    try {
+      if (!item.isRead) {
+        await markNotificationAsRead(item.id);
+      }
+
+      setIsNotificationOpen(false);
+      await loadNotifications();
+
+      if (item.redirectUrl) {
+        navigate(item.redirectUrl);
+      }
+    } catch (error) {
+      console.error("Read notification error:", error);
+    }
+  };
+
+  //TODO Xử lý đánh dấu tất cả đã đọc
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      await loadNotifications();
+    } catch (error) {
+      console.error("Mark all notifications error:", error);
+    }
+  };
+
+  //TODO Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsCurrencyOpen(false);
+      }
+
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="flex items-center justify-between h-16 px-6 bg-white/70 dark:bg-[#161E2E]/70 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800/50 sticky top-0 z-40 transition-colors duration-300">
@@ -67,18 +163,113 @@ export default function Topbar({ toggleSidebar }: any) {
         >
           <Menu size={24} />
         </button>
-        <h1 className="text-lg font-black text-gray-800 dark:text-white leading-none animate-in fade-in duration-300">
-          {getTitle()}
-        </h1>
+
+        <div className="flex items-center gap-2">
+          {mode === "admin" && (
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
+              <Shield size={16} />
+            </div>
+          )}
+
+          <h1 className="text-lg font-black text-gray-800 dark:text-white leading-none animate-in fade-in duration-300">
+            {getTitle()}
+          </h1>
+        </div>
       </div>
 
       {/* Right*/}
       <div className="flex items-center sm:gap-3">
         {/* Chuông thông báo */}
-        <button className="hidden sm:block p-2 text-gray-400 dark:text-white hover:text-indigo-500 transition-colors relative">
-          <Bell size={18} strokeWidth={2.5} />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border border-white dark:border-[#161E2E]"></span>
-        </button>
+        <div className="relative hidden sm:block" ref={notificationRef}>
+          <button
+            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+            className="p-2 text-gray-400 dark:text-white hover:text-indigo-500 transition-colors relative"
+          >
+            <Bell size={18} strokeWidth={2.5} />
+
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border border-white dark:border-[#161E2E]">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {isNotificationOpen && (
+            <div className="absolute right-0 mt-0 w-80 bg-white dark:bg-[#1C2636] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+              {/* HEADER */}
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-extrabold text-gray-800 dark:text-white">
+                    Thông báo
+                  </p>
+                  <p className="text-[10px] text-gray-400 font-bold">
+                    {unreadCount} chưa đọc
+                  </p>
+                </div>
+
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    className="text-[11px] font-bold text-indigo-600 hover:underline"
+                  >
+                    Đọc tất cả
+                  </button>
+                )}
+              </div>
+
+              {/* LIST */}
+              <div className="max-h-96 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-gray-400 font-bold">
+                    Chưa có thông báo
+                  </div>
+                ) : (
+                  notifications.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNotificationClick(item)}
+                      className={`w-full text-left p-2 rounded-xl transition-all duration-200 group
+              ${
+                !item.isRead
+                  ? "hover:bg-indigo-50/70 dark:bg-indigo-500/10 shadow-sm"
+                  : "hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+                    >
+                      <div className="flex gap-3">
+                        {/* DOT */}
+                        <div
+                          className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
+                            item.isRead
+                              ? "bg-gray-300"
+                              : "bg-red-500 animate-pulse"
+                          }`}
+                        />
+
+                        {/* CONTENT */}
+                        <div className="min-w-0 flex-1">
+                          {/* TITLE */}
+                          <p className="text-xs font-extrabold text-gray-800 dark:text-white leading-tight">
+                            {item.title}
+                          </p>
+
+                          {/* MESSAGE */}
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                            {item.message}
+                          </p>
+
+                          {/* TIME */}
+                          <p className="text-[10px] text-gray-400 mt-2 font-semibold">
+                            {new Date(item.createdAt).toLocaleString("vi-VN")}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="relative" ref={dropdownRef}>
           <button

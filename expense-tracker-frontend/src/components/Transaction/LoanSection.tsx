@@ -1,4 +1,10 @@
-import { Percent, Timer, CircleDollarSign, Calculator } from "lucide-react";
+import {
+  Percent,
+  Timer,
+  CircleDollarSign,
+  Calculator,
+  BellRing,
+} from "lucide-react";
 import { useTranslation } from "../../hook/useTranslation";
 
 type DurationUnit = "day" | "month" | "year";
@@ -14,6 +20,13 @@ interface LoanSectionProps {
   durationUnit: string;
   setDurationUnit: (val: DurationUnit) => void;
 
+  isRecurringReminder: boolean;
+  setIsRecurringReminder: (val: boolean) => void;
+  reminderBeforeDays: string;
+  setReminderBeforeDays: (val: string) => void;
+  reminderFrequency: string;
+  setReminderFrequency: (val: string) => void;
+
   schedule: any;
   currency: string;
   onOpenSchedule: () => void;
@@ -28,6 +41,12 @@ export default function LoanSection({
   setLoanDuration,
   durationUnit,
   setDurationUnit,
+  isRecurringReminder,
+  setIsRecurringReminder,
+  reminderBeforeDays,
+  setReminderBeforeDays,
+  reminderFrequency,
+  setReminderFrequency,
   schedule,
   currency,
   onOpenSchedule,
@@ -48,7 +67,7 @@ export default function LoanSection({
               type="number"
               value={interestRate}
               onChange={(e) => setInterestRate(e.target.value)}
-              className="w-full bg-white dark:text-white dark:bg-gray-900 border-2 border-blue-50 dark:border-blue-900/20 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+              className="w-full bg-white dark:text-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
               %
@@ -69,7 +88,7 @@ export default function LoanSection({
 
       {/* Chi tiết khoản vay */}
       {Number(interestRate) > 0 && (
-        <div className="p-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-[2.5rem] border border-blue-100 dark:border-blue-900/30 space-y-6">
+        <div className=" rounded-[2.5rem] space-y-6">
           {/* Thời hạn */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-gray-500 dark:text-white uppercase flex items-center gap-2">
@@ -87,7 +106,7 @@ export default function LoanSection({
               <select
                 value={durationUnit}
                 onChange={(e) => setDurationUnit(e.target.value)}
-                className="flex-1 bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-800 px-4 rounded-xl text-[10px] font-bold uppercase"
+                className="flex-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-4 rounded-xl text-[10px] font-bold uppercase"
               >
                 <option value="year">{t.loan.year}</option>
                 <option value="month">{t.loan.month}</option>
@@ -145,6 +164,71 @@ export default function LoanSection({
           )}
         </div>
       )}
+      {/* Nhắc hạn khoản vay */}
+      <div className="space-y-3 p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-[10px] font-black text-gray-500 dark:text-gray-300 uppercase flex items-center gap-2">
+            <BellRing size={13} className="text-amber-500" />
+            Nhắc hạn khoản vay
+          </label>
+
+          <button
+            type="button"
+            onClick={() => setIsRecurringReminder(!isRecurringReminder)}
+            className={`relative w-12 h-7 rounded-full transition-all ${
+              isRecurringReminder
+                ? "bg-blue-600"
+                : "bg-gray-300 dark:bg-gray-700"
+            }`}
+          >
+            <span
+              className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all ${
+                isRecurringReminder ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+
+        {isRecurringReminder && (
+          <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-2">
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-gray-400 uppercase">
+                Nhắc trước
+              </label>
+
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  value={reminderBeforeDays}
+                  onChange={(e) => setReminderBeforeDays(e.target.value)}
+                  className="w-full bg-gray-50 dark:bg-gray-950 dark:text-white border border-gray-100 dark:border-gray-800 p-4 pr-12 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                />
+
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-black uppercase">
+                  ngày
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-gray-400 uppercase">
+                Chu kỳ nhắc
+              </label>
+
+              <select
+                value={reminderFrequency}
+                onChange={(e) => setReminderFrequency(e.target.value)}
+                className="w-full bg-gray-50 dark:bg-gray-950 dark:text-white border border-gray-100 dark:border-gray-800 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Daily">Hằng ngày</option>
+                <option value="Weekly">Hằng tuần</option>
+                <option value="Monthly">Hằng tháng</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

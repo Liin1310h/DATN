@@ -1,5 +1,5 @@
-// components/CategoryPicker.tsx
-import { DynamicIcon } from "./DynamicIcon";
+// components/CategoryPicker.ts
+import { DynamicIcon } from "../Base/DynamicIcon";
 
 export const CategoryPicker = ({ categories, selectedId, onSelect }: any) => {
   return (

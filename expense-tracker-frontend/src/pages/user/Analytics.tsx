@@ -4,7 +4,7 @@ import "dayjs/locale/vi";
 import "dayjs/locale/en";
 import isBetween from "dayjs/plugin/isBetween";
 import { useSettings } from "../../context/SettingsContext";
-import Layout from "./Layout";
+import Layout from "../Layout";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,

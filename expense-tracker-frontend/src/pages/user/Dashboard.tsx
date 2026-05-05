@@ -6,7 +6,7 @@ import {
 import { getCategoriesChart, getChart } from "../../services/analyticsService";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "../../context/SettingsContext";
-import Layout from "./Layout";
+import Layout from "../Layout";
 import StatCard from "../../components/StatCard";
 import {
   Receipt,

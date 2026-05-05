@@ -11,6 +11,9 @@ import {
   PanelLeftClose,
   Menu,
   HandCoins,
+  Shield,
+  Users,
+  Tags,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "../../hook/useTranslation";
@@ -18,9 +21,11 @@ import { useTranslation } from "../../hook/useTranslation";
 export default function Sidebar({
   collapsed,
   setCollapsed,
+  mode = "user",
 }: {
   collapsed: boolean;
   setCollapsed: (val: boolean) => void;
+  mode?: "user" | "admin";
 }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -29,7 +34,7 @@ export default function Sidebar({
     navigate("/");
   };
 
-  const menuItems = [
+  const userMenuItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: t.nav.dashboard },
     { to: "/addExpense", icon: PlusCircle, label: t.nav.addExpense },
     { to: "/accountManager", icon: UserCircle, label: t.nav.accountManager },
@@ -39,6 +44,18 @@ export default function Sidebar({
     { to: "/history", icon: History, label: t.nav.history },
     { to: "/analytics", icon: PieChart, label: t.nav.analytics },
   ];
+
+  const adminMenuItems = [
+    { to: "/admin", icon: Shield, label: t.nav.adminDashboard },
+    { to: "/admin/users", icon: Users, label: t.nav.adminUserManagement },
+    {
+      to: "/admin/categories",
+      icon: Tags,
+      label: t.nav.adminCategoryManagement,
+    },
+  ];
+
+  const menuItems = mode === "admin" ? adminMenuItems : userMenuItems;
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar");
@@ -64,10 +81,20 @@ export default function Sidebar({
         {!collapsed && (
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
-              <Wallet size={20} />
+              {mode === "admin" ? <Shield size={20} /> : <Wallet size={20} />}
             </div>
             <h1 className="text-lg font-black italic">
-              Expen<span className="text-indigo-200">sy</span>
+              {mode === "admin" ? (
+                <>
+                  {" "}
+                  Admin<span className="text-indigo-200">Flow</span>
+                </>
+              ) : (
+                <>
+                  {" "}
+                  Expen<span className="text-indigo-200">sy</span>
+                </>
+              )}
             </h1>
           </div>
         )}

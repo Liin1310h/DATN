@@ -10,6 +10,9 @@ export interface LoanItem {
   interestUnit: string;
   startDate: string;
   dueDate?: string | null;
+  isRecurringReminder?: boolean;
+  reminderBeforeDays?: number;
+  reminderFrequency?: string;
   note?: string;
   isCompleted: boolean;
   createdAt?: string;

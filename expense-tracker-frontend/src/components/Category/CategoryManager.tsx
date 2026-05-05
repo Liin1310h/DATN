@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Edit2, Trash2, LayoutGrid, List } from "lucide-react";
+import { Plus, Edit2, Trash2, LayoutGrid, List } from "lucide-react";
 import {
   getCategories,
   deleteCategory,
+  createCategory,
+  changeCategory,
 } from "../../services/categoriesService";
 import { DynamicIcon } from "../Base/DynamicIcon";
 import AddCategoryModal from "./AddCategoryModal";
@@ -179,9 +181,19 @@ export default function CategoryManager() {
 
       <AddCategoryModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedCategory(null);
+        }}
         onSuccess={loadData}
         initialData={selectedCategory}
+        onSubmit={async (payload, id) => {
+          if (id) {
+            await changeCategory(id, { id, ...payload });
+          } else {
+            await createCategory(payload);
+          }
+        }}
       />
     </div>
   );

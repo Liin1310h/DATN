@@ -25,6 +25,11 @@ export default function EditTransactionModal({
 
   const handleUpdate = async (payload: any) => {
     setLoading(true);
+    if (payload.transactionFromDate !== null)
+      payload.transactionDate = new Date(
+        payload.transactionFromDate,
+      ).toISOString();
+
     try {
       await updateTransaction(transactionData.id, payload);
 

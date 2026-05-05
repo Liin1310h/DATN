@@ -14,7 +14,12 @@ export default function RegisterPage() {
 
   const handleRegister = async () => {
     if (!fullName || !email || !password) {
-      setError("Please fill all fields");
+      setError("Please fill all fields.");
+      return;
+    }
+
+    if (password.trim().length < 6) {
+      setError("Password must be at least 6 characters");
       return;
     }
 
@@ -22,12 +27,12 @@ export default function RegisterPage() {
       setLoading(true);
       setError("");
 
-      await register(email, password, fullName);
+      await register(email.trim(), password, fullName.trim());
 
       navigate("/");
     } catch (err) {
-      setError("Register failed");
-      console.log(err);
+      setError("");
+      console.error(err);
     } finally {
       setLoading(false);
     }

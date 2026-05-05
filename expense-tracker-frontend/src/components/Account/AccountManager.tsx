@@ -5,7 +5,6 @@ import {
   CreditCard,
   Banknote,
   Edit2,
-  Search,
   LayoutGrid,
   List,
   RefreshCw,

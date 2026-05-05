@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { X, User, Percent, CalendarDays, MessageSquare } from "lucide-react";
+import {
+  X,
+  User,
+  Percent,
+  CalendarDays,
+  MessageSquare,
+  BellRing,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from "../../hook/useTranslation";
 import { updateLoan } from "../../services/loanService";
@@ -16,10 +23,7 @@ const INTEREST_UNITS = [
   { value: "percent_per_year", label: "% / năm" },
 ];
 
-type InterestUnit =
-  | "percentage_per_month"
-  | "percentage_per_year"
-  | "fixed_amount";
+type InterestUnit = "percentage_per_month" | "percentage_per_year";
 function toLocalDateInput(date?: string | null) {
   if (!date) return "";
   const d = new Date(date);
@@ -30,7 +34,7 @@ function toLocalDateInput(date?: string | null) {
 }
 
 export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
 
   const [counterPartyName, setCounterPartyName] = useState("");
   const [interestRate, setInterestRate] = useState("");
@@ -40,6 +44,11 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
   const [dueDate, setDueDate] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+
+  //Reminder
+  const [isRecurringReminder, setIsRecurringReminder] = useState(false);
+  const [reminderBeforeDays, setReminderBeforeDays] = useState("");
+  const [reminderFrequency, setReminderFrequency] = useState("Monthly");
 
   useEffect(() => {
     setCounterPartyName(loan.counterPartyName || "");
@@ -51,15 +60,18 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
     setInterestUnit(loan.interestUnit || "percent_per_month");
     setDueDate(toLocalDateInput(loan.dueDate));
     setNote(loan.note || "");
+    setIsRecurringReminder(loan.isRecurringReminder || false);
+    setReminderBeforeDays(
+      loan.reminderBeforeDays !== undefined && loan.reminderBeforeDays !== null
+        ? String(loan.reminderBeforeDays)
+        : "0",
+    );
+    setReminderFrequency(loan.reminderFrequency || "Monthly");
   }, [loan]);
 
   const handleSubmit = async () => {
     if (!counterPartyName.trim()) {
-      toast.error(
-        language === "vi"
-          ? "Vui lòng nhập tên đối tác."
-          : "Please enter counterparty name.",
-      );
+      toast.error(t.loan.errorCounterparty);
       return;
     }
 
@@ -67,9 +79,7 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
       interestRate.trim() === "" ? 0 : Number(interestRate);
 
     if (Number.isNaN(parsedInterestRate) || parsedInterestRate < 0) {
-      toast.error(
-        language === "vi" ? "Lãi suất không hợp lệ." : "Invalid interest rate.",
-      );
+      toast.error(t.loan.errorInvalidInterestRate);
       return;
     }
 
@@ -79,27 +89,35 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
       const localDate = new Date(`${dueDate}T00:00:00`);
 
       if (Number.isNaN(localDate.getTime())) {
-        toast.error(
-          language === "vi"
-            ? "Ngày đến hạn không hợp lệ."
-            : "Invalid due date.",
-        );
+        toast.error(t.loan.errorInvalidDueDate);
         return;
       }
 
       if (loan.startDate) {
         const start = new Date(loan.startDate);
         if (!Number.isNaN(start.getTime()) && localDate < start) {
-          toast.error(
-            language === "vi"
-              ? "Ngày đến hạn phải sau ngày bắt đầu."
-              : "Due date must be after start date.",
-          );
+          toast.error(t.loan.errorDueDateAfterStartDate);
           return;
         }
       }
 
       dueDateIso = localDate.toISOString();
+    }
+
+    const parsedReminderBeforeDays =
+      reminderBeforeDays.trim() === "" ? 0 : Number(reminderBeforeDays);
+
+    if (
+      isRecurringReminder &&
+      (Number.isNaN(parsedReminderBeforeDays) || parsedReminderBeforeDays < 0)
+    ) {
+      toast.error("Số ngày nhắc trước hạn không hợp lệ.");
+      return;
+    }
+
+    if (isRecurringReminder && !dueDate) {
+      toast.error("Cần có ngày hạn trả để bật nhắc hạn.");
+      return;
     }
 
     setLoading(true);
@@ -110,13 +128,13 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
         interestUnit,
         dueDate: dueDateIso,
         note: note.trim(),
+
+        isRecurringReminder,
+        reminderBeforeDays: parsedReminderBeforeDays,
+        reminderFrequency,
       });
 
-      toast.success(
-        language === "vi"
-          ? "Cập nhật khoản vay thành công."
-          : "Loan updated successfully.",
-      );
+      toast.success(t.loan.updatedSuccessfully);
 
       await onSuccess();
       onClose();
@@ -130,11 +148,9 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-xl rounded-[1.5rem] bg-white dark:bg-[#0F172A] shadow-2xl overflow-hidden">
-        <div className="relative px-6 py-5 text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-black ">
-            {language === "vi" ? "Sửa khoản vay" : "Edit loan"}
-          </h2>
+      <div className="w-full max-w-xl max-h-[90vh] rounded-[1.5rem] bg-white dark:bg-[#0F172A] shadow-2xl overflow-hidden flex flex-col">
+        <div className="relative px-6 py-5 text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <h2 className="text-lg font-black ">{t.loan.editLoan}</h2>
 
           <button
             onClick={onClose}
@@ -145,11 +161,11 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 overflow-y-auto flex-1">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-1">
               <User size={12} />
-              {language === "vi" ? "Đối tác" : "Counterparty"}
+              {t.loan.counterParty}
             </label>
             <input
               type="text"
@@ -163,7 +179,7 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-1">
                 <Percent size={12} />
-                {language === "vi" ? "Lãi suất" : "Interest rate"}
+                {t.loan.interestRate}
               </label>
               <input
                 type="number"
@@ -178,7 +194,7 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-1">
                 <Percent size={12} />
-                {language === "vi" ? "Đơn vị lãi" : "Interest unit"}
+                {t.loan.interestUnit}
               </label>
               <select
                 value={interestUnit}
@@ -197,7 +213,7 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-1">
               <CalendarDays size={12} />
-              {language === "vi" ? "Ngày đến hạn" : "Due date"}
+              {t.loan.dueDate}
             </label>
             <input
               type="date"
@@ -205,11 +221,72 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
               onChange={(e) => setDueDate(e.target.value)}
               className="w-full bg-white dark:bg-gray-900 dark:text-white border border-gray-100 dark:border-gray-800 py-2 px-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <p className="text-xs text-gray-400">
-              {language === "vi"
-                ? "Có thể để trống nếu khoản vay chưa có thời hạn cụ thể."
-                : "Leave empty if this loan has no fixed due date."}
-            </p>
+            <p className="text-xs text-gray-400">{t.loan.leaveEmptyDueDate}</p>
+          </div>
+
+          <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2">
+                <BellRing size={13} className="text-amber-500" />
+                Nhắc hạn khoản vay
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setIsRecurringReminder(!isRecurringReminder)}
+                className={`relative w-12 h-7 rounded-full transition-all ${
+                  isRecurringReminder
+                    ? "bg-indigo-600"
+                    : "bg-gray-300 dark:bg-gray-700"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all ${
+                    isRecurringReminder ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {isRecurringReminder && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 uppercase">
+                    Nhắc trước
+                  </label>
+
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      value={reminderBeforeDays}
+                      onChange={(e) => setReminderBeforeDays(e.target.value)}
+                      className="w-full bg-white dark:bg-gray-950 dark:text-white border border-gray-100 dark:border-gray-800 py-2 px-4 pr-12 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-black uppercase">
+                      ngày
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-gray-400 uppercase">
+                    Chu kỳ nhắc
+                  </label>
+
+                  <select
+                    value={reminderFrequency}
+                    onChange={(e) => setReminderFrequency(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-950 dark:text-white border border-gray-100 dark:border-gray-800 py-2 px-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="Daily">Hằng ngày</option>
+                    <option value="Weekly">Hằng tuần</option>
+                    <option value="Monthly">Hằng tháng</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -226,7 +303,8 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
             disabled={loading}
@@ -244,11 +322,7 @@ export default function EditLoanModal({ loan, onClose, onSuccess }: Props) {
                 : "bg-indigo-600 hover:bg-indigo-700"
             }`}
           >
-            {loading
-              ? t.common.loading
-              : language === "vi"
-                ? "Lưu thay đổi"
-                : "Save changes"}
+            {loading ? t.common.loading : t.common.saveChanges}
           </button>
         </div>
       </div>

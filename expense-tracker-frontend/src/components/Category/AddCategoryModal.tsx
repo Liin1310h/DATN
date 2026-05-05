@@ -1,21 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { X, Palette, Search, Plus } from "lucide-react";
-import { DynamicIcon } from "../Base/DynamicIcon";
-import {
-  changeCategory,
-  createCategory,
-} from "../../services/categoriesService";
-import type { Category } from "../../types/category";
-import toast from "react-hot-toast";
 import { HexColorPicker } from "react-colorful";
+import toast from "react-hot-toast";
+import { DynamicIcon } from "../Base/DynamicIcon";
+import type { Category } from "../../types/category";
+
+type CategoryModalPayload = {
+  name: string;
+  icon: string;
+  color: string;
+};
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
-  initialData?: Category | null;
+  onSuccess?: () => void;
+  initialData?: Partial<Category> | null;
+  onSubmit: (payload: CategoryModalPayload, id?: number) => Promise<void>;
+  title?: string;
+  submitText?: string;
 }
 
-// Danh sách icon gợi ý để người dùng chọn
 const AVAILABLE_ICONS = [
   "Utensils",
   "ShoppingBag",
@@ -47,9 +52,10 @@ const AVAILABLE_ICONS = [
   "Wallet",
   "Beer",
   "Pizza",
+  "Tag",
+  "Laptop",
 ];
 
-// Danh sách màu sắc
 const AVAILABLE_COLORS = [
   "#6366f1",
   "#8b5cf6",
@@ -74,17 +80,32 @@ export default function AddCategoryModal({
   onClose,
   onSuccess,
   initialData,
+  onSubmit,
+  title,
+  submitText,
 }: Props) {
   const [name, setName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("Tag");
   const [selectedColor, setSelectedColor] = useState("#6366f1");
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [showPicker, setShowPicker] = useState(false);
+
   const pickerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    setName(initialData?.name || "");
+    setSelectedIcon(initialData?.icon || "Tag");
+    setSelectedColor(initialData?.color || "#6366f1");
+    setSearchTerm("");
+    setShowPicker(false);
+  }, [initialData, isOpen]);
+
+  useEffect(() => {
+    if (!showPicker) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (
         pickerRef.current &&
@@ -94,66 +115,79 @@ export default function AddCategoryModal({
       }
     };
 
-    if (showPicker) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showPicker]);
 
-  useEffect(() => {
-    if (initialData) {
-      setName(initialData.name);
-      setSelectedIcon(initialData.icon || "Tag");
-      setSelectedColor(initialData.color || "#6366f1");
-    } else {
-      setName("");
-      setSelectedIcon("Tag");
-      setSelectedColor("#6366f1");
-    }
-  }, [initialData, isOpen]);
+  const filteredIcons = useMemo(() => {
+    return AVAILABLE_ICONS.filter((icon) =>
+      icon.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [searchTerm]);
 
-  if (!isOpen) return null;
+  const modalTitle =
+    title || (initialData?.id ? "Chỉnh sửa danh mục" : "Tạo danh mục mới");
 
-  //   1. Hàm lọc icon theo tìm kiếm
-  const filteredIcons = AVAILABLE_ICONS.filter((icon) =>
-    icon.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const modalSubmitText =
+    submitText ||
+    (isSubmitting
+      ? "ĐANG LƯU..."
+      : initialData?.id
+        ? "CẬP NHẬT"
+        : "LƯU DANH MỤC");
+
+  const resetState = () => {
+    setName("");
+    setSelectedIcon("Tag");
+    setSelectedColor("#6366f1");
+    setSearchTerm("");
+    setShowPicker(false);
+  };
+
+  const handleClose = () => {
+    if (isSubmitting) return;
+    resetState();
+    onClose();
+  };
 
   const handleSubmit = async () => {
-    if (!name.trim()) return toast.error("Vui lòng nhập tên danh mục");
+    if (!name.trim()) {
+      toast.error("Vui lòng nhập tên danh mục");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const payload = {
-        id: initialData?.id,
+      const payload: CategoryModalPayload = {
         name: name.trim(),
         icon: selectedIcon,
         color: selectedColor,
       };
 
-      if (initialData) {
-        await changeCategory(initialData.id, payload);
-      } else {
-        await createCategory(payload);
-      }
-
-      onSuccess();
-      onClose();
-    } catch (error) {
-      toast.error(`Lỗi ${error}. Vui lòng thử lại!`);
+      await onSubmit(payload, initialData?.id);
+      onSuccess?.();
+      handleClose();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Có lỗi xảy ra. Vui lòng thử lại!",
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
+
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[100] h-[101%] flex items-end justify-center bg-black/40 backdrop-blur-sm p-4 -translate-y-8"
-      onClick={onClose}
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={handleClose}
     >
       <div
         className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-300 overflow-hidden flex flex-col max-h-[90vh]"
@@ -162,40 +196,46 @@ export default function AddCategoryModal({
         {/* Header */}
         <div className="flex justify-between items-center mb-6 shrink-0">
           <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gray-800 dark:text-white">
-            {initialData ? "Chỉnh sửa danh mục" : "Tạo danh mục mới"}
+            {modalTitle}
           </h2>
+
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-full transition-colors"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="p-2 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-800 rounded-full transition-colors disabled:opacity-50"
           >
             <X size={20} />
           </button>
         </div>
 
         <div className="overflow-y-auto pr-2 custom-scrollbar space-y-6">
-          {/* Preview & Name Input */}
-          <div className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/50 p-2 rounded-3xl border border-gray-100 dark:border-gray-800 transition-all">
+          {/* Preview + Name */}
+          <div className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-3xl border border-gray-100 dark:border-gray-800 transition-all">
             <div
-              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
               style={{ backgroundColor: selectedColor }}
             >
-              <DynamicIcon name={selectedIcon} size={20} color="#fff" />
+              <DynamicIcon name={selectedIcon} size={22} color="#fff" />
             </div>
+
             <input
               type="text"
               placeholder="Tên danh mục..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="flex-1 bg-transparent text-base font-bold outline-none dark:text-white"
+              maxLength={100}
             />
           </div>
 
-          {/* COLOR SECTION */}
+          {/* Color section */}
           <div className="space-y-3">
             <div className="flex justify-between items-center px-2">
               <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-2">
-                <Palette size={12} /> Chọn màu sắc
+                <Palette size={12} />
+                Chọn màu sắc
               </label>
+
               <div className="relative w-7 h-7">
                 <input
                   type="color"
@@ -204,14 +244,13 @@ export default function AddCategoryModal({
                   className="absolute inset-0 w-full h-full cursor-pointer opacity-0 z-10"
                 />
                 <div
-                  className="w-full h-full rounded-full border-2 border-white dark:border-gray-800 shadow-sm transition-colors"
+                  className="w-full h-full rounded-full border-2 border-white dark:border-gray-800 shadow-sm"
                   style={{ backgroundColor: selectedColor }}
                 />
               </div>
             </div>
 
             <div className="relative">
-              {/* LIST COLOR */}
               <div
                 className="flex flex-nowrap gap-3 p-2 overflow-x-auto custom-scrollbar no-scrollbar scroll-smooth items-center"
                 style={{ WebkitOverflowScrolling: "touch" }}
@@ -219,6 +258,7 @@ export default function AddCategoryModal({
                 {AVAILABLE_COLORS.map((color) => (
                   <button
                     key={color}
+                    type="button"
                     onClick={() => setSelectedColor(color)}
                     className={`w-7 h-7 rounded-full border-2 transition-all flex-shrink-0 ${
                       selectedColor === color
@@ -229,22 +269,23 @@ export default function AddCategoryModal({
                   />
                 ))}
 
-                {/* BUTTON PICKER */}
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowPicker((prev) => !prev);
                   }}
                   className="w-7 h-7 flex items-center justify-center rounded-full border border-dashed border-gray-300 dark:text-white dark:border-gray-400 flex-shrink-0 hover:scale-110 transition-all"
                 >
-                  <Plus />
+                  <Plus size={16} />
                 </button>
               </div>
+
               {showPicker && (
                 <div
                   ref={pickerRef}
                   onClick={(e) => e.stopPropagation()}
-                  className="fixed bottom-[350px] right-[300px] z-[9999] bg-white dark:bg-gray-900 p-3 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700"
+                  className="absolute right-0 top-full mt-3 z-[9999] bg-white dark:bg-gray-900 p-3 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700"
                 >
                   <HexColorPicker
                     color={selectedColor}
@@ -255,7 +296,7 @@ export default function AddCategoryModal({
             </div>
           </div>
 
-          {/* ICON SECTION */}
+          {/* Icon section */}
           <div className="space-y-3">
             <div className="relative px-2">
               <Search
@@ -267,13 +308,15 @@ export default function AddCategoryModal({
                 placeholder="Tìm biểu tượng..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-gray-100 dark:bg-gray-800 p-3 pl-10 rounded-xl text-xs font-bold outline-none"
+                className="w-full bg-gray-100 dark:bg-gray-800 p-3 pl-10 rounded-xl text-xs font-bold outline-none dark:text-white"
               />
             </div>
-            <div className="grid grid-cols-7 gap-2 justify-items-center ">
+
+            <div className="grid grid-cols-7 gap-2 justify-items-center">
               {filteredIcons.map((icon) => (
                 <button
                   key={icon}
+                  type="button"
                   onClick={() => setSelectedIcon(icon)}
                   className={`w-full max-w-[48px] aspect-square rounded-2xl flex items-center justify-center transition-all ${
                     selectedIcon === icon
@@ -289,10 +332,16 @@ export default function AddCategoryModal({
                 </button>
               ))}
             </div>
+
+            {!filteredIcons.length && (
+              <div className="text-center text-xs text-gray-400 py-4 font-bold">
+                Không tìm thấy biểu tượng phù hợp
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Footer Action */}
+        {/* Footer */}
         <div className="pt-6 shrink-0">
           <button
             onClick={handleSubmit}
@@ -301,11 +350,7 @@ export default function AddCategoryModal({
               isSubmitting ? "bg-gray-400" : "bg-indigo-600 hover:bg-indigo-700"
             }`}
           >
-            {isSubmitting
-              ? "ĐANG LƯU..."
-              : initialData
-                ? "CẬP NHẬT"
-                : "LƯU DANH MỤC"}
+            {modalSubmitText}
           </button>
         </div>
       </div>
