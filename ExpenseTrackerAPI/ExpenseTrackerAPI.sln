@@ -1,8 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.5.2.0
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11716.218
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseTrackerAPI", "ExpenseTrackerAPI.csproj", "{278E6EE0-97A3-E7D7-9D40-BAB705DFA0CE}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "MLServer", "..\MLServer\MLServer.pyproj", "{ABE19EC1-5558-46FB-B776-D1E8C2730C16}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "OCRServer", "..\OCRServer\OCRServer.pyproj", "{DD54371B-EED8-4BAE-A446-F2A1E803EEEC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,6 +18,10 @@ Global
 		{278E6EE0-97A3-E7D7-9D40-BAB705DFA0CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{278E6EE0-97A3-E7D7-9D40-BAB705DFA0CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{278E6EE0-97A3-E7D7-9D40-BAB705DFA0CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ABE19EC1-5558-46FB-B776-D1E8C2730C16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ABE19EC1-5558-46FB-B776-D1E8C2730C16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD54371B-EED8-4BAE-A446-F2A1E803EEEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD54371B-EED8-4BAE-A446-F2A1E803EEEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

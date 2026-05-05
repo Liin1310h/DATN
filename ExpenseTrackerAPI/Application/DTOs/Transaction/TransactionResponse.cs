@@ -19,4 +19,5 @@ public class TransactionResponse
     public int? ToAccountId { get; set; }
     public string? AccountName { get; set; }
     public LoanDto? Loan { get; set; }
+    public List<string>? ImageUrls { get; set; }
 }

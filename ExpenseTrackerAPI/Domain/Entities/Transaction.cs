@@ -50,9 +50,9 @@ public class Transaction
     [Required]
     public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
     /// <summary>
-    /// Link ảnh
+    /// Danh sách ảnh hóa đơn
     /// </summary>
-    public string ImageUrl { get; set; } = string.Empty; // Ảnh hóa đơn
+    public virtual ICollection<TransactionImage> TransactionImages { get; set; } = new List<TransactionImage>();
     /// <summary>
     /// Loại giao dịch
     /// "expense", "income", "lend", "borrow", "transfer"

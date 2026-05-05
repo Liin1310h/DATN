@@ -15,6 +15,10 @@ public class AppDbContext : DbContext
     public DbSet<RepaymentSchedule> RepaymentSchedules { get; set; }
     public DbSet<UserSetting> UserSettings { get; set; }
     public DbSet<Budget> Budgets { get; set; }
+    public DbSet<PersonalCategoryRule> PersonalCategoryRules { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
+    public DbSet<PushSubscriptionEntity> PushSubscriptions { get; set; }
+    public DbSet<TransactionImage> TransactionImages { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -46,6 +50,18 @@ public class AppDbContext : DbContext
             entity.Property(t => t.BalanceAfter).HasPrecision(18, 2);
         });
 
+        // --- Cấu hình TransactionImage ---
+        modelBuilder.Entity<TransactionImage>(entity =>
+        {
+            entity.HasOne(i => i.Transaction)
+                .WithMany(t => t.TransactionImages)
+                .HasForeignKey(i => i.TransactionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(i => i.ImageUrl)
+                .HasMaxLength(500)
+                .IsRequired();
+        });
         // --- Cấu hình Loan ---
         modelBuilder.Entity<Loan>(entity =>
         {
@@ -98,13 +114,17 @@ public class AppDbContext : DbContext
             entity.Property(b => b.Amount).HasColumnType("numeric(15,2)");
         });
 
+        modelBuilder.Entity<PersonalCategoryRule>()
+            .HasIndex(x => new { x.UserId, x.Type, x.Keyword, x.CategoryId })
+            .IsUnique();
+
         // --- Dữ liệu Category mặc định ---
         modelBuilder.Entity<Category>().HasData(
             new Category { Id = 1, Name = "Ăn uống", Icon = "Utensils", Color = "#FF5733", UserId = null },
             new Category { Id = 2, Name = "Di chuyển", Icon = "Car", Color = "#33FF57", UserId = null },
             new Category { Id = 3, Name = "Mua sắm", Icon = "ShoppingBag", Color = "#3357FF", UserId = null },
-            new Category { Id = 4, Name = "Lương", Icon = "Banknote", Color = "#22c55e", UserId = null },
-            new Category { Id = 5, Name = "Vay nợ", Icon = "Landmark", Color = "#2563eb", UserId = null }
+            new Category { Id = 4, Name = "Giải trí", Icon = "Gamepad2", Color = "#22c55e", UserId = null },
+            new Category { Id = 5, Name = "Hoá đơn", Icon = "Receipt", Color = "#2563eb", UserId = null }
         );
     }
 }

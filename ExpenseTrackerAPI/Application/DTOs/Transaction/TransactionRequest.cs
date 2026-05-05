@@ -17,4 +17,8 @@ public class TransactionRequest
     public int? CategoryId { get; set; }
     public int? LoanId { get; set; }
     public LoanUpdateRequest? Loan { get; set; }
+    /// <summary>
+    /// Danh sách URL ảnh hóa đơn (0 đến nhiều ảnh)
+    /// </summary>
+    public List<string>? ImageUrls { get; set; }
 }

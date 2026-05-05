@@ -1,5 +1,5 @@
 using ExpenseTrackerAPI.Application.DTOs;
-using ExpenseTrackerAPI.Application.Interfaces;
+using ExpenseTrackerAPI.Application.Interfaces.User;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 
@@ -25,7 +25,7 @@ namespace ExpenseTrackerAPI.Infrastructure.Services
         public async Task<Dictionary<string, decimal>> GetRatesAsync(string baseCurrency)
         {
             var cacheKey = $"rate_{baseCurrency}";
-            if (_cache.TryGetValue(cacheKey, out Dictionary<string, decimal> rates))
+            if (_cache.TryGetValue(cacheKey, out Dictionary<string, decimal>? rates) && rates != null)
             {
                 return rates;
             }

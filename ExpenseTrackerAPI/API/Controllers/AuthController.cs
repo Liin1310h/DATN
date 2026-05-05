@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using ExpenseTrackerAPI.Application.DTOs;
-using ExpenseTrackerAPI.Application.Interfaces;
+using ExpenseTrackerAPI.Application.Interfaces.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace ExpenseTrackerAPI.API.Controllers;
 
@@ -18,6 +20,9 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         try
         {
             var result = await _authService.RegisterAsync(registerDto);
@@ -33,6 +38,9 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         try
         {
             var token = await _authService.LoginAsync(loginDto);
@@ -46,5 +54,16 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { Message = ex.Message });
         }
+    }
+
+    [Authorize]
+    [HttpGet("/me")]
+    public IActionResult Me()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        return Ok(new { userId, email, role });
     }
 }

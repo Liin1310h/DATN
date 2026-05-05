@@ -63,6 +63,45 @@ namespace ExpenseTrackerAPI.Migrations
                     b.ToTable("Accounts");
                 });
 
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ActorUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AuditLog");
+                });
+
             modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.Budget", b =>
                 {
                     b.Property<int>("Id")
@@ -162,15 +201,15 @@ namespace ExpenseTrackerAPI.Migrations
                         {
                             Id = 4,
                             Color = "#22c55e",
-                            Icon = "Banknote",
-                            Name = "Lương"
+                            Icon = "Gamepad2",
+                            Name = "Giải trí"
                         },
                         new
                         {
                             Id = 5,
                             Color = "#2563eb",
-                            Icon = "Landmark",
-                            Name = "Vay nợ"
+                            Icon = "Receipt",
+                            Name = "Hoá đơn"
                         });
                 });
 
@@ -211,6 +250,12 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Property<bool>("IsLending")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsRecurringReminder")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("NextReminderDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Note")
                         .IsRequired()
                         .HasColumnType("text");
@@ -223,6 +268,13 @@ namespace ExpenseTrackerAPI.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("ReminderBeforeDays")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReminderFrequency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -234,6 +286,118 @@ namespace ExpenseTrackerAPI.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Loans");
+                });
+
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RedirectUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.PersonalCategoryRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Keyword")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("UserId", "Type", "Keyword", "CategoryId")
+                        .IsUnique();
+
+                    b.ToTable("PersonalCategoryRules");
+                });
+
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.PushSubscriptionEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Auth")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("P256dh")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PushSubscriptions");
                 });
 
             modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.RepaymentSchedule", b =>
@@ -321,10 +485,6 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Property<int?>("FromAccountId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<int?>("LoanId")
                         .HasColumnType("integer");
 
@@ -361,6 +521,32 @@ namespace ExpenseTrackerAPI.Migrations
                     b.ToTable("Transactions");
                 });
 
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.TransactionImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("TransactionId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransactionId");
+
+                    b.ToTable("TransactionImages");
+                });
+
             modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -384,6 +570,9 @@ namespace ExpenseTrackerAPI.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -450,11 +639,24 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.AuditLog", b =>
+                {
+                    b.HasOne("ExpenseTrackerAPI.Domain.Entities.User", null)
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("UserId");
+                });
+
             modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.Budget", b =>
                 {
                     b.HasOne("ExpenseTrackerAPI.Domain.Entities.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExpenseTrackerAPI.Domain.Entities.User", null)
+                        .WithMany("Budgets")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -474,6 +676,47 @@ namespace ExpenseTrackerAPI.Migrations
                 {
                     b.HasOne("ExpenseTrackerAPI.Domain.Entities.User", "User")
                         .WithMany("Loans")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.Notification", b =>
+                {
+                    b.HasOne("ExpenseTrackerAPI.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.PersonalCategoryRule", b =>
+                {
+                    b.HasOne("ExpenseTrackerAPI.Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExpenseTrackerAPI.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.PushSubscriptionEntity", b =>
+                {
+                    b.HasOne("ExpenseTrackerAPI.Domain.Entities.User", "User")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -529,6 +772,17 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.TransactionImage", b =>
+                {
+                    b.HasOne("ExpenseTrackerAPI.Domain.Entities.Transaction", "Transaction")
+                        .WithMany("TransactionImages")
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Transaction");
+                });
+
             modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.UserSetting", b =>
                 {
                     b.HasOne("ExpenseTrackerAPI.Domain.Entities.User", "User")
@@ -559,9 +813,18 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Navigation("Transactions");
                 });
 
+            modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.Transaction", b =>
+                {
+                    b.Navigation("TransactionImages");
+                });
+
             modelBuilder.Entity("ExpenseTrackerAPI.Domain.Entities.User", b =>
                 {
                     b.Navigation("Accounts");
+
+                    b.Navigation("AuditLogs");
+
+                    b.Navigation("Budgets");
 
                     b.Navigation("Categories");
 

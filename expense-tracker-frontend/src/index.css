@@ -1,7 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+:root {
+  --input-placeholder-color: #9ca3af;
+}
 
+.dark {
+  --input-placeholder-color: #6b7280;
+}
 /* Custom thanh scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -15,4 +21,28 @@
 ::-webkit-scrollbar-thumb {
   background: #9ca3af;
   border-radius: 999px;
+}
+
+/* Icon của thanh input date */
+input::placeholder {
+  color: var(--input-placeholder-color);
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(60%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(90%)
+    contrast(85%);
+  opacity: 0.8;
+}
+
+/* Ẩn spinner của input number */
+/* Chrome, Edge */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
 }

@@ -41,7 +41,19 @@ public class Loan
     public bool IsCompleted { get; set; } = false; // Đã trả hết nợ hay chưa
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
+    /// <summary>
+    /// Nhắc hạn khoản vay?
+    /// </summary>
+    public bool IsRecurringReminder { get; set; } = false;
+    /// <summary>
+    /// Nhắc trước bao nhiêu ngày
+    /// </summary>
+    public int ReminderBeforeDays { get; set; } = 0;
+    /// <summary>
+    /// Tần suất nhắc lại
+    /// </summary>
+    public string ReminderFrequency { get; set; } = "Monthly";
+    public DateTime? NextReminderDate { get; set; }
     [ForeignKey("UserId")]
     public virtual User? User { get; set; }
 
