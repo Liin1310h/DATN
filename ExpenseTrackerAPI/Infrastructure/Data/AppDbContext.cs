@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ExpenseTrackerAPI.Domain.Entities;
+using ExpenseTrackerAPI.Migrations;
 
 namespace ExpenseTrackerAPI.Infrastructure.Data;
 
@@ -19,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<PushSubscriptionEntity> PushSubscriptions { get; set; }
     public DbSet<TransactionImage> TransactionImages { get; set; }
+    public DbSet<ReceiptJobResult> ReceiptJobResults { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -117,7 +119,14 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PersonalCategoryRule>()
             .HasIndex(x => new { x.UserId, x.Type, x.Keyword, x.CategoryId })
             .IsUnique();
-
+        modelBuilder.Entity<ReceiptJobResult>(entity =>
+        {
+            entity.OwnsOne(e => e.Data, b =>
+            {
+                b.ToJson();
+                b.OwnsMany(d => d.Transactions);
+            });
+        });
         // --- Dữ liệu Category mặc định ---
         modelBuilder.Entity<Category>().HasData(
             new Category { Id = 1, Name = "Ăn uống", Icon = "Utensils", Color = "#FF5733", UserId = null },

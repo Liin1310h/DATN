@@ -1,11 +1,14 @@
 ﻿using ExpenseTrackerAPI.Application.DTOs.AI;
 using ExpenseTrackerAPI.Application.DTOs.Ocr;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
-using ExpenseTrackerAPI.Application.Interfaces.User;
-using Microsoft.AspNetCore.Rewrite;
+using ExpenseTrackerAPI.Application.Interfaces.OCR;
 
-namespace ExpenseTrackerAPI.Application.Services.Users
+namespace ExpenseTrackerAPI.Application.Services.OCR
 {
+    /// <summary>
+    /// Từ text (nhận từ OCRServer) trả về transaction 
+    /// (luồng OCR và dự đoán category)
+    /// </summary>
     public class ReceiptProcessingService : IReceiptProcessingService
     {
         private readonly IReceiptParserService _ruleParser;
@@ -19,7 +22,7 @@ namespace ExpenseTrackerAPI.Application.Services.Users
             _categoryService = categoryService;
         }
 
-        public async Task<ParsedReceiptDto> ProcessAsync(int userId,OcrResponseDto ocr)
+        public async Task<ParsedReceiptDto> ProcessAsync(int userId, OcrResponseDto ocr)
         {
             // 1. Rule parse trước
             var ruleResult = _ruleParser.Parse(ocr);
@@ -44,7 +47,7 @@ namespace ExpenseTrackerAPI.Application.Services.Users
                     var predict = await _categoryService.PredictAsync(userId, new()
                     {
                         Note = item.Name,
-                        Amount = item.Amount ??0,
+                        Amount = item.Amount ?? 0,
                         Type = "expense"
                     });
 
@@ -56,7 +59,7 @@ namespace ExpenseTrackerAPI.Application.Services.Users
 
             return finalResult;
         }
-        
+
         /// <summary>
         /// Merge kết quả rule + AI
         /// </summary>

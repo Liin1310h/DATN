@@ -1,9 +1,9 @@
 ﻿using ExpenseTrackerAPI.Application.DTOs.Ocr;
-using ExpenseTrackerAPI.Application.Interfaces.User;
+using ExpenseTrackerAPI.Application.Interfaces.OCR;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace ExpenseTrackerAPI.Controllers.User;
+namespace ExpenseTrackerAPI.Controllers.OCR;
 
 [ApiController]
 [Route("api/receipt-ocr")]

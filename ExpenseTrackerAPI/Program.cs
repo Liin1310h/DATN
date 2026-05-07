@@ -4,16 +4,16 @@ using ExpenseTrackerAPI.Application.Interfaces.Admin;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
 using ExpenseTrackerAPI.Application.Interfaces.Auth;
 using ExpenseTrackerAPI.Application.Interfaces.Notifications;
+using ExpenseTrackerAPI.Application.Interfaces.OCR;
 using ExpenseTrackerAPI.Application.Interfaces.User;
 using ExpenseTrackerAPI.Application.Services;
 using ExpenseTrackerAPI.Application.Services.Admin;
 using ExpenseTrackerAPI.Application.Services.AI;
 using ExpenseTrackerAPI.Application.Services.Auth;
-using ExpenseTrackerAPI.Application.Services.Users;
+using ExpenseTrackerAPI.Application.Services.OCR;
 using ExpenseTrackerAPI.Domain.Interfaces.Notifications;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using ExpenseTrackerAPI.Infrastructure.Services;
-using ExpenseTrackerAPI.Services.User;
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -38,7 +38,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
+            policy.WithOrigins("http://localhost:3000", "http://localhost:5174")
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();
@@ -104,10 +104,16 @@ builder.Services.AddScoped<ILoanReminderService, LoanReminderService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
-
+//---OCR---
+builder.Services.AddHttpClient<IOcrService, OcrService>(client =>
+{
+    var ocrUrl = builder.Configuration["OCR_URL"] ?? "http://ocr:8002/";
+    client.BaseAddress = new Uri(ocrUrl);
+    client.Timeout = TimeSpan.FromMinutes(5);
+});
 builder.Services.AddScoped<IReceiptParserService, ReceiptParserService>();
 builder.Services.AddScoped<IReceiptProcessingService, ReceiptProcessingService>();
-
+builder.Services.AddScoped<IReceiptTransactionFlowService, ReceiptTransactionFlowService>();
 //---Admin---
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
@@ -118,7 +124,8 @@ builder.Services.AddScoped<ICategoryPredictionService, CategoryPredictionService
 builder.Services.AddScoped<IPersonalCategoryRuleService, PersonalCategoryRuleService>();
 builder.Services.AddHttpClient<IGlobalCategoryMlService, GlobalCategoryMlService>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:8001");
+    var mlUrl = builder.Configuration["ML_URL"] ?? "http://ml-service:8001";
+    client.BaseAddress = new Uri(mlUrl);
 });
 builder.Services.AddHttpClient<ISemanticCategoryService, SemanticCategoryService>(client =>
 {
@@ -147,7 +154,24 @@ builder.Services.AddHangfireServer();
 
 
 var app = builder.Build();
-
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        // Lệnh này sẽ tự tạo Database và Bảng nếu chưa có dựa trên Migrations
+        if (context.Database.GetPendingMigrations().Any())
+        {
+            context.Database.Migrate();
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Một lỗi đã xảy ra khi khởi tạo database (Migration).");
+    }
+}
 // Hangfire Dashboard
 app.UseHangfireDashboard("/hangfire");
 
@@ -163,11 +187,15 @@ Hangfire.RecurringJob.AddOrUpdate<ILoanReminderService>(
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Expense Tracker API v1");
+        c.RoutePrefix = "swagger"; // Đảm bảo truy cập được tại /swagger
+    });
 }
 
 app.UseCors("AllowFrontend");
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

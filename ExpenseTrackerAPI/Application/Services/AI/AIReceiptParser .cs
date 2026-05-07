@@ -42,8 +42,9 @@ namespace ExpenseTrackerAPI.Application.Services.AI
         {
             try
             {
+                // Map JSON => object
                 var openAiResponse = System.Text.Json.JsonSerializer.Deserialize<OpenAIResponse>(json);
-
+                // Lấy nội dung
                 var content = openAiResponse?
                     .Choices?
                     .FirstOrDefault()?
@@ -87,7 +88,11 @@ namespace ExpenseTrackerAPI.Application.Services.AI
             return null;
         }
 
-
+        /// <summary>
+        /// Hàm xây prompt gửi lên AI
+        /// </summary>
+        /// <param name="rawText"></param>
+        /// <returns></returns>
         private string BuildPrompt(string rawText)
         {
             return $@"You are an AI that extracts structured data from Vietnamese receipts.

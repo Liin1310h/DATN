@@ -1,10 +1,10 @@
 ﻿using DocumentFormat.OpenXml.Vml;
 using ExpenseTrackerAPI.Application.DTOs.Ocr;
-using ExpenseTrackerAPI.Application.Interfaces.User;
+using ExpenseTrackerAPI.Application.Interfaces.OCR;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace ExpenseTrackerAPI.Services.User;
+namespace ExpenseTrackerAPI.Application.Services.OCR;
 
 public class ReceiptParserService : IReceiptParserService
 {
@@ -34,7 +34,10 @@ public class ReceiptParserService : IReceiptParserService
         result.TotalAmount = ExtractTotalAmount(lines, rawText);
         result.VatAmount = ExtractVatAmount(lines, rawText);
         result.Subtotal = ExtractSubtotal(lines, rawText);
-        result.Items = ExtractItems(lines);
+        result.Items = ExtractItems(lines)
+            .Where(x => !IsReceiptSummaryLine(x.Name))
+            .Where(x => result.TotalAmount == null || x.Amount <= result.TotalAmount)
+            .ToList();
 
         result.ParseConfidence = CalculateConfidence(result);
 
@@ -54,7 +57,7 @@ public class ReceiptParserService : IReceiptParserService
             Normalize(x).Contains("winmart") ||
             Normalize(x).Contains("circle") ||
             Normalize(x).Contains("bach hoa") ||
-            Normalize(x).Contains("cua hang")||
+            Normalize(x).Contains("cua hang") ||
             Normalize(x).Contains("coop") ||
             Normalize(x).Contains("lotte"));
 
@@ -132,20 +135,33 @@ public class ReceiptParserService : IReceiptParserService
     /// <returns></returns>
     private decimal? ExtractTotalAmount(List<string> lines, string rawText)
     {
-        var keywords = new[]
+        // Ưu tiên những dòng thể hiện số tiền khách phải trả/thanh toán cuối cùng
+        var paymentKeywords = new[]
         {
-            "tong tien thanh toan",
-            "tong ten thanh toan",
-            "tong tien",
-            "tong cong",
-            "thanh toan",
-            "total",
-            "amount"
-        };
+        "khach phai tra",
+        "khach phi tra",
+        "phai tra",
+        "tong tien thanh toan",
+        "tong ten thanh toan",
+        "thanh toan",
+        "tong cong",
+        "total",
+        "amount"
+    };
 
-        return ExtractAmountNearKeywords(lines, keywords) ?? ExtractBestAmount(lines);
+        var paymentTotal = ExtractAmountNearKeywords(lines, paymentKeywords);
+        if (paymentTotal.HasValue)
+            return paymentTotal;
+
+        // Fallback sau cùng mới xét tổng tiền chung
+        var fallbackKeywords = new[]
+        {
+        "tong tien",
+        "tong cong"
+    };
+
+        return ExtractAmountNearKeywords(lines, fallbackKeywords) ?? ExtractBestAmount(lines);
     }
-
     /// <summary>
     /// Xác định phí VAT
     /// </summary>
@@ -174,11 +190,14 @@ public class ReceiptParserService : IReceiptParserService
     {
         var keywords = new[]
         {
-            "cong tien hang",
-            "tien hang",
-            "subtotal",
-            "tam tinh"
-        };
+        "tong tien hang",
+        "tng tin hang",
+        "cong tien hang",
+        "tien hang",
+        "tin hang",
+        "subtotal",
+        "tam tinh"
+    };
 
         return ExtractAmountNearKeywords(lines, keywords);
     }
@@ -192,9 +211,6 @@ public class ReceiptParserService : IReceiptParserService
     {
         if (IsPhoneNumber(text)) return new List<decimal>();
         var matches = Regex.Matches(text, @"\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?|\d+");
-
-        if (!IsLikelyMoneyContext(text))
-            return new List<decimal>();
 
         return matches
             .Select(m => ParseMoney(m.Value))
@@ -212,46 +228,114 @@ public class ReceiptParserService : IReceiptParserService
     {
         var items = new List<ParsedReceiptItemDto>();
 
-        for (int i = 0; i < lines.Count; i++)
+        int startIndex = FindItemTableStartIndex(lines);
+
+        for (int i = startIndex; i < lines.Count; i++)
         {
             var nameLine = lines[i];
             var norm = Normalize(nameLine);
 
-            // STOP khi tới phần tổng kết
-            if (norm.Contains("tong") || norm.Contains("khachphai"))
+            // Gặp khu vực tổng tiền thì dừng hẳn
+            if (IsReceiptSummaryLine(nameLine))
                 break;
-            if (!HasProductLikeText(nameLine) || IsNonItemLine(nameLine))
+
+            if (!IsLikelyItemName(nameLine))
                 continue;
 
-            // tìm các dòng phía sau có số
-            var nextNumbers = new List<decimal>();
+            var blockLines = new List<string> { nameLine };
 
-            for (int j = i + 1; j < Math.Min(i + 6, lines.Count); j++)
+            // Gom các dòng phía sau: quantity, unitPrice, discount, amount
+            for (int j = i + 1; j < lines.Count && j < i + 7; j++)
             {
-                var amounts = ExtractAmounts(lines[j]);
-                if (amounts.Any())
-                    nextNumbers.AddRange(amounts);
+                var next = lines[j];
 
-                if (nextNumbers.Count >= 2) break;
+                if (IsReceiptSummaryLine(next))
+                    break;
+
+                // Nếu gặp tên sản phẩm mới thì dừng block hiện tại
+                if (HasProductLikeText(next) && IsLikelyItemName(next))
+                    break;
+
+                blockLines.Add(next);
             }
 
-            if (nextNumbers.Count >= 1)
+            var allNumbers = blockLines
+                .SelectMany(l => ExtractAllNumbers(l))
+                .ToList();
+
+            var moneyNumbers = allNumbers
+                .Where(x => x >= 1000)
+                .ToList();
+
+            if (!moneyNumbers.Any())
+                continue;
+
+            decimal? quantity = null;
+            decimal? unitPrice = null;
+            decimal amount;
+
+            // Case phổ biến OCR dạng:
+            // Tên sản phẩm / 2 / 450,000 / 0 / 900,000
+            var smallNumbers = allNumbers.Where(x => x > 0 && x < 100).ToList();
+
+            if (smallNumbers.Any())
+                quantity = smallNumbers.First();
+
+            amount = moneyNumbers.Last();
+
+            if (moneyNumbers.Count >= 2)
+                unitPrice = moneyNumbers.First();
+            else if (quantity.HasValue && quantity.Value > 0)
+                unitPrice = amount / quantity.Value;
+
+            // Validate: nếu có quantity và unitPrice thì amount phải gần đúng
+            if (quantity.HasValue && unitPrice.HasValue)
             {
-                items.Add(new ParsedReceiptItemDto
+                var expected = quantity.Value * unitPrice.Value;
+                var diff = Math.Abs(expected - amount);
+
+                // Cho phép lệch nhỏ do OCR/discount
+                if (diff > Math.Max(1000, amount * 0.1m))
                 {
-                    Name = CleanItemName(nameLine),
-                    UnitPrice = nextNumbers.Count >= 2 ? nextNumbers[0] : null,
-                    Amount = nextNumbers.Last(),
-                    Confidence = 0.7
-                });
-
-                i += 3; // skip block
+                    // Nếu không khớp thì vẫn giữ amount, nhưng giảm confidence
+                }
             }
+
+            var item = new ParsedReceiptItemDto
+            {
+                Name = CleanItemName(nameLine),
+                Quantity = quantity,
+                UnitPrice = unitPrice,
+                Amount = amount,
+                Confidence = CalculateItemConfidence(nameLine, allNumbers)
+            };
+
+            items.Add(item);
+
+            i += blockLines.Count - 1;
         }
 
         return items;
     }
 
+    /// <summary>
+    /// Hàm lấy tất cả số
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns></returns>
+    private List<decimal> ExtractAllNumbers(string text)
+    {
+        if (IsPhoneNumber(text))
+            return new List<decimal>();
+
+        var matches = Regex.Matches(text, @"\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?|\d+");
+
+        return matches
+            .Select(m => ParseMoney(m.Value))
+            .Where(x => x.HasValue)
+            .Select(x => x!.Value)
+            .ToList();
+    }
     #endregion
 
     #region Helper
@@ -348,6 +432,36 @@ public class ReceiptParserService : IReceiptParserService
         return null;
     }
     #endregion
+    #region Tìm vị trí bắt đầu của bảng
+    private int FindItemTableStartIndex(List<string> lines)
+    {
+        for (int i = 0; i < lines.Count; i++)
+        {
+            var norm = Normalize(lines[i]);
+
+            // Ưu tiên tìm cột thành tiền vì thường là header cuối của bảng
+            if (norm.Contains("t.tin") ||
+                norm.Contains("ttien") ||
+                norm.Contains("thanh tien"))
+            {
+                return i + 1;
+            }
+        }
+
+        // Nếu không thấy T.Tin thì tìm cụm SL/DG/CK gần nhau
+        for (int i = 0; i < lines.Count; i++)
+        {
+            var norm = Normalize(lines[i]);
+
+            if (norm == "sl")
+            {
+                return Math.Min(i + 4, lines.Count);
+            }
+        }
+
+        return 0;
+    }
+    #endregion
     #region Check
     /// <summary>
     /// Kiểm tra xem có chứa các từ trong blacklist keyword không
@@ -361,6 +475,35 @@ public class ReceiptParserService : IReceiptParserService
         return NonItemKeywords.Any(k => norm.Contains(k));
     }
 
+    /// <summary>
+    /// Check là tên sản phẩm
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns></returns>
+    private bool IsLikelyItemName(string text)
+    {
+        var norm = Normalize(text);
+
+        if (NonItemKeywords.Any(k => norm.Contains(k)))
+            return false;
+
+        if (norm.Length < 5)
+            return false;
+
+        // toàn chữ hoa + ngắn => header
+        if (text.ToUpper() == text && text.Length < 20)
+            return false;
+
+        // không chứa chữ => loại
+        if (!Regex.IsMatch(text, @"[a-zA-Z]"))
+            return false;
+
+        // loại các dòng kiểu viết tắt
+        if (Regex.IsMatch(text, @"^[A-Z\.]{2,}$"))
+            return false;
+
+        return true;
+    }
     /// <summary>
     /// check xem có sđt không
     /// </summary>
@@ -426,6 +569,42 @@ public class ReceiptParserService : IReceiptParserService
         return Regex.Replace(text, @"\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?|\d+", "")
             .Trim('-', ':', ' ', '.', ',');
     }
+
+    /// <summary>
+    /// Check xem có phải tổng hoá đơn k
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns></returns>
+    private bool IsReceiptSummaryLine(string text)
+    {
+        var norm = Normalize(text);
+
+        var summaryKeywords = new[]
+        {
+        "tong tien",
+        "tng tin",
+        "tong tien hang",
+        "tng tin hang",
+        "tong so luong",
+        "tng s lung",
+        "tong cong",
+        "chiet khau",
+        "chit khu",
+        "giam gia",
+        "phi giao",
+        "khach phai tra",
+        "khach phi tra",
+        "phai tra",
+        "tin khach dua",
+        "tien khach dua",
+        "tin mat",
+        "tien mat",
+        "tin tra li",
+        "tien tra lai"
+    };
+
+        return summaryKeywords.Any(k => norm.Contains(k));
+    }
     #endregion
 
     /// <summary>
@@ -433,6 +612,23 @@ public class ReceiptParserService : IReceiptParserService
     /// </summary>
     /// <param name="result"></param>
     /// <returns></returns>
+    private double CalculateItemConfidence(string name, List<decimal> numbers)
+    {
+        double score = 0.3;
+
+        if (name.Length > 5) score += 0.2;
+
+        if (numbers.Any(x => x > 0 && x < 100)) score += 0.15; // quantity
+
+        if (numbers.Any(x => x >= 1000)) score += 0.2; // money
+
+        if (numbers.Count >= 3) score += 0.15; // qty, unit price, amount
+
+        if (!NonItemKeywords.Any(k => Normalize(name).Contains(k)))
+            score += 0.2;
+
+        return Math.Min(score, 1.0);
+    }
     private double CalculateConfidence(ParsedReceiptDto result)
     {
         double score = 0.3;
@@ -443,8 +639,8 @@ public class ReceiptParserService : IReceiptParserService
         if (result.TotalAmount != null && result.TotalAmount > 0)
             score += 0.3;
 
-        if (result.Items.Count >= 2)
-            score += 0.2;
+        if (result.Items.Any(x => x.Amount > 0 && !string.IsNullOrWhiteSpace(x.Name)))
+            score += 0.1;
 
         return Math.Min(score, 1.0);
     }
@@ -532,13 +728,21 @@ public class ReceiptParserService : IReceiptParserService
     /// </summary>
     private static readonly string[] NonItemKeywords =
     {
-        "tong", "tien", "thue", "vat", "cong",
-        "chiet khau", "giam gia", "phi",
-        "khach", "tra", "dua",
-        "tien mat", "chuyen khoan",
-        "so luong", "tang",
-        "ma", "hoa don", "ngay",
-        "ttien", "t.tien"
-    };
+    "tong tien", "tng tin",
+    "tong so luong", "tng s lung",
+    "tien hang", "tin hang",
+    "thue", "vat",
+    "chiet khau", "chit khu",
+    "giam gia",
+    "phi giao",
+    "khach phai tra", "khach phi tra",
+    "tien mat", "tin mat",
+    "chuyen khoan",
+    "so luong", "s lung",
+    "hoa don", "ngay ban",
+    "ttien", "t.tien",
+    "tien khach dua", "tin khach dua",
+    "tien tra lai", "tin tra li"
+};
 
 }

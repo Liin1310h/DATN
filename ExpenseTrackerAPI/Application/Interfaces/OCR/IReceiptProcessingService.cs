@@ -1,6 +1,6 @@
 ﻿using ExpenseTrackerAPI.Application.DTOs.Ocr;
 
-namespace ExpenseTrackerAPI.Application.Interfaces.User
+namespace ExpenseTrackerAPI.Application.Interfaces.OCR
 {
     public interface IReceiptProcessingService
     {

@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ExpenseTrackerAPI.API.Controllers.AI;
-
+/// <summary>
+/// API train global ML cho admin
+/// </summary>
 [ApiController]
 [Route("api/ai/[controller]")]
 [Authorize(Roles = "Admin")]
