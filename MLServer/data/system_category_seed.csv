@@ -1,0 +1,482 @@
+note,type,amount,categoryId
+ăn phở bò,expense,45000,1
+ăn bún chả,expense,50000,1
+ăn sáng bánh mì,expense,25000,1
+cơm trưa văn phòng,expense,55000,1
+cơm tối gia đình,expense,90000,1
+cafe muối,expense,35000,1
+trà sữa,expense,45000,1
+đồ ăn vặt,expense,30000,1
+đi ăn lẩu,expense,350000,1
+đi ăn buffet,expense,450000,1
+nước ngọt,expense,20000,1
+đặt đồ ăn,expense,120000,1
+ăn gà rán,expense,99000,1
+ăn pizza,expense,180000,1
+bún bò huế,expense,50000,1
+bún riêu cua,expense,45000,1
+mì quảng,expense,55000,1
+phở gà,expense,45000,1
+cơm rang dưa bò,expense,65000,1
+bánh cuốn,expense,35000,1
+xôi sáng,expense,25000,1
+cháo sườn,expense,30000,1
+bánh ngọt,expense,80000,1
+trái cây,expense,120000,1
+đi ăn sushi,expense,350000,1
+ăn hải sản,expense,700000,1
+đặt cơm văn phòng,expense,60000,1
+uống trà đào,expense,45000,1
+cafe starbucks,expense,95000,1
+cà phê rang xay,expense,180000,1
+đi ăn nướng,expense,450000,1
+đồ nhậu,expense,250000,1
+ăn bánh mì pate,expense,25000,1
+sữa tươi,expense,40000,1
+ăn mì cay,expense,65000,1
+ăn bún đậu mắm tôm,expense,80000,1
+ăn nem nướng,expense,90000,1
+ăn chè thái,expense,40000,1
+ăn bánh xèo,expense,120000,1
+ăn lẩu thái,expense,380000,1
+ăn bánh tráng nướng,expense,30000,1
+ăn xúc xích,expense,25000,1
+uống sinh tố bơ,expense,55000,1
+uống nước ép cam,expense,60000,1
+thịt bò,expense,220000,1
+cá hồi,expense,350000,1
+rau củ,expense,90000,1
+mì tôm,expense,120000,1
+ăn kem,expense,45000,1
+ăn gỏi cuốn,expense,70000,1
+ăn bít tết,expense,450000,1
+ăn đồ chay,expense,85000,1
+bánh sinh nhật,expense,320000,1
+ăn bánh canh cua,expense,65000,1
+ăn hủ tiếu nam vang,expense,70000,1
+ăn cơm tấm sườn,expense,75000,1
+ăn bún cá,expense,60000,1
+ăn miến gà,expense,55000,1
+ăn nui xào bò,expense,85000,1
+ăn salad healthy,expense,95000,1
+uống matcha latte,expense,70000,1
+uống trà chanh,expense,25000,1
+uống cacao nóng,expense,45000,1
+hải sản chợ,expense,420000,1
+thịt heo,expense,180000,1
+gạo,expense,280000,1
+gia vị nấu ăn,expense,90000,1
+nước khoáng,expense,60000,1
+đặt pizza hut,expense,260000,1
+đặt kfc,expense,180000,1
+ăn buffet nướng,expense,520000,1
+ăn dimsum,expense,380000,1
+bánh trung thu,expense,450000,1
+ăn phở tái,expense,48000,1
+ăn phở chín,expense,50000,1
+ăn bún bò đặc biệt,expense,65000,1
+ăn cơm gà,expense,55000,1
+ăn cơm niêu,expense,120000,1
+ăn mì xào hải sản,expense,95000,1
+ăn cháo lòng,expense,45000,1
+ăn bánh mì trứng,expense,25000,1
+ăn bánh bao,expense,22000,1
+ăn bánh cuốn nóng,expense,40000,1
+uống cà phê highlands,expense,59000,1
+uống highlands freeze,expense,69000,1
+uống highlands trà sen,expense,55000,1
+uống starbucks latte,expense,95000,1
+uống trà sữa ,expense,65000,1
+uống nước mía,expense,20000,1
+uống sinh tố xoài,expense,45000,1
+Phúc Long,expense,55000,1
+Gong Cha,expense,60000,1
+Koi Thé,expense,65000,1
+The Alley,expense,75000,1
+Tocotoco,expense,35000,1
+Ding Tea,expense,40000,1
+Bobapop,expense,38000,1
+Phê La,expense,65000,1
+Katinat,expense,55000,1
+Mixue,expense,25000,1
+
+đổ xăng petrolimex,expense,80000,2
+đổ xăng pvoil,expense,90000,2
+đổ xăng shell,expense,85000,2
+grab bike đi làm,expense,38000,2
+grab bike đi học,expense,35000,2
+grab car đi sân bay,expense,280000,2
+be car đi họp,expense,120000,2
+taxi vinasun,expense,140000,2
+taxi grab về nhà,expense,95000,2
+vé xe bus tháng,expense,200000,2
+gửi xe máy văn phòng,expense,150000,2
+gửi xe trung tâm thương mại,expense,20000,2
+rửa xe máy gần nhà,expense,40000,2
+thay nhớt xe honda,expense,180000,2
+sửa xe máy bị thủng lốp,expense,70000,2
+vé máy bay vietjet,expense,1800000,2
+vé máy bay vietnamairlines,expense,3200000,2
+đi xe khách về quê,expense,280000,2
+thuê xe máy du lịch,expense,180000,2
+gọi xanh sm bike,expense,32000,2
+grab bike,expense,35000,2
+grab đi học,expense,40000,2
+taxi đi làm,expense,120000,2
+đổ xăng xe máy,expense,70000,2
+vé xe bus,expense,7000,2
+gửi xe,expense,10000,2
+rửa xe,expense,50000,2
+sửa xe máy,expense,300000,2
+thay dầu xe,expense,120000,2
+vé tàu,expense,250000,2
+vé máy bay,expense,1500000,2
+thuê xe,expense,500000,2
+đi xe khách,expense,180000,2
+phí cao tốc,expense,90000,2
+gọi be bike,expense,30000,2
+gọi be car đi sân bay,expense,260000,2
+gọi taxi mai linh,expense,140000,2
+vé xe điện nội khu,expense,10000,2
+thuê xe đạp công cộng,expense,30000,2
+xăng xe số,expense,70000,2
+thay ắc quy xe máy,expense,650000,2
+thay dầu ô tô,expense,950000,2
+cân bằng lốp,expense,250000,2
+vá lốp xe,expense,50000,2
+rửa xe detailing,expense,350000,2
+vé tàu hỏa,expense,650000,2
+vé máy bay công tác,expense,2800000,2
+đi xe khách giường nằm,expense,420000,2
+gửi xe trung tâm,expense,30000,2
+camera hành trình,expense,2200000,2
+mũ fullface,expense,1200000,2
+đi phượt bằng xe máy,expense,600000,2
+thuê xe tự lái cuối tuần,expense,2100000,2
+gọi grab đi ăn tối,expense,48000,2
+đi taxi về khuya,expense,170000,2
+gọi taxi ra bến xe,expense,150000,2
+grab car đi sân bay,expense,280000,2
+be bike đi làm,expense,35000,2
+xanh sm đi học,expense,45000,2
+vé tàu điện,expense,15000,2
+đổ xăng ô tô,expense,800000,2
+thay lốp xe,expense,1200000,2
+bảo dưỡng xe máy,expense,450000,2
+sửa phanh xe,expense,350000,2
+rửa ô tô,expense,100000,2
+gửi xe tháng,expense,300000,2
+phí gửi xe trung tâm thương mại,expense,20000,2
+đăng kiểm xe,expense,350000,2
+mũ bảo hiểm,expense,250000,2
+áo mưa đi xe,expense,80000,2
+vé xe limousine,expense,250000,2
+đi metro,expense,12000,2
+thuê xe máy,expense,150000,2
+gọi grab về nhà,expense,65000,2
+đi công tác bằng taxi,expense,220000,2
+đi xe ôm công nghệ,expense,30000,2
+gọi taxi công ty,expense,180000,2
+thuê xe đạp,expense,50000,2
+vé phà,expense,100000,2
+xăng xe ga,expense,90000,2
+sửa lốp xe máy,expense,80000,2
+thay nhớt xe,expense,150000,2
+dầu nhớt,expense,180000,2
+rửa xe máy,expense,40000,2
+rửa xe ô tô,expense,120000,2
+vé xe khách về quê,expense,280000,2
+đi xe buýt nhanh,expense,10000,2
+gửi xe bệnh viện,expense,15000,2
+phí gửi xe chung cư,expense,250000,2
+phụ kiện xe máy,expense,250000,2
+đổ xăng đi tỉnh,expense,250000,2
+thuê ô tô tự lái,expense,1800000,2
+đi phà qua đảo,expense,220000,2
+đặt xe sân bay,expense,300000,2
+gọi grabcar đi họp,expense,95000,2
+
+mua bàn học,expense,1500000,3
+mua tủ quần áo,expense,3500000,3
+mua giường ngủ,expense,4200000,3
+mua gối nằm,expense,250000,3
+mua chăn ga,expense,800000,3
+mua loa bluetooth,expense,650000,3
+mua ipad,expense,12000000,3
+mua máy ảnh,expense,18000000,3
+mua thẻ nhớ,expense,350000,3
+mua vali du lịch,expense,1200000,3
+mua dép lê,expense,120000,3
+mua đồ trang sức,expense,2500000,3
+mua nhẫn bạc,expense,600000,3
+mua vòng cổ,expense,900000,3
+mua son dưỡng,expense,180000,3
+mua toner,expense,350000,3
+mua serum,expense,520000,3
+mua quạt điện,expense,750000,3
+mua máy lọc không khí,expense,4500000,3
+mua máy hút bụi,expense,3800000,3
+mua váy,expense,420000,3
+mua túi xách,expense,850000,3
+mua son môi,expense,250000,3
+mua kem chống nắng,expense,300000,3
+mua laptop,expense,15000000,3
+mua màn hình máy tính,expense,3200000,3
+mua sạc điện thoại,expense,180000,3
+mua ốp lưng,expense,90000,3
+mua dép,expense,150000,3
+mua đồ gia dụng,expense,600000,3
+mua nồi chiên không dầu,expense,1800000,3
+mua máy sấy tóc,expense,550000,3
+mua ghế làm việc,expense,1200000,3
+mua đèn ngủ,expense,250000,3
+mua quà sinh nhật,expense,400000,3
+mua kính mắt,expense,700000,3
+mua đồng phục,expense,350000,3
+mua đồ thể thao,expense,500000,3
+mua dây sạc,expense,120000,3
+mua mỹ phẩm skincare,expense,650000,3
+mua sofa,expense,7800000,3
+mua bàn ăn,expense,4200000,3
+mua rèm cửa,expense,1500000,3
+mua chậu cây decor,expense,250000,3
+mua máy pha cà phê,expense,3200000,3
+mua nồi cơm điện,expense,1800000,3
+mua máy lạnh,expense,9500000,3
+mua tivi,expense,14500000,3
+mua tai nghe airpods,expense,4200000,3
+mua sạc dự phòng,expense,650000,3
+mua áo sơ mi,expense,450000,3
+mua quần tây,expense,520000,3
+mua giày sneaker,expense,2200000,3
+mua kính râm,expense,850000,3
+mua kem dưỡng da,expense,650000,3
+mua mặt nạ dưỡng da,expense,220000,3
+mua máy cạo râu,expense,1250000,3
+mua máy in,expense,2800000,3
+mua usb,expense,180000,3
+mua ổ cứng di động,expense,2650000,3
+mua áo shopee,expense,250000,3
+mua giày,expense,500000,3
+mua quần jean,expense,350000,3
+mua mỹ phẩm,expense,320000,3
+mua sữa rửa mặt,expense,150000,3
+mua tai nghe,expense,450000,3
+mua điện thoại,expense,5000000,3
+mua đồ decor phòng,expense,180000,3
+mua balo,expense,280000,3
+mua đồng hồ,expense,800000,3
+mua sách online,expense,120000,3
+mua bàn phím,expense,700000,3
+mua chuột máy tính,expense,250000,3
+mua áo khoác,expense,400000,3
+mua nước hoa,expense,650000,3
+mua áo shopee mall,expense,320000,3
+mua quần jean levis,expense,950000,3
+mua giày nike,expense,2500000,3
+mua giày adidas,expense,2200000,3
+mua mỹ phẩm laneige,expense,850000,3
+mua mỹ phẩm innisfree,expense,620000,3
+mua son dior,expense,1200000,3
+mua laptop dell,expense,18500000,3
+mua macbook,expense,32000000,3
+mua điện thoại iphone,expense,25000000,3
+mua samsung galaxy,expense,18000000,3
+mua airpods pro,expense,5200000,3
+mua tai nghe sony,expense,3500000,3
+mua bàn phím cơ,expense,1800000,3
+mua chuột logitech,expense,950000,3
+mua bàn học ikea,expense,2800000,3
+mua ghế gaming,expense,4200000,3
+mua vali locklock,expense,1200000,3
+mua túi xách charles keith,expense,2200000,3
+mua đồng hồ casio,expense,1800000,3
+
+xem phim cgv,expense,120000,4
+đi karaoke,expense,300000,4
+đi cắm trại,expense,500000,4
+đi picnic cuối tuần,expense,350000,4
+vé concert,expense,900000,4
+đi chơi với bạn,expense,400000,4
+chơi game,expense,100000,4
+nạp game,expense,200000,4
+đi du lịch,expense,2500000,4
+đi bar,expense,800000,4
+vé bóng đá,expense,250000,4
+đi bowling,expense,300000,4
+đi công viên,expense,200000,4
+thuê homestay,expense,1200000,4
+cà phê highlands,expense,59000,4
+đi xem kịch,expense,200000,4
+đi bảo tàng,expense,80000,4
+đi khu vui chơi,expense,300000,4
+đi hồ bơi,expense,120000,4
+đi spa thư giãn,expense,600000,4
+đi massage,expense,500000,4
+vé du lịch,expense,1500000,4
+book khách sạn,expense,1800000,4
+đặt resort cuối tuần,expense,2500000,4
+đi câu cá,expense,300000,4
+đi leo núi,expense,450000,4
+đi phượt,expense,700000,4
+board game,expense,350000,4
+đăng ký netflix,expense,260000,4
+đăng ký spotify,expense,59000,4
+game steam,expense,300000,4
+đi billiards,expense,180000,4
+tổ chức sinh nhật,expense,1200000,4
+đi chơi trung thu,expense,350000,4
+đi xem xiếc,expense,250000,4
+đi sở thú,expense,180000,4
+đi thủy cung,expense,320000,4
+đi công viên nước,expense,450000,4
+đi chèo sup,expense,700000,4
+đi camping,expense,850000,4
+đặt villa nghỉ dưỡng,expense,4200000,4
+đặt vé máy bay du lịch,expense,3200000,4
+đi tham quan thành phố,expense,250000,4
+đi xem ca nhạc,expense,950000,4
+vé rạp phim,expense,140000,4
+nạp app xem phim,expense,120000,4
+skin game,expense,450000,4
+đồ cosplay,expense,850000,4
+đi picnic biển,expense,650000,4
+đi sinh nhật,expense,780000,4
+đi nhậu cuối tuần,expense,900000,4
+đi nghỉ lễ,expense,2500000,4
+book homestay đà lạt,expense,1800000,4
+đi xem opera,expense,750000,4
+đi workshop gốm,expense,420000,4
+đi workshop vẽ tranh,expense,350000,4
+đi trượt băng,expense,280000,4
+đi leo núi trong nhà,expense,320000,4
+đi chèo kayak,expense,780000,4
+book villa biển,expense,5200000,4
+đặt vé disneyland,expense,3500000,4
+đi du thuyền,expense,2800000,4
+đi xem pháo hoa,expense,220000,4
+vé liveshow,expense,1650000,4
+nạp netflix premium,expense,260000,4
+nạp youtube premium,expense,79000,4
+battle pass game,expense,250000,4
+đi camping hồ,expense,950000,4
+đi tụ tập bạn bè,expense,650000,4
+đi bar lounge,expense,1350000,4
+đi nghỉ dưỡng cuối tuần,expense,3200000,4
+book khách sạn biển,expense,2400000,4
+xem phim cgv vincom,expense,140000,4
+xem phim lotte cinema,expense,130000,4
+đi karaoke icoool,expense,420000,4
+đi karaoke nnice,expense,380000,4
+đi cắm trại hồ trị an,expense,950000,4
+đi picnic công viên,expense,280000,4
+đi du lịch đà lạt,expense,3200000,4
+đi du lịch phú quốc,expense,6500000,4
+book homestay đà lạt,expense,1800000,4
+book resort phú quốc,expense,5200000,4
+đi bar cuối tuần,expense,950000,4
+đi pub với bạn bè,expense,780000,4
+đi chơi bowling,expense,320000,4
+đi chơi bida,expense,250000,4
+vé concert blackpink,expense,2500000,4
+vé ca nhạc,expense,1200000,4
+nạp game liên quân,expense,200000,4
+game steam sale,expense,350000,4
+đăng ký netflix premium,expense,260000,4
+xem phim,expense,260000,4
+
+tiền điện evn tháng này,expense,520000,5
+tiền nước sawaco,expense,130000,5
+đóng internet fpt tháng này,expense,250000,5
+đóng internet viettel tháng này,expense,220000,5
+nạp điện thoại viettel,expense,100000,5
+nạp điện thoại mobifone,expense,100000,5
+đóng tiền nhà tháng này,expense,3500000,5
+trả tiền thuê phòng trọ,expense,2200000,5
+đóng phí chung cư vinhomes,expense,980000,5
+đóng phí gửi xe tháng,expense,250000,5
+thanh toán tiền gas tháng,expense,320000,5
+đóng học phí kỳ mới,expense,8500000,5
+trả góp iphone,expense,2200000,5
+trả góp macbook,expense,3500000,5
+trả nợ thẻ tín dụng vpbank,expense,4500000,5
+trả nợ thẻ tín dụng techcombank,expense,3800000,5
+đóng bảo hiểm y tế năm nay,expense,980000,5
+đóng bảo hiểm xe máy honda,expense,150000,5
+phí duy trì tài khoản ngân hàng,expense,25000,5
+phí chuyển khoản liên ngân hàng,expense,11000,5
+đóng tiền điện tháng 7,expense,510000,5
+đóng tiền nước tháng 7,expense,128000,5
+thanh toán wifi tháng 7,expense,230000,5
+nạp cước điện thoại tháng,expense,150000,5
+trả tiền thuê nhà tháng này,expense,4200000,5
+đóng phí bảo trì chung cư,expense,720000,5
+đóng phí gửi xe máy tháng,expense,180000,5
+trả tiền gas gia đình,expense,340000,5
+đóng tiền rác,expense,90000,5
+đóng học phí đại học,expense,12500000,5
+trả nợ vay tiêu dùng,expense,3800000,5
+trả góp máy tính,expense,1450000,5
+đóng bảo hiểm xe ô tô,expense,4800000,5
+đóng bảo hiểm tai nạn,expense,980000,5
+thanh toán khoản vay mua nhà,expense,12500000,5
+đóng phí sms banking,expense,15000,5
+phí quản lý tài khoản,expense,25000,5
+phí chuyển tiền quốc tế,expense,120000,5
+thanh toán hóa đơn căn hộ,expense,1650000,5
+đóng combo internet truyền hình,expense,420000,5
+đóng tiền điện tháng 6,expense,490000,5
+đóng tiền nước tháng 6,expense,125000,5
+đóng internet tháng 6,expense,220000,5
+nạp sim điện thoại,expense,100000,5
+trả tiền thuê căn hộ,expense,6500000,5
+đóng phí dịch vụ tòa nhà,expense,950000,5
+đóng phí gửi xe ô tô,expense,1200000,5
+trả tiền gas tháng này,expense,280000,5
+đóng tiền vệ sinh,expense,120000,5
+đóng học phí khóa học,expense,1800000,5
+trả nợ thẻ tín dụng,expense,4500000,5
+trả góp xe máy,expense,1800000,5
+đóng bảo hiểm nhân thọ,expense,2500000,5
+đóng bảo hiểm sức khỏe,expense,1800000,5
+thanh toán khoản vay ngân hàng,expense,5500000,5
+đóng phí thường niên thẻ,expense,300000,5
+phí chuyển khoản ngân hàng,expense,15000,5
+phí rút tiền atm,expense,11000,5
+thanh toán hóa đơn chung cư,expense,1300000,5
+đóng tiền truyền hình internet,expense,350000,5
+tiền điện tháng này,expense,450000,5
+tiền nước,expense,120000,5
+đóng internet,expense,220000,5
+nạp điện thoại,expense,100000,5
+đóng tiền nhà,expense,2500000,5
+tiền thuê phòng,expense,3000000,5
+đóng bảo hiểm,expense,700000,5
+thanh toán wifi,expense,250000,5
+thanh toán điện thoại,expense,150000,5
+trả tiền điện nước,expense,600000,5
+đóng phí chung cư,expense,900000,5
+thanh toán hóa đơn,expense,500000,5
+đóng tiền mạng,expense,200000,5
+trả tiền gas,expense,350000,5
+đóng tiền truyền hình,expense,180000,5
+đóng tiền điện tháng 5,expense,520000,5
+đóng tiền nước tháng 5,expense,130000,5
+thanh toán internet fpt,expense,250000,5
+thanh toán internet viettel,expense,220000,5
+nạp data điện thoại,expense,90000,5
+trả tiền thuê nhà,expense,3500000,5
+trả tiền phòng trọ,expense,1800000,5
+đóng phí quản lý chung cư,expense,850000,5
+đóng tiền gửi xe chung cư,expense,250000,5
+thanh toán tiền gas,expense,320000,5
+đóng học phí em trai,expense,2500000,5
+đóng bảo hiểm xe máy,expense,150000,5
+đóng bảo hiểm y tế,expense,800000,5
+thanh toán thẻ tín dụng,expense,3000000,5
+trả góp điện thoại,expense,1200000,5
+trả góp laptop,expense,2500000,5
+đóng tiền truyền hình cáp,expense,180000,5
+đóng phí ngân hàng,expense,50000,5
+phí duy trì tài khoản,expense,30000,5
+thanh toán hóa đơn điện nước,expense,700000,5
