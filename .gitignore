@@ -19,7 +19,8 @@ obj/
 
 # logs
 *.log
-
+appsettings.Development.json
+appsettings.json
 # ======================
 # PYTHON (ML + OCR)
 # ======================
