@@ -10,21 +10,14 @@ import {
 } from "lucide-react";
 import { RepaymentModal } from "../Loan/RepaymentModal";
 import { DynamicIcon } from "../Base/DynamicIcon";
-import AIInputMenu from "../../components/AI/AIInputMenu";
 
 import { useSettings } from "../../context/SettingsContext";
 import { useLoanCalculator } from "../../hook/useLoanCalculator";
-import {
-  createCategory,
-  getCategories,
-} from "../../services/categoriesService";
+import { createCategory } from "../../services/categoriesService";
 import AddCategoryModal from "../../components/Category/AddCategoryModal";
 import type { Category } from "../../types/category";
-import { getAccounts } from "../../services/accountsService";
 import type { Account } from "../../types/account";
 import AddAccountModal from "../../components/Account/AddAccountModal";
-import VoiceModal from "../../components/AI/VoiceModal";
-import CameraModal from "../../components/AI/CameraModal";
 import LoanSection from "../../components/Transaction/LoanSection";
 import SearchableSelect from "../Base/SearchableSelect";
 import {
@@ -64,6 +57,9 @@ export interface TransactionFormSubmitData {
 }
 
 interface TransactionFormProps {
+  categories: Category[];
+  accounts: Account[];
+  onMetaChange?: () => Promise<void>;
   onSubmit: (data: TransactionFormSubmitData) => Promise<void>;
   loading: boolean;
   initialData?: any;
@@ -71,6 +67,9 @@ interface TransactionFormProps {
 }
 
 export default function TransactionForm({
+  categories,
+  accounts,
+  onMetaChange,
   onSubmit,
   loading,
   initialData,
@@ -78,11 +77,6 @@ export default function TransactionForm({
 }: TransactionFormProps) {
   const { t } = useTranslation();
   const { currency } = useSettings();
-  // const loading = externalLoading;
-  // ! Camera + Voice
-  const [isAIMenuOpen, setIsAIMenuOpen] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [showVoice, setShowVoice] = useState(false);
 
   //! TRANSACTION DATA
   const [type, setType] = useState("expense");
@@ -108,7 +102,6 @@ export default function TransactionForm({
   const [reminderBeforeDays, setReminderBeforeDays] = useState("");
   const [reminderFrequency, setReminderFrequency] = useState("Monthly");
   // ! CATEGORY STATE
-  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
@@ -118,7 +111,6 @@ export default function TransactionForm({
   const [showAddCategory, setShowAddCategory] = useState(false);
 
   // ! ACCOUNT STATE
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
     null,
   );
@@ -164,32 +156,6 @@ export default function TransactionForm({
     const local = new Date(date.getTime() - offset * 60000);
 
     return local.toISOString().slice(0, 16);
-  };
-  // TODO Load xử lý dữ liệu
-  const loadData = async () => {
-    try {
-      const [accData, catData] = await Promise.all([
-        getAccounts(),
-        getCategories(),
-      ]);
-
-      setAccounts(accData);
-      setCategories(catData);
-
-      setSearchTerm("");
-      setSearchAccTerm("");
-    } catch (error) {
-      console.log(t.category.error, error);
-      toast.error(t.common.error);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleAddSuccess = () => {
-    loadData();
   };
 
   // TODO Lấy tỷ giá khi Currency hoặc Account thay đổi
@@ -361,6 +327,29 @@ export default function TransactionForm({
     };
   }, [newPreviews]);
 
+  //TODO Hàm thêm category thành công
+  const handleAddCategorySuccess = async (newCategory?: Category) => {
+    await onMetaChange?.();
+
+    if (newCategory?.id) {
+      setSelectedCategoryId(newCategory.id);
+      setSearchTerm(newCategory.name);
+    }
+
+    setShowAddCategory(false);
+  };
+
+  // TODO Hàm thêm account thành công
+  const handleAddAccountSuccess = async (newAccount?: Account) => {
+    await onMetaChange?.();
+
+    if (newAccount?.id) {
+      setSelectedAccountId(newAccount.id);
+      setSearchAccTerm(newAccount.name);
+    }
+
+    setShowAddAccount(false);
+  };
   // TODO Hàm lưu
   const handleSave = async () => {
     const rawAmount = parseInputToNumber(amount, selectedCurrency);
@@ -815,13 +804,6 @@ export default function TransactionForm({
         </div>
       </div>
 
-      <AIInputMenu
-        isOpen={isAIMenuOpen}
-        setIsOpen={setIsAIMenuOpen}
-        onOpenCamera={() => setShowCamera(true)}
-        onOpenVoice={() => setShowVoice(true)}
-        position="right"
-      />
       <RepaymentModal
         isOpen={showSchedule}
         onClose={() => setShowSchedule(false)}
@@ -831,7 +813,7 @@ export default function TransactionForm({
       <AddCategoryModal
         isOpen={showAddCategory}
         onClose={() => setShowAddCategory(false)}
-        onSuccess={handleAddSuccess}
+        onSuccess={handleAddCategorySuccess}
         initialData={null}
         onSubmit={async (payload) => {
           await createCategory(payload);
@@ -840,11 +822,8 @@ export default function TransactionForm({
       <AddAccountModal
         isOpen={showAddAccount}
         onClose={() => setShowAddAccount(false)}
-        onSuccess={handleAddSuccess}
+        onSuccess={handleAddAccountSuccess}
       />
-      <CameraModal isOpen={showCamera} onClose={() => setShowCamera(false)} />
-
-      <VoiceModal isOpen={showVoice} onClose={() => setShowVoice(false)} />
     </>
   );
 }

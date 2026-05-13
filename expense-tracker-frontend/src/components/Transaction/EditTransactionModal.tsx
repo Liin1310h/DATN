@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import TransactionForm from "./TransactionForm";
 import { updateTransaction } from "../../services/transactionsService";
 import toast from "react-hot-toast";
 import { useTranslation } from "../../hook/useTranslation";
+import { getCategories } from "../../services/categoriesService";
+import { getAccounts } from "../../services/accountsService";
 
 interface EditTransactionModalProps {
   isOpen: boolean;
@@ -20,6 +22,34 @@ export default function EditTransactionModal({
 }: EditTransactionModalProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [metaLoading, setMetaLoading] = useState(false);
+
+  const [categories, setCategories] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+
+  const loadMetaData = async () => {
+    try {
+      setMetaLoading(true);
+      const [categoryData, accountData] = await Promise.all([
+        getCategories(),
+        getAccounts(),
+      ]);
+
+      setCategories(categoryData);
+      setAccounts(accountData);
+    } catch (error) {
+      console.error("Load metadata error:", error);
+      toast.error("Không thể tải danh mục hoặc tài khoản");
+    } finally {
+      setMetaLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadMetaData();
+    }
+  }, [isOpen]);
 
   if (!isOpen || !transactionData) return null;
 
@@ -63,6 +93,9 @@ export default function EditTransactionModal({
         {/* Nội dung Form */}
         <div className="p-4">
           <TransactionForm
+            categories={categories}
+            accounts={accounts}
+            onMetaChange={loadMetaData}
             onSubmit={handleUpdate}
             loading={loading}
             initialData={transactionData}
