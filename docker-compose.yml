@@ -44,15 +44,15 @@ services:
   ocr:
     build: ./OCRServer
     container_name: ocr-service
-    ports:
-      - "8502:8002"
-
+    environment:
+      - OMP_NUM_THREADS=2
+      - MKL_NUM_THREADS=2
+      - OPENBLAS_NUM_THREADS=2
+      - NUMEXPR_NUM_THREADS=2
   #! ML
   ml:
     build: ./MLServer
     container_name: ml-service
-    ports:
-      - "8501:8001"
 
   #! Frontend
   frontend:
