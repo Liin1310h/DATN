@@ -110,7 +110,7 @@ public class ReceiptTransactionFlowService : IReceiptTransactionFlowService
                 throw new Exception("OCR returned empty result");
             // parse
             var parsed = await _receiptProcessingService.ProcessAsync(userId, ocrResult);
-            if (parsed.Items == null)
+            if (parsed.Items == null || !parsed.Items.Any())
             {
                 throw new Exception("Parsed result contains no items list.");
             }
@@ -132,6 +132,11 @@ public class ReceiptTransactionFlowService : IReceiptTransactionFlowService
             })
             .Where(x => x.Amount > 0)
             .ToList();
+
+            if (!previews.Any())
+            {
+                throw new Exception("Không tìm thấy giao dịch hợp lệ từ hóa đơn.");
+            }
 
             var data = new ReceiptTransactionPreviewDataDto
             {
@@ -181,7 +186,8 @@ public class ReceiptTransactionFlowService : IReceiptTransactionFlowService
                 .SendAsync("OCR_FAILED", new
                 {
                     jobId,
-                    message = ex.Message
+                    error = ex.Message,
+                    message = "Quá trình OCR hoặc phân loại giao dịch bị lỗi"
                 });
         }
         finally
@@ -244,7 +250,7 @@ public class ReceiptTransactionFlowService : IReceiptTransactionFlowService
 
         var entities = selected.Select(item =>
         {
-            var accountId = item.AccountId ?? request.DefaultAccountId;
+            var accountId = item.FromAccountId ?? request.DefaultAccountId;
 
             if (accountId <= 0)
                 throw new Exception("Tài khoản không hợp lệ");
@@ -258,7 +264,10 @@ public class ReceiptTransactionFlowService : IReceiptTransactionFlowService
                 Amount = item.Amount,
                 Currency = item.Currency,
                 Type = item.Type,
-                TransactionDate = item.TransactionDate,
+                TransactionDate = DateTime.SpecifyKind(
+                    item.TransactionDate,
+                    DateTimeKind.Utc
+                ),
                 Note = item.Note,
                 CategoryId = item.CategoryId,
                 FromAccountId = accountId
