@@ -6,10 +6,18 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_DEFAULT_TIMEOUT=1000
 
+ENV OMP_NUM_THREADS=2
+ENV MKL_NUM_THREADS=2
+ENV OPENBLAS_NUM_THREADS=2
+ENV NUMEXPR_NUM_THREADS=2
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
     libgomp1 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -21,8 +29,8 @@ RUN pip install --no-cache-dir --default-timeout=1000 --retries=20 \
     -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
 
 RUN pip install --no-cache-dir --default-timeout=1000 --retries=20 \
-    paddleocr -r requirements.txt
+    -r requirements.txt
 
 COPY . .
 
-CMD ["uvicorn", "app.OCRServer:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["uvicorn", "app.OCRServer:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]
