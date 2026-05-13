@@ -1,23 +1,27 @@
 version: "3.9"
 
+# Khai báo container
 services:
-  db:
-    image: postgres:15
-    container_name: expense-db
-    restart: always
+  # ! Database
+  db: # Domain
+    image: postgres:15 #Image gốc
+    container_name: expense-db # Tên container
+    restart: always #Container crash => tự restart
     environment:
-      POSTGRES_DB: ExpenseTrackerDB
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1
-    ports:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports: #<Host>:<Container>
       - "5432:5432"
-    volumes:
+    volumes: #Persist dữ liệu DB
       - db_data:/var/lib/postgresql/data
-    healthcheck:
+    healthcheck: #Kiểm tra DB ready? (mỗi 5s, timeout 5s, thử tối đa 5l)
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  #! Backend
   api:
     build: ./ExpenseTrackerAPI
     container_name: expense-api
@@ -32,22 +36,25 @@ services:
       - "5000:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=ExpenseTrackerDB;Username=postgres;Password=1
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       OCR_URL: http://ocr:8002
       ML_URL: http://ml:8001
 
+  #! OCR
   ocr:
     build: ./OCRServer
     container_name: ocr-service
     ports:
-      - "8002:8002"
+      - "8502:8002"
 
+  #! ML
   ml:
     build: ./MLServer
     container_name: ml-service
     ports:
-      - "8001:8001"
+      - "8501:8001"
 
+  #! Frontend
   frontend:
     build: ./expense-tracker-frontend
     container_name: frontend
