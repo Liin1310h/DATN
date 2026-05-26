@@ -78,11 +78,11 @@ export default function History() {
 
   const [exporting, setExporting] = useState(false);
 
+  const requestIdRef = useRef(0);
+
   useEffect(() => {
     getCategories().then(setCategories).catch(console.error);
   }, []);
-
-  const requestIdRef = useRef(0);
 
   const fetchHistory = async (targetPage: number) => {
     const currentRequestId = ++requestIdRef.current;
@@ -135,19 +135,23 @@ export default function History() {
             new Date(b.transactionDate).getTime() -
             new Date(a.transactionDate).getTime()
           );
+
         case "oldest":
           return (
             new Date(a.transactionDate).getTime() -
             new Date(b.transactionDate).getTime()
           );
+
         case "az":
           return (a.note || a.categoryName || "").localeCompare(
             b.note || b.categoryName || "",
           );
+
         case "za":
           return (b.note || b.categoryName || "").localeCompare(
             a.note || a.categoryName || "",
           );
+
         default:
           return 0;
       }
@@ -224,6 +228,14 @@ export default function History() {
     }
   };
 
+  const getTypeIcon = (item: HistoryTransaction) => {
+    if (item.type === "transfer") return "ArrowLeftRight";
+    if (item.type === "borrow") return "HandCoins";
+    if (item.type === "lend") return "HandHeart";
+    if (item.type === "income") return "TrendingUp";
+    return item.categoryIcon || "Tag";
+  };
+
   const dynamicTitle = useMemo(() => {
     let typeLabel = t.history.allTransactions;
 
@@ -246,6 +258,7 @@ export default function History() {
     }
 
     const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+
     const catLabel = selectedCat
       ? language === "vi"
         ? ` thuộc ${selectedCat.name}`
@@ -305,6 +318,7 @@ export default function History() {
     try {
       await deleteTransaction(selectedTransId);
       toast.success(t.common.deleteSuccess);
+
       setTransactions((prev) => prev.filter((x) => x.id !== selectedTransId));
       setTotalCount((prev) => prev - 1);
 
@@ -361,10 +375,11 @@ export default function History() {
 
   return (
     <Layout>
-      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
-        <div className="flex flex-col max-w-8xl mx-auto px-4 pb-1 min-h-full">
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
+        <div className="mx-auto flex max-w-8xl flex-col pb-1">
+          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between px-2 pb-3 space-y-2 animate-in fade-in duration-700">
-            <h1 className="text-xl md:text-xl font-black text-[#263B2B] dark:text-[#F4E7C5] tracking-tight leading-tight">
+            <h1 className="text-xl font-black text-[#263B2B] dark:text-[#F4E7C5] tracking-tight leading-tight">
               {dynamicTitle}
             </h1>
 
@@ -376,6 +391,7 @@ export default function History() {
             </div>
           </div>
 
+          {/* Toolbar */}
           <div className="flex flex-col lg:flex-row justify-between gap-3 mb-3">
             <div className="w-full lg:max-w-md">
               <SearchInput
@@ -434,293 +450,293 @@ export default function History() {
             </div>
           </div>
 
+          {/* Content */}
           <div
-            className="bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
-            rounded-[2rem]
-            border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
-            overflow-hidden w-full max-w-full
-            shadow-[0_18px_45px_rgba(38,59,43,0.08)]"
+            className={`grid grid-cols-1 gap-2 items-start ${
+              showFilter
+                ? "lg:grid-cols-[minmax(0,1fr)_320px]"
+                : "lg:grid-cols-1"
+            }`}
           >
-            <div className="flex relative">
-              <div className="flex-1 min-w-0">
-                <div className="overflow-hidden relative flex flex-col lg:h-[450px]">
-                  {loading && (
-                    <div className="p-20 flex justify-center">
-                      <Loader2 className="animate-spin text-[#C86B3C]" />
-                    </div>
-                  )}
-
-                  {!loading && transactions.length > 0 && (
-                    <>
-                      <div className="overflow-auto flex-1 custom-scrollbar">
-                        <table
-                          className={`w-full relative table-fixed ${
-                            showFilter ? "min-w-[600px]" : "min-w-[800px]"
-                          } text-left border-collapse`}
-                        >
-                          <thead className="sticky top-0 z-10 bg-[#F4E7C5] dark:bg-[#1F2E24]">
-                            <tr className="border-b border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
-                              <th className="w-[40%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D]">
-                                {t.common.transactions} / {t.common.categories}
-                              </th>
-
-                              <th className="w-[20%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] hidden md:table-cell">
-                                {t.common.accounts}
-                              </th>
-
-                              <th className="w-[15%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] hidden sm:table-cell">
-                                {t.common.date}
-                              </th>
-
-                              <th className="w-[15%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] text-right">
-                                {t.common.amount}
-                              </th>
-
-                              <th className="p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] text-center w-24">
-                                {t.common.actions}
-                              </th>
-                            </tr>
-                          </thead>
-
-                          <tbody className="divide-y divide-[#D6B56D]/25 dark:divide-[#F4E7C5]/10">
-                            {sortedTransactions.map((item) => {
-                              const disabledActions = !canEditOrDelete(item);
-
-                              return (
-                                <tr
-                                  key={item.id}
-                                  onClick={(e) => {
-                                    if (
-                                      (e.target as HTMLElement).closest(
-                                        "button",
-                                      )
-                                    )
-                                      return;
-
-                                    setSelectedTransaction(item);
-                                    setIsDetailOpen(true);
-                                  }}
-                                  className="group hover:bg-[#F4E7C5]/55 dark:hover:bg-[#F4E7C5]/10 transition-colors cursor-pointer"
-                                >
-                                  <td className="p-2">
-                                    <div className="flex items-center gap-3">
-                                      <div
-                                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${getTypeIconBoxClass(
-                                          item,
-                                        )}`}
-                                      >
-                                        <DynamicIcon
-                                          name={
-                                            item.type === "transfer"
-                                              ? "ArrowLeftRight"
-                                              : item.type === "borrow"
-                                                ? "HandCoins"
-                                                : item.type === "lend"
-                                                  ? "HandHeart"
-                                                  : item.type === "income"
-                                                    ? "TrendingUp"
-                                                    : item.categoryIcon || "Tag"
-                                          }
-                                          size={18}
-                                        />
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5] truncate">
-                                          {getDisplayTitle(item)}
-                                        </p>
-
-                                        <p className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-wider">
-                                          {getTypeLabel(item)}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </td>
-
-                                  <td className="p-2 hidden md:table-cell">
-                                    <span
-                                      className="px-2 py-1 rounded-xl
-                                      bg-[#F4E7C5]/80 dark:bg-[#F4E7C5]/10
-                                      border border-[#D6B56D]/30 dark:border-[#F4E7C5]/10
-                                      text-[10px] font-bold text-[#7A6F45] dark:text-[#F4E7C5]/70"
-                                    >
-                                      {item.accountName}
-                                    </span>
-                                  </td>
-
-                                  <td className="p-2 text-xs text-[#7A6F45] dark:text-[#F4E7C5]/65 hidden sm:table-cell font-bold">
-                                    {new Date(
-                                      item.transactionDate,
-                                    ).toLocaleDateString("vi-VN")}
-                                  </td>
-
-                                  <td
-                                    className={`p-2 text-right font-black text-sm whitespace-nowrap ${getAmountColor(
-                                      item,
-                                    )}`}
-                                  >
-                                    {getAmountPrefix(item)}
-                                    {formatMoney(
-                                      item.amount,
-                                      item.currency || currency,
-                                    )}
-                                  </td>
-
-                                  <td className="p-2">
-                                    <div className="flex items-center justify-center gap-2">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditClick(item);
-                                        }}
-                                        disabled={disabledActions}
-                                        className={`p-2 rounded-xl transition-colors ${
-                                          disabledActions
-                                            ? "text-[#BFA66A]/50 cursor-not-allowed"
-                                            : "text-[#5F8A8B] hover:text-[#FFF4D8] hover:bg-[#5F8A8B]"
-                                        }`}
-                                        title={
-                                          disabledActions
-                                            ? t.history.editLoanInLoanScreen
-                                            : t.common.edit
-                                        }
-                                      >
-                                        <Edit2 size={16} />
-                                      </button>
-
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openDeleteModal(item);
-                                        }}
-                                        disabled={disabledActions}
-                                        className={`p-2 rounded-xl transition-colors ${
-                                          disabledActions
-                                            ? "text-[#BFA66A]/50 cursor-not-allowed"
-                                            : "text-[#C86B3C] hover:text-[#FFF4D8] hover:bg-[#C86B3C]"
-                                        }`}
-                                        title={
-                                          disabledActions
-                                            ? t.history.editLoanInLoanScreen
-                                            : t.common.delete
-                                        }
-                                      >
-                                        <Trash2 size={16} />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div
-                        className="sticky bottom-0 z-10 px-4 py-3
-                        border-t border-[#D6B56D]/35 dark:border-[#F4E7C5]/10
-                        bg-[#F4E7C5]/80 dark:bg-[#1F2E24]/95
-                        flex flex-col sm:flex-row items-center justify-between gap-4"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-widest">
-                            {t.common.show}
-                          </span>
-
-                          <select
-                            value={pageSize}
-                            onChange={(e) =>
-                              setPageSize(Number(e.target.value))
-                            }
-                            className="bg-[#FFF9E8] dark:bg-[#263B2B]
-                            border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
-                            text-[#263B2B] dark:text-[#F4E7C5]
-                            rounded-xl text-[11px] font-black py-1 px-2
-                            focus:outline-none focus:ring-2 focus:ring-[#C86B3C]/25"
-                          >
-                            {[5, 10, 15, 30, 50, 100].map((size) => (
-                              <option
-                                key={size}
-                                value={size}
-                                className="bg-[#FFF9E8] text-[#263B2B]"
-                              >
-                                {size}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="text-[11px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-widest">
-                          {t.common.page} {page} /{" "}
-                          {Math.max(1, Math.ceil(totalCount / pageSize))}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => fetchHistory(page - 1)}
-                            disabled={page === 1 || loading}
-                            className="px-3 py-1.5 rounded-xl
-                            border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
-                            text-[#7A6F45] dark:text-[#F4E7C5]
-                            text-[10px] font-black uppercase
-                            hover:bg-[#FFF9E8] dark:hover:bg-[#F4E7C5]/10
-                            disabled:opacity-30 transition-all"
-                          >
-                            {t.common.prev}
-                          </button>
-
-                          <button
-                            onClick={() => fetchHistory(page + 1)}
-                            disabled={!hasMore || loading}
-                            className="px-4 py-1.5 rounded-xl
-                            bg-[#C86B3C] text-[#FFF4D8]
-                            text-[10px] font-black uppercase
-                            shadow-[0_10px_24px_rgba(200,107,60,0.22)]
-                            disabled:bg-[#BFA66A] disabled:opacity-60
-                            transition-all"
-                          >
-                            {t.common.next}
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {!loading && transactions.length === 0 && (
-                    <div className="p-20 text-center text-[#C86B3C] font-black uppercase text-[15px] tracking-widest">
-                      {t.common.noData}
-                    </div>
-                  )}
+            {/* Table card */}
+            <div
+              className="relative overflow-hidden
+              bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+              rounded-[2rem]
+              border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+              shadow-[0_18px_45px_rgba(38,59,43,0.08)]"
+            >
+              {loading && (
+                <div className="p-12 flex justify-center">
+                  <Loader2 className="animate-spin text-[#C86B3C]" />
                 </div>
-              </div>
+              )}
 
-              <div
-                className={`transition-all duration-300 ${
-                  showFilter ? "w-[320px] opacity-100" : "w-0 opacity-0"
-                } overflow-hidden border-l border-[#D6B56D]/35 dark:border-[#F4E7C5]/10`}
-              >
-                <FilterBar
-                  type={type}
-                  setType={setType}
-                  fromDate={fromDate}
-                  setFromDate={setFromDate}
-                  toDate={toDate}
-                  setToDate={setToDate}
-                  categories={categories}
-                  selectedCategoryId={selectedCategoryId}
-                  setSelectedCategoryId={setSelectedCategoryId}
-                  getCategoryLabel={(c) => c.name}
-                  onReset={() => {
-                    setSearchTerm("");
-                    setType("all");
-                    setFromDate("");
-                    setToDate("");
-                    setSelectedCategoryId(null);
-                    navigate("/history");
-                  }}
-                />
-              </div>
+              {!loading && transactions.length > 0 && (
+                <>
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <div className="max-h-[520px] overflow-y-auto custom-scrollbar">
+                      <table
+                        className={`w-full relative table-fixed ${
+                          showFilter ? "min-w-[600px]" : "min-w-[800px]"
+                        } text-left border-collapse`}
+                      >
+                        <thead className="sticky top-0 z-10 bg-[#F4E7C5] dark:bg-[#1F2E24]">
+                          <tr className="border-b border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
+                            <th className="w-[40%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D]">
+                              {t.common.transactions} / {t.common.categories}
+                            </th>
+
+                            <th className="w-[20%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] hidden md:table-cell">
+                              {t.common.accounts}
+                            </th>
+
+                            <th className="w-[15%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] hidden sm:table-cell">
+                              {t.common.date}
+                            </th>
+
+                            <th className="w-[15%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] text-right">
+                              {t.common.amount}
+                            </th>
+
+                            <th className="p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] text-center w-24">
+                              {t.common.actions}
+                            </th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-[#D6B56D]/25 dark:divide-[#F4E7C5]/10">
+                          {sortedTransactions.map((item) => {
+                            const disabledActions = !canEditOrDelete(item);
+
+                            return (
+                              <tr
+                                key={item.id}
+                                onClick={(e) => {
+                                  if (
+                                    (e.target as HTMLElement).closest("button")
+                                  ) {
+                                    return;
+                                  }
+
+                                  setSelectedTransaction(item);
+                                  setIsDetailOpen(true);
+                                }}
+                                className="group hover:bg-[#F4E7C5]/55 dark:hover:bg-[#F4E7C5]/10 transition-colors cursor-pointer"
+                              >
+                                <td className="p-2">
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${getTypeIconBoxClass(
+                                        item,
+                                      )}`}
+                                    >
+                                      <DynamicIcon
+                                        name={getTypeIcon(item)}
+                                        size={18}
+                                      />
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5] truncate">
+                                        {getDisplayTitle(item)}
+                                      </p>
+
+                                      <p className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-wider">
+                                        {getTypeLabel(item)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td className="p-2 hidden md:table-cell">
+                                  <span
+                                    className="px-2 py-1 rounded-xl
+                                    bg-[#F4E7C5]/80 dark:bg-[#F4E7C5]/10
+                                    border border-[#D6B56D]/30 dark:border-[#F4E7C5]/10
+                                    text-[10px] font-bold text-[#7A6F45] dark:text-[#F4E7C5]/70"
+                                  >
+                                    {item.accountName || "--"}
+                                  </span>
+                                </td>
+
+                                <td className="p-2 text-xs text-[#7A6F45] dark:text-[#F4E7C5]/65 hidden sm:table-cell font-bold">
+                                  {new Date(
+                                    item.transactionDate,
+                                  ).toLocaleDateString("vi-VN")}
+                                </td>
+
+                                <td
+                                  className={`p-2 text-right font-black text-sm whitespace-nowrap ${getAmountColor(
+                                    item,
+                                  )}`}
+                                >
+                                  {getAmountPrefix(item)}
+                                  {formatMoney(
+                                    item.amount,
+                                    item.currency || currency,
+                                  )}
+                                </td>
+
+                                <td className="p-2">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditClick(item);
+                                      }}
+                                      disabled={disabledActions}
+                                      className={`p-2 rounded-xl transition-colors ${
+                                        disabledActions
+                                          ? "text-[#BFA66A]/50 cursor-not-allowed"
+                                          : "text-[#5F8A8B] hover:text-[#FFF4D8] hover:bg-[#5F8A8B]"
+                                      }`}
+                                      title={
+                                        disabledActions
+                                          ? t.history.editLoanInLoanScreen
+                                          : t.common.edit
+                                      }
+                                    >
+                                      <Edit2 size={16} />
+                                    </button>
+
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openDeleteModal(item);
+                                      }}
+                                      disabled={disabledActions}
+                                      className={`p-2 rounded-xl transition-colors ${
+                                        disabledActions
+                                          ? "text-[#BFA66A]/50 cursor-not-allowed"
+                                          : "text-[#C86B3C] hover:text-[#FFF4D8] hover:bg-[#C86B3C]"
+                                      }`}
+                                      title={
+                                        disabledActions
+                                          ? t.history.editLoanInLoanScreen
+                                          : t.common.delete
+                                      }
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Pagination */}
+                  <div
+                    className="px-4 py-3
+                    border-t border-[#D6B56D]/35 dark:border-[#F4E7C5]/10
+                    bg-[#F4E7C5]/80 dark:bg-[#1F2E24]/95
+                    flex flex-col sm:flex-row items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-widest">
+                        {t.common.show}
+                      </span>
+
+                      <select
+                        value={pageSize}
+                        onChange={(e) => setPageSize(Number(e.target.value))}
+                        className="bg-[#FFF9E8] dark:bg-[#263B2B]
+                        border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+                        text-[#263B2B] dark:text-[#F4E7C5]
+                        rounded-xl text-[11px] font-black py-1 px-2
+                        focus:outline-none focus:ring-2 focus:ring-[#C86B3C]/25"
+                      >
+                        {[5, 10, 15, 30, 50, 100].map((size) => (
+                          <option
+                            key={size}
+                            value={size}
+                            className="bg-[#FFF9E8] text-[#263B2B]"
+                          >
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="text-[11px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-widest">
+                      {t.common.page} {page} /{" "}
+                      {Math.max(1, Math.ceil(totalCount / pageSize))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => fetchHistory(page - 1)}
+                        disabled={page === 1 || loading}
+                        className="px-3 py-1.5 rounded-xl
+                        border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+                        text-[#7A6F45] dark:text-[#F4E7C5]
+                        text-[10px] font-black uppercase
+                        hover:bg-[#FFF9E8] dark:hover:bg-[#F4E7C5]/10
+                        disabled:opacity-30 transition-all"
+                      >
+                        {t.common.prev}
+                      </button>
+
+                      <button
+                        onClick={() => fetchHistory(page + 1)}
+                        disabled={!hasMore || loading}
+                        className="px-4 py-1.5 rounded-xl
+                        bg-[#C86B3C] text-[#FFF4D8]
+                        text-[10px] font-black uppercase
+                        shadow-[0_10px_24px_rgba(200,107,60,0.22)]
+                        disabled:bg-[#BFA66A] disabled:opacity-60
+                        transition-all"
+                      >
+                        {t.common.next}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {!loading && transactions.length === 0 && (
+                <div className="p-20 text-center text-[#C86B3C] font-black uppercase text-[15px] tracking-widest">
+                  {t.common.noData}
+                </div>
+              )}
             </div>
+
+            {/* FilterBar */}
+            {showFilter && (
+              <aside className="self-start lg:sticky lg:top-4">
+                <div
+                  className="overflow-hidden rounded-[2rem]
+                  bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+                  border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+                  shadow-[0_18px_45px_rgba(38,59,43,0.08)]"
+                >
+                  <FilterBar
+                    type={type}
+                    setType={setType}
+                    fromDate={fromDate}
+                    setFromDate={setFromDate}
+                    toDate={toDate}
+                    setToDate={setToDate}
+                    categories={categories}
+                    selectedCategoryId={selectedCategoryId}
+                    setSelectedCategoryId={setSelectedCategoryId}
+                    getCategoryLabel={(c) => c.name}
+                    onReset={() => {
+                      setSearchTerm("");
+                      setType("all");
+                      setFromDate("");
+                      setToDate("");
+                      setSelectedCategoryId(null);
+                      navigate("/history");
+                    }}
+                  />
+                </div>
+              </aside>
+            )}
           </div>
 
           <ConfirmModal
