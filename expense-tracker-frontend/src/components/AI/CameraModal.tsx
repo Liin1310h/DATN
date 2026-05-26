@@ -3,6 +3,8 @@ import {
   Camera as CameraIcon,
   Image as ImageIcon,
   AlertCircle,
+  Sparkles,
+  ScanLine,
 } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 
@@ -20,6 +22,7 @@ export default function CameraModal({
   isProcessing,
 }: ModalProps) {
   const [hasCamera, setHasCamera] = useState<boolean>(true);
+
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,7 +33,7 @@ export default function CameraModal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  // Kiểm tra thiết bị có camera không khi mở Modal
+
   useEffect(() => {
     if (isOpen) {
       checkCameraSupport();
@@ -39,26 +42,23 @@ export default function CameraModal({
 
   const checkCameraSupport = async () => {
     try {
-      // 1. Kiểm tra xem trình duyệt có hỗ trợ mediaDevices không
       if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
         setHasCamera(false);
         return;
       }
 
-      // 2. Lấy danh sách thiết bị
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(
         (device) => device.kind === "videoinput",
       );
 
-      // 3. Cập nhật state dựa trên số lượng camera tìm thấy
       setHasCamera(videoDevices.length > 0);
     } catch (err) {
+      console.error(err);
       setHasCamera(false);
     }
   };
 
-  //TODO Mở cam trên desktop
   const openDesktopCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -79,7 +79,6 @@ export default function CameraModal({
     }
   };
 
-  //TODO hàm chụp từ webcam
   const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -90,7 +89,6 @@ export default function CameraModal({
     canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext("2d");
-
     if (!ctx) return;
 
     ctx.drawImage(video, 0, 0);
@@ -103,12 +101,10 @@ export default function CameraModal({
       });
 
       onFileSelect(file);
-
       closeDesktopCamera();
     }, "image/jpeg");
   };
 
-  //TODO Hàm đóng webcam
   const closeDesktopCamera = () => {
     stream?.getTracks().forEach((track) => track.stop());
 
@@ -116,10 +112,14 @@ export default function CameraModal({
     setIsDesktopCameraOpen(false);
   };
 
+  const handleClose = () => {
+    closeDesktopCamera();
+    onClose();
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onFileSelect(e.target.files[0]);
-
       e.target.value = "";
     }
   };
@@ -134,140 +134,218 @@ export default function CameraModal({
 
   if (isProcessing) {
     return (
-      <div className="fixed inset-0 bg-black/95 z-[300] text-white flex flex-col backdrop-blur-md">
-        <div className="p-4 flex justify-between items-center border-b border-white/10">
-          <h2 className="text-lg font-bold">AI Receipt Scanner</h2>
-        </div>
+      <div
+        className="fixed inset-0 z-[300] flex items-center justify-center
+        bg-[#263B2B]/80 backdrop-blur-xl p-4"
+      >
+        <div
+          className="relative w-full max-w-md overflow-hidden rounded-[2rem]
+          bg-[#FFF9E8] dark:bg-[#263B2B]
+          border border-[#D6B56D]/50 dark:border-[#F4E7C5]/10
+          shadow-[0_30px_90px_rgba(0,0,0,0.35)] p-8 text-center"
+        >
+          <div className="pointer-events-none absolute -top-20 -right-16 h-52 w-52 rounded-full bg-[#D6B56D]/25 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-16 h-52 w-52 rounded-full bg-[#C86B3C]/18 blur-3xl" />
 
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="space-y-6">
-            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-indigo-400 animate-pulse">
-              AI đang phân tích hóa đơn...
+          <div className="relative z-10">
+            <div
+              className="mx-auto mb-5 h-16 w-16 rounded-2xl
+              bg-[#C86B3C] text-[#FFF4D8]
+              flex items-center justify-center
+              shadow-[0_12px_28px_rgba(200,107,60,0.32)]"
+            >
+              <Sparkles size={30} className="animate-pulse" />
+            </div>
+
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#6F8F72] dark:text-[#D6B56D]">
+              AI Receipt Scanner
             </p>
+
+            <h2 className="mt-2 text-xl font-black text-[#263B2B] dark:text-[#F4E7C5]">
+              AI đang phân tích hóa đơn
+            </h2>
+
+            <p className="mt-2 text-sm font-semibold text-[#7A6F45] dark:text-[#F4E7C5]/65">
+              Hệ thống đang nhận diện nội dung, ngày tháng, tổng tiền và các
+              dòng giao dịch.
+            </p>
+
+            <div className="mt-6 h-2 overflow-hidden rounded-full bg-[#F4E7C5] dark:bg-[#F4E7C5]/10">
+              <div className="h-full w-1/2 rounded-full bg-[#C86B3C] animate-pulse" />
+            </div>
           </div>
         </div>
       </div>
     );
   }
+
   return (
-    <div className="fixed inset-0 bg-black/95 z-[300] text-white flex flex-col backdrop-blur-md">
-      <div className="p-4 flex justify-between items-center border-b border-white/10">
-        <h2 className="text-lg font-bold">AI Receipt Scanner</h2>
-        <button
-          onClick={() => {
-            closeDesktopCamera();
-            onClose();
-          }}
-          className="p-2 hover:bg-white/10 rounded-full"
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center
+      bg-[#263B2B]/78 backdrop-blur-xl p-4"
+    >
+      <div
+        className="relative flex w-full max-w-lg max-h-[92vh] flex-col overflow-hidden
+        rounded-[2rem]
+        bg-[#FFF9E8] dark:bg-[#263B2B]
+        border border-[#D6B56D]/50 dark:border-[#F4E7C5]/10
+        shadow-[0_30px_90px_rgba(0,0,0,0.38)]"
+      >
+        <div className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-[#D6B56D]/22 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-[#C86B3C]/16 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_1px_1px,#263B2B_1px,transparent_0)] [background-size:16px_16px]" />
+
+        {/* Header */}
+        <div
+          className="relative z-10 flex items-center justify-between gap-4
+          border-b border-[#D6B56D]/35 dark:border-[#F4E7C5]/10
+          px-5 py-4"
         >
-          <X size={24} />
-        </button>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        {isDesktopCameraOpen ? (
-          <div className="w-full max-w-md space-y-4">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full rounded-3xl border border-white/10"
-            />
-
-            <div className="flex gap-3">
-              <button
-                onClick={capturePhoto}
-                className="flex-1 bg-white text-black py-4 rounded-2xl font-bold"
-              >
-                CHỤP ẢNH
-              </button>
-
-              <button
-                onClick={closeDesktopCamera}
-                className="px-6 bg-red-500 rounded-2xl font-bold"
-              >
-                HỦY
-              </button>
+          <div className="flex items-center gap-3">
+            <div
+              className="h-11 w-11 rounded-2xl
+              bg-[#C86B3C] text-[#FFF4D8]
+              flex items-center justify-center
+              shadow-[0_10px_24px_rgba(200,107,60,0.28)]"
+            >
+              <ScanLine size={22} />
             </div>
 
-            <canvas ref={canvasRef} className="hidden" />
+            <div>
+              <h2 className="text-base font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                Quét hóa đơn
+              </h2>
+            </div>
           </div>
-        ) : (
-          <div className="w-full max-w-sm space-y-8">
-            <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 flex flex-col items-center gap-4">
+
+          <button
+            onClick={handleClose}
+            className="h-10 w-10 rounded-2xl
+            bg-[#F4E7C5]/70 text-[#263B2B]
+            hover:bg-[#C86B3C] hover:text-[#FFF4D8]
+            dark:bg-[#F4E7C5]/10 dark:text-[#F4E7C5]
+            dark:hover:bg-[#C86B3C]
+            transition-all active:scale-95
+            flex items-center justify-center"
+          >
+            <X size={21} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="relative z-10 flex-1 overflow-y-auto p-5">
+          {isDesktopCameraOpen ? (
+            <div className="space-y-4">
               <div
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-                  hasCamera
-                    ? "bg-indigo-500/20 text-indigo-400"
-                    : "bg-gray-500/20 text-gray-500"
-                }`}
+                className="relative overflow-hidden rounded-[2rem]
+                border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+                bg-[#263B2B]"
               >
-                <CameraIcon size={32} />
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full rounded-[2rem]"
+                />
+
+                <div className="pointer-events-none absolute inset-4 rounded-[1.5rem] border border-[#FFF4D8]/35" />
               </div>
 
-              <p className="text-gray-300 font-medium">
-                Cung cấp ảnh hóa đơn rõ nét
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <div className="w-full">
+              <div className="grid grid-cols-2 gap-3">
                 <button
-                  disabled={!hasCamera}
-                  onClick={() => {
-                    if (isMobile) {
-                      cameraInputRef.current?.click();
-                    } else {
-                      openDesktopCamera();
-                    }
-                  }}
-                  className={`w-full flex items-center justify-center gap-3 font-bold py-4 rounded-2xl transition-all active:scale-95 ${
-                    hasCamera
-                      ? "bg-white text-black hover:bg-gray-200"
-                      : "bg-gray-700 text-gray-500 cursor-not-allowed opacity-50"
-                  }`}
+                  onClick={capturePhoto}
+                  className="rounded-2xl bg-[#C86B3C] py-4
+                  text-xs font-black uppercase tracking-widest text-[#FFF4D8]
+                  shadow-[0_12px_28px_rgba(200,107,60,0.28)]
+                  hover:bg-[#9F4D2E] active:scale-95 transition-all"
                 >
-                  <CameraIcon size={22} />
-                  CHỤP ẢNH MỚI
+                  Chụp ảnh
                 </button>
 
-                {!hasCamera && (
-                  <div className="flex items-center justify-center gap-1 mt-3 text-red-500">
-                    <AlertCircle size={14} />
-                    <span className="text-xs font-semibold">
-                      Thiết bị không hỗ trợ chụp ảnh!
-                    </span>
-                  </div>
-                )}
+                <button
+                  onClick={closeDesktopCamera}
+                  className="rounded-2xl bg-[#F4E7C5] py-4
+                  text-xs font-black uppercase tracking-widest text-[#9F4D2E]
+                  border border-[#D6B56D]/45
+                  hover:bg-[#E7C87D]/55 active:scale-95 transition-all
+                  dark:bg-[#F4E7C5]/10 dark:text-[#F4E7C5] dark:border-[#F4E7C5]/10"
+                >
+                  Hủy
+                </button>
               </div>
 
-              <button
-                onClick={() => galleryInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-3 bg-white text-black font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all active:scale-95 border border-white/20"
-              >
-                <ImageIcon size={22} />
-                CHỌN TỪ THƯ VIỆN / MÁY TÍNH
-              </button>
+              <canvas ref={canvasRef} className="hidden" />
             </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <div>
+                  <button
+                    disabled={!hasCamera}
+                    onClick={() => {
+                      if (isMobile) {
+                        cameraInputRef.current?.click();
+                      } else {
+                        openDesktopCamera();
+                      }
+                    }}
+                    className={`w-full flex items-center justify-center gap-3
+                    rounded-2xl py-4 text-xs font-black uppercase tracking-widest
+                    transition-all active:scale-95
+                    ${
+                      hasCamera
+                        ? "bg-[#C86B3C] text-[#FFF4D8] hover:bg-[#9F4D2E] shadow-[0_12px_28px_rgba(200,107,60,0.28)]"
+                        : "bg-[#7A6F45]/20 text-[#7A6F45] cursor-not-allowed opacity-60"
+                    }`}
+                  >
+                    <CameraIcon size={22} />
+                    Chụp ảnh mới
+                  </button>
 
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+                  {!hasCamera && (
+                    <div className="mt-3 flex items-center justify-center gap-1 text-[#C86B3C]">
+                      <AlertCircle size={14} />
+                      <span className="text-xs font-bold">
+                        Thiết bị không hỗ trợ chụp ảnh!
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-            <input
-              ref={galleryInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </div>
-        )}
+                <button
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-3
+                  rounded-2xl py-4
+                  bg-[#6F8F72] text-[#FFF4D8]
+                  text-xs font-black uppercase tracking-widest
+                  hover:bg-[#55745A]
+                  shadow-[0_12px_28px_rgba(111,143,114,0.26)]
+                  transition-all active:scale-95"
+                >
+                  <ImageIcon size={22} />
+                  Chọn từ thư viện / máy tính
+                </button>
+              </div>
+
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

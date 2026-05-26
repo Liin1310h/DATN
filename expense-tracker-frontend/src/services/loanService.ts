@@ -4,7 +4,10 @@ export interface CreateLoanPayload {
   counterPartyName: string;
   principalAmount: number;
   interestRate: number;
-  interestUnit: "percentage_per_month" | "percentage_per_year" | "fixed_amount";
+  interestUnit: "percent_per_month" | "percent_per_year" | "fixed_amount";
+
+  duration: number;
+  durationUnit: "months" | "years" | "days";
 
   currency: string;
 
@@ -29,7 +32,7 @@ export interface RepayLoanPayload {
   note?: string;
 }
 export const repayLoan = async (data: RepayLoanPayload) => {
-  const res = await api.post("/loans/repayment", data);
+  const res = await api.post("/loans/repay", data);
   return res.data;
 };
 

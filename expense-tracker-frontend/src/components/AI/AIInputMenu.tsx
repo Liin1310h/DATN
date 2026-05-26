@@ -1,12 +1,12 @@
-import { Sparkles, Camera, Mic } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { Camera, Mic, X, Sparkles } from "lucide-react";
 
 interface AIInputMenuProps {
   isOpen: boolean;
-  setIsOpen: (val: boolean) => void;
-
+  setIsOpen: (value: boolean) => void;
   onOpenCamera: () => void;
   onOpenVoice: () => void;
-
   position?: "left" | "right";
 }
 
@@ -17,75 +17,112 @@ export default function AIInputMenu({
   onOpenVoice,
   position = "right",
 }: AIInputMenuProps) {
-  const isRight = position === "right";
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <>
-      {/* Overlay */}
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const positionClass =
+    position === "right" ? "right-6 sm:right-8" : "left-6 sm:left-8";
+
+  const menu = (
+    <div
+      className={`fixed bottom-6 sm:bottom-8 ${positionClass} z-[99999] flex flex-col items-end gap-3 pointer-events-none`}
+    >
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 animate-in fade-in duration-300"
-          onClick={() => setIsOpen(false)}
-        />
+        <div className="flex flex-col gap-2 mb-2 animate-in slide-in-from-bottom-4 duration-300 pointer-events-auto">
+          {/* OCR */}
+          <button
+            type="button"
+            onClick={() => {
+              onOpenCamera();
+              setIsOpen(false);
+            }}
+            className="group flex items-center gap-3
+            bg-[#FFF9E8] dark:bg-[#263B2B]
+            border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+            rounded-2xl p-2 pr-4
+            shadow-[0_18px_45px_rgba(38,59,43,0.22)]
+            hover:-translate-y-1 hover:scale-[1.02]
+            active:scale-95 transition-all"
+          >
+            <div
+              className="w-11 h-11 rounded-2xl
+              bg-[#C86B3C] text-[#FFF4D8]
+              flex items-center justify-center
+              shadow-[0_10px_24px_rgba(200,107,60,0.28)]
+              group-hover:bg-[#9F4D2E] transition-colors"
+            >
+              <Camera size={21} strokeWidth={2.5} />
+            </div>
+
+            <p className="text-xs font-black uppercase tracking-widest text-[#263B2B] dark:text-[#F4E7C5] whitespace-nowrap">
+              Quét hóa đơn
+            </p>
+          </button>
+
+          {/* Voice */}
+          <button
+            type="button"
+            onClick={() => {
+              onOpenVoice();
+              setIsOpen(false);
+            }}
+            className="group flex items-center gap-3
+            bg-[#FFF9E8] dark:bg-[#263B2B]
+            border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+            rounded-2xl p-2 pr-4
+            shadow-[0_18px_45px_rgba(38,59,43,0.22)]
+            hover:-translate-y-1 hover:scale-[1.02]
+            active:scale-95 transition-all"
+          >
+            <div
+              className="w-11 h-11 rounded-2xl
+              bg-[#6F8F72] text-[#FFF4D8]
+              flex items-center justify-center
+              shadow-[0_10px_24px_rgba(111,143,114,0.28)]
+              group-hover:bg-[#55745A] transition-colors"
+            >
+              <Mic size={21} strokeWidth={2.5} />
+            </div>
+
+            <p className="text-xs font-black uppercase tracking-widest text-[#263B2B] dark:text-[#F4E7C5] whitespace-nowrap">
+              Nhập bằng giọng nói
+            </p>
+          </button>
+        </div>
       )}
 
-      {/* Container */}
-      <div
-        className={`fixed bottom-8 ${
-          isRight ? "right-8 items-end" : "left-8 items-start"
-        } flex flex-col gap-4 z-50`}
+      {/* Main button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`relative w-16 h-16 rounded-[2rem]
+        flex items-center justify-center
+        shadow-[0_18px_45px_rgba(38,59,43,0.28)]
+        transition-all duration-300 active:scale-95 overflow-hidden
+        pointer-events-auto
+        ${
+          isOpen
+            ? "bg-[#263B2B] text-[#F4E7C5] rotate-45 dark:bg-[#F4E7C5] dark:text-[#263B2B]"
+            : "bg-[#C86B3C] text-[#FFF4D8] hover:bg-[#9F4D2E] hover:scale-110"
+        }`}
       >
-        {/* Menu list */}
-        {isOpen && (
-          <div className="flex flex-col gap-3 mb-2 animate-in slide-in-from-bottom-4 duration-300">
-            {[
-              {
-                label: "Chụp hóa đơn",
-                icon: <Camera size={20} />,
-                action: onOpenCamera,
-                color: "bg-indigo-500",
-              },
-              {
-                label: "Nhập giọng nói",
-                icon: <Mic size={20} />,
-                action: onOpenVoice,
-                color: "bg-emerald-500",
-              },
-            ].map((item, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  item.action();
-                  setIsOpen(false);
-                }}
-                className="flex items-center gap-3 bg-white dark:bg-gray-800 p-3 pr-6 rounded-2xl shadow-xl hover:scale-105 transition-all"
-              >
-                <div
-                  className={`w-10 h-10 ${item.color} text-white rounded-xl flex items-center justify-center shadow-lg`}
-                >
-                  {item.icon}
-                </div>
+        <div className="absolute inset-0 bg-[#D6B56D]/15" />
 
-                <span className="text-xs font-black uppercase tracking-widest text-gray-700 dark:text-white">
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className="relative z-10">
+          {isOpen ? <X size={28} /> : <Sparkles size={28} />}
+        </div>
+
+        {!isOpen && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#D6B56D] border-2 border-[#FFF4D8]" />
         )}
-
-        {/* Main button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-16 h-16 rounded-[2rem] shadow-2xl flex items-center justify-center transition-all duration-300 ${
-            isOpen
-              ? "bg-gray-800 dark:bg-white text-white dark:text-white rotate-45"
-              : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-110 shadow-purple-400"
-          }`}
-        >
-          <Sparkles size={28} />
-        </button>
-      </div>
-    </>
+      </button>
+    </div>
   );
+
+  if (!mounted) return null;
+
+  return createPortal(menu, document.body);
 }

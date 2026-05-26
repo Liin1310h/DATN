@@ -16,14 +16,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../hook/useTranslation";
 import { CURRENCIES } from "../../constants/currencies";
-import {
-  getNotifications,
-  getUnreadNotificationCount,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-  type NotificationItem,
-} from "../../services/notification/notificationService";
-import { startNotificationConnection } from "../../services/notification/signalService";
+import { useNotifications } from "../../context/NotificationContext";
+import type { NotificationItem } from "../../services/notification/notificationService";
 
 export default function Topbar({
   toggleSidebar,
@@ -43,13 +37,17 @@ export default function Topbar({
 
   const navigate = useNavigate();
 
-  // Notification states
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const {
+    notifications,
+    unreadCount,
+    loadingNotifications,
+    loadNotifications,
+    markOneAsRead,
+    markAllAsRead,
+  } = useNotifications();
 
-  //TODO Xử lý tiêu đề động
   const getTitle = () => {
     const userPathMap: Record<string, string> = {
       "/dashboard": t.nav.dashboard,
@@ -61,56 +59,25 @@ export default function Topbar({
       "/history": t.nav.history,
       "/analytics": t.nav.analytics,
     };
+
     const adminPathMap: Record<string, string> = {
-      "/admin": t.nav.adminDashboard,
+      "/admin/dashboard": t.nav.adminDashboard,
       "/admin/users": t.nav.adminUserManagement,
       "/admin/categories": t.nav.adminCategoryManagement,
     };
-    if (mode === "admin")
-      return adminPathMap[location.pathname || t.nav.adminDashboard];
-    else return userPathMap[location.pathname] || t.nav.dashboard;
-  };
 
-  //TODO Xử lý thông báo
-  const loadNotifications = async () => {
-    try {
-      const [notiData, count] = await Promise.all([
-        getNotifications(),
-        getUnreadNotificationCount(),
-      ]);
-
-      setNotifications(notiData);
-      setUnreadCount(count);
-    } catch (error) {
-      console.error("Load notifications error:", error);
+    if (mode === "admin") {
+      return adminPathMap[location.pathname] || t.nav.adminDashboard;
     }
+
+    return userPathMap[location.pathname] || t.nav.dashboard;
   };
 
-  useEffect(() => {
-    loadNotifications();
-  }, []);
-
-  //TODO Kết nối SignalR để nhận thông báo real-time
-  useEffect(() => {
-    const conn = startNotificationConnection((notification) => {
-      setNotifications((prev) => [notification, ...prev]);
-      setUnreadCount((prev) => prev + 1);
-    });
-
-    return () => {
-      conn?.stop();
-    };
-  }, []);
-
-  //TODO Xử lý click vào thông báo
   const handleNotificationClick = async (item: NotificationItem) => {
     try {
-      if (!item.isRead) {
-        await markNotificationAsRead(item.id);
-      }
+      await markOneAsRead(item);
 
       setIsNotificationOpen(false);
-      await loadNotifications();
 
       if (item.redirectUrl) {
         navigate(item.redirectUrl);
@@ -120,17 +87,14 @@ export default function Topbar({
     }
   };
 
-  //TODO Xử lý đánh dấu tất cả đã đọc
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllNotificationsAsRead();
-      await loadNotifications();
+      await markAllAsRead();
     } catch (error) {
       console.error("Mark all notifications error:", error);
     }
   };
 
-  //TODO Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -147,6 +111,7 @@ export default function Topbar({
         setIsNotificationOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -154,55 +119,96 @@ export default function Topbar({
   }, []);
 
   return (
-    <div className="flex items-center justify-between h-16 px-6 bg-white/70 dark:bg-[#161E2E]/70 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800/50 sticky top-0 z-40 transition-colors duration-300">
+    <div
+      className="sticky top-0 z-40 h-16 px-6 flex items-center justify-between
+      bg-[#FFF4D8]/80 dark:bg-[#263B2B]/85
+      backdrop-blur-xl border-b border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+      shadow-[0_8px_30px_rgba(38,59,43,0.08)]
+      transition-colors duration-300"
+    >
       {/* LEFT */}
       <div className="flex items-center gap-4">
         <button
-          className="lg:hidden p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-white active:scale-95 transition-all"
+          className="lg:hidden p-2 rounded-2xl
+          bg-[#F4E7C5] text-[#263B2B] border border-[#D6B56D]/50
+          hover:bg-[#D6B56D]/35 hover:text-[#9F4D2E]
+          dark:bg-[#F4E7C5]/10 dark:text-[#F4E7C5] dark:border-[#F4E7C5]/10
+          active:scale-95 transition-all"
           onClick={toggleSidebar}
         >
-          <Menu size={24} />
+          <Menu size={22} />
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {mode === "admin" && (
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
-              <Shield size={16} />
+            <div
+              className="w-9 h-9 rounded-2xl bg-[#263B2B] text-[#F4E7C5]
+              flex items-center justify-center shadow-[0_8px_18px_rgba(38,59,43,0.22)]
+              dark:bg-[#F4E7C5] dark:text-[#263B2B]"
+            >
+              <Shield size={17} />
             </div>
           )}
 
-          <h1 className="text-lg font-black text-gray-800 dark:text-white leading-none animate-in fade-in duration-300">
+          <h1
+            className="text-lg font-black leading-none tracking-wide
+              text-[#263B2B] dark:text-[#F4E7C5]
+              animate-in fade-in duration-300"
+          >
             {getTitle()}
           </h1>
         </div>
       </div>
 
-      {/* Right*/}
-      <div className="flex items-center sm:gap-3">
-        {/* Chuông thông báo */}
+      {/* RIGHT */}
+      <div className="flex items-center sm:gap-3 gap-1">
+        {/* NOTIFICATION */}
         <div className="relative hidden sm:block" ref={notificationRef}>
           <button
-            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-            className="p-2 text-gray-400 dark:text-white hover:text-indigo-500 transition-colors relative"
+            onClick={() => {
+              const nextOpen = !isNotificationOpen;
+              setIsNotificationOpen(nextOpen);
+
+              if (nextOpen) {
+                loadNotifications();
+              }
+            }}
+            className={`relative p-2 rounded-2xl transition-all active:scale-95
+            ${
+              isNotificationOpen
+                ? "bg-[#263B2B] text-[#F4E7C5] dark:bg-[#F4E7C5] dark:text-[#263B2B]"
+                : "text-[#6F8F72] hover:bg-[#E7C87D]/35 hover:text-[#C86B3C] dark:text-[#F4E7C5]/80 dark:hover:bg-[#F4E7C5]/10"
+            }`}
           >
             <Bell size={18} strokeWidth={2.5} />
 
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border border-white dark:border-[#161E2E]">
+              <span
+                className="absolute -top-1 -right-1 min-w-5 h-5 px-1
+                bg-[#C86B3C] text-[#FFF4D8] text-[10px] font-black rounded-full
+                flex items-center justify-center border-2 border-[#FFF4D8]
+                dark:border-[#263B2B]"
+              >
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </button>
 
           {isNotificationOpen && (
-            <div className="absolute right-0 mt-0 w-80 bg-white dark:bg-[#1C2636] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+            <div
+              className="absolute right-0 mt-3 w-80
+              bg-[#FFF4D8] dark:bg-[#263B2B]
+              border border-[#D6B56D]/50 dark:border-[#F4E7C5]/10
+              rounded-3xl shadow-[0_24px_60px_rgba(38,59,43,0.22)]
+              overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200"
+            >
               {/* HEADER */}
-              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <div className="px-4 py-3 border-b border-[#D6B56D]/40 dark:border-[#F4E7C5]/10 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-extrabold text-gray-800 dark:text-white">
+                  <p className="text-sm font-extrabold text-[#263B2B] dark:text-[#F4E7C5]">
                     Thông báo
                   </p>
-                  <p className="text-[10px] text-gray-400 font-bold">
+                  <p className="text-[10px] text-[#6F8F72] dark:text-[#D6B56D] font-bold">
                     {unreadCount} chưa đọc
                   </p>
                 </div>
@@ -210,7 +216,7 @@ export default function Topbar({
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
-                    className="text-[11px] font-bold text-indigo-600 hover:underline"
+                    className="text-[11px] font-black text-[#C86B3C] hover:underline"
                   >
                     Đọc tất cả
                   </button>
@@ -219,8 +225,12 @@ export default function Topbar({
 
               {/* LIST */}
               <div className="max-h-96 overflow-y-auto custom-scrollbar p-2 space-y-1">
-                {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-sm text-gray-400 font-bold">
+                {loadingNotifications ? (
+                  <div className="p-4 text-center text-xs font-bold text-[#7A6F45] dark:text-[#F4E7C5]/60">
+                    Đang tải thông báo...
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-[#6F8F72] dark:text-[#F4E7C5]/60 font-bold">
                     Chưa có thông báo
                   </div>
                 ) : (
@@ -228,37 +238,32 @@ export default function Topbar({
                     <button
                       key={item.id}
                       onClick={() => handleNotificationClick(item)}
-                      className={`w-full text-left p-2 rounded-xl transition-all duration-200 group
-              ${
-                !item.isRead
-                  ? "hover:bg-indigo-50/70 dark:bg-indigo-500/10 shadow-sm"
-                  : "hover:bg-gray-50 dark:hover:bg-gray-800"
-              }`}
+                      className={`w-full text-left p-3 rounded-2xl transition-all duration-200 group
+                      ${
+                        !item.isRead
+                          ? "bg-[#E7C87D]/25 hover:bg-[#E7C87D]/40 shadow-sm"
+                          : "hover:bg-[#F4E7C5] dark:hover:bg-[#F4E7C5]/10"
+                      }`}
                     >
                       <div className="flex gap-3">
-                        {/* DOT */}
                         <div
                           className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
                             item.isRead
-                              ? "bg-gray-300"
-                              : "bg-red-500 animate-pulse"
+                              ? "bg-[#D6B56D]"
+                              : "bg-[#C86B3C] animate-pulse"
                           }`}
                         />
 
-                        {/* CONTENT */}
                         <div className="min-w-0 flex-1">
-                          {/* TITLE */}
-                          <p className="text-xs font-extrabold text-gray-800 dark:text-white leading-tight">
+                          <p className="text-xs font-extrabold text-[#263B2B] dark:text-[#F4E7C5] leading-tight">
                             {item.title}
                           </p>
 
-                          {/* MESSAGE */}
-                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                          <p className="text-[11px] text-[#5F634A] dark:text-[#F4E7C5]/65 mt-1 line-clamp-2">
                             {item.message}
                           </p>
 
-                          {/* TIME */}
-                          <p className="text-[10px] text-gray-400 mt-2 font-semibold">
+                          <p className="text-[10px] text-[#6F8F72] dark:text-[#D6B56D] mt-2 font-semibold">
                             {new Date(item.createdAt).toLocaleString("vi-VN")}
                           </p>
                         </div>
@@ -271,33 +276,46 @@ export default function Topbar({
           )}
         </div>
 
+        {/* CURRENCY */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all active:scale-95 border
-              ${
-                isCurrencyOpen
-                  ? "bg-indigo-50 border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/50"
-                  : "bg-transparent border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50"
-              }`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl transition-all active:scale-95 border
+            ${
+              isCurrencyOpen
+                ? "bg-[#263B2B] border-[#263B2B] text-[#F4E7C5] dark:bg-[#F4E7C5] dark:text-[#263B2B] dark:border-[#F4E7C5]"
+                : "bg-[#F4E7C5]/70 border-[#D6B56D]/40 text-[#263B2B] hover:bg-[#E7C87D]/35 hover:text-[#9F4D2E] dark:bg-[#F4E7C5]/10 dark:border-[#F4E7C5]/10 dark:text-[#F4E7C5]"
+            }`}
           >
-            <Coins size={18} className="text-emerald-500" strokeWidth={2.5} />
-            <span className="text-[11px] font-black text-gray-800 dark:text-white uppercase">
-              {currency}
-            </span>
+            <Coins
+              size={18}
+              className={isCurrencyOpen ? "text-current" : "text-[#C86B3C]"}
+              strokeWidth={2.5}
+            />
+
+            <span className="text-[11px] font-black uppercase">{currency}</span>
+
             <ChevronDown
               size={14}
-              className={`text-gray-400 transition-transform duration-300 ${isCurrencyOpen ? "rotate-180" : ""}`}
+              className={`transition-transform duration-300 ${
+                isCurrencyOpen ? "rotate-180" : ""
+              }`}
             />
           </button>
 
-          {/* LIST SELECT */}
           {isCurrencyOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1C2636] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
-              <div className="px-3 py-1 mb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <div
+              className="absolute right-0 mt-3 w-52
+              bg-[#FFF4D8] dark:bg-[#263B2B]
+              border border-[#D6B56D]/50 dark:border-[#F4E7C5]/10
+              rounded-3xl shadow-[0_24px_60px_rgba(38,59,43,0.22)]
+              py-2 z-50 animate-in fade-in zoom-in-95 duration-200"
+            >
+              <div className="px-4 py-2 mb-1 text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-widest">
                 {t.common.selectCurrency}
               </div>
-              <div className="max-h-60 overflow-y-auto custom-scrollbar">
+
+              <div className="max-h-60 overflow-y-auto custom-scrollbar px-2">
                 {CURRENCIES.map((c) => (
                   <button
                     key={c.code}
@@ -305,27 +323,44 @@ export default function Topbar({
                       setCurrency(c.code);
                       setIsCurrencyOpen(false);
                     }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-colors group
+                    ${
+                      currency === c.code
+                        ? "bg-[#263B2B] text-[#F4E7C5] dark:bg-[#F4E7C5] dark:text-[#263B2B]"
+                        : "hover:bg-[#E7C87D]/30 text-[#263B2B] dark:text-[#F4E7C5] dark:hover:bg-[#F4E7C5]/10"
+                    }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 text-[12px] font-bold text-gray-600 dark:text-gray-300 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 group-hover:text-indigo-600 transition-colors">
+                      <span
+                        className={`w-8 h-8 flex items-center justify-center rounded-xl text-[12px] font-black transition-colors
+                        ${
+                          currency === c.code
+                            ? "bg-[#C86B3C] text-[#FFF4D8]"
+                            : "bg-[#F4E7C5] text-[#6F8F72] group-hover:bg-[#C86B3C]/15 group-hover:text-[#C86B3C] dark:bg-[#F4E7C5]/10 dark:text-[#D6B56D]"
+                        }`}
+                      >
                         {c.symbol}
                       </span>
+
                       <div className="flex flex-col items-start">
+                        <span className="text-[11px] font-black">{c.code}</span>
+
                         <span
-                          className={`text-[11px] font-bold ${currency === c.code ? "text-indigo-600" : "text-gray-700 dark:text-gray-300"}`}
+                          className={`text-[9px] ${
+                            currency === c.code
+                              ? "text-[#F4E7C5]/75 dark:text-[#263B2B]/70"
+                              : "text-[#6F8F72] dark:text-[#D6B56D]"
+                          }`}
                         >
-                          {c.code}
-                        </span>
-                        <span className="text-[9px] text-gray-400">
                           {c.label}
                         </span>
                       </div>
                     </div>
+
                     {currency === c.code && (
                       <Check
                         size={14}
-                        className="text-indigo-600"
+                        className="text-current"
                         strokeWidth={3}
                       />
                     )}
@@ -335,38 +370,43 @@ export default function Topbar({
             </div>
           )}
         </div>
-        {/* Chuyển ngôn ngữ*/}
-        <button
-          onClick={() => setLanguage(language === "en" ? "vi" : "en")}
-          className="flex items-center gap-2 group p-1 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50"
-        >
-          <Globe
-            size={18}
-            className="text-gray-400 dark:text-white group-hover:text-indigo-500 transition-colors"
-            strokeWidth={2.5}
-          />
-          <span className="text-[11px] font-bold text-gray-800 dark:text-white uppercase tracking-wider group-hover:text-indigo-600">
-            {language}
-          </span>
-        </button>
 
-        {/* Tooltip cho title language */}
-        <div
-          className="absolute top-full mt-2 left-1/2 -translate-x-1/2
-        bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md
-        opacity-0 group-hover:opacity-100 transition-all duration-200
-        whitespace-nowrap pointer-events-none"
-        >
-          {language === "en"
-            ? t.common.switchToVietnamese
-            : t.common.switchToEnglish}
+        {/* LANGUAGE */}
+        <div className="relative group">
+          <button
+            onClick={() => setLanguage(language === "en" ? "vi" : "en")}
+            className="flex items-center gap-2 p-2 rounded-2xl
+            text-[#6F8F72] hover:bg-[#E7C87D]/35 hover:text-[#C86B3C]
+            dark:text-[#F4E7C5]/80 dark:hover:bg-[#F4E7C5]/10 dark:hover:text-[#F4E7C5]
+            transition-all active:scale-95"
+          >
+            <Globe size={18} strokeWidth={2.5} />
+
+            <span className="hidden sm:inline text-[11px] font-black uppercase tracking-wider">
+              {language}
+            </span>
+          </button>
+
+          <div
+            className="absolute top-full mt-2 left-1/2 -translate-x-1/2
+            bg-[#263B2B] text-[#F4E7C5] text-[10px] px-3 py-1.5 rounded-xl
+            opacity-0 group-hover:opacity-100 transition-all duration-200
+            whitespace-nowrap pointer-events-none shadow-xl z-50"
+          >
+            {language === "en"
+              ? t.common.switchToVietnamese
+              : t.common.switchToEnglish}
+          </div>
         </div>
 
-        {/* Chuyển theme sáng tối*/}
+        {/* THEME */}
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           title={theme === "dark" ? t.common.lightMode : t.common.darkMode}
-          className="p-2 text-gray-400 hover:text-indigo-500 dark:text-white transition-colors rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          className="p-2 rounded-2xl
+          text-[#6F8F72] hover:bg-[#E7C87D]/35 hover:text-[#C86B3C]
+          dark:text-[#F4E7C5]/80 dark:hover:bg-[#F4E7C5]/10 dark:hover:text-[#F4E7C5]
+          transition-all active:scale-95"
         >
           {theme === "dark" ? (
             <Sun size={18} strokeWidth={2.5} />
@@ -375,13 +415,24 @@ export default function Topbar({
           )}
         </button>
 
-        <div className="hidden sm:block h-6 w-px bg-gray-100 dark:bg-gray-800" />
+        <div className="hidden sm:block h-7 w-px bg-[#D6B56D]/50 dark:bg-[#F4E7C5]/10" />
 
-        {/* User */}
-        <button className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-xl shadow-indigo-500/10 active:scale-95 transition-all group relative">
+        {/* USER */}
+        <button
+          className="w-10 h-10 rounded-2xl
+          bg-[#263B2B] text-[#F4E7C5]
+          dark:bg-[#F4E7C5] dark:text-[#263B2B]
+          flex items-center justify-center
+          shadow-[0_10px_24px_rgba(38,59,43,0.18)]
+          hover:scale-105 active:scale-95 transition-all group relative"
+        >
           <User size={18} strokeWidth={2.5} />
 
-          <span className="absolute -bottom-10 right-0 p-2 bg-gray-900 text-white text-[10px] font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+          <span
+            className="absolute -bottom-11 right-0 px-3 py-2
+            bg-[#263B2B] text-[#F4E7C5] text-[10px] font-bold rounded-2xl
+            opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl"
+          >
             {user?.name || t.common.profile}
           </span>
         </button>

@@ -37,17 +37,17 @@ export default function LoanPage() {
   const [deleteLoanItem, setDeleteLoanItem] = useState<LoanItem | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  // TODO fetch data
   const fetchLoans = async () => {
     setLoading(true);
+
     try {
       let param;
+
       if (viewMode === "active") param = false;
       else if (viewMode === "completed") param = true;
       else param = undefined;
 
       const res = await getLoans(param);
-
       setLoans(res || []);
     } catch (err) {
       console.error(err);
@@ -61,7 +61,6 @@ export default function LoanPage() {
     fetchLoans();
   }, [viewMode]);
 
-  // TODO search
   const filteredLoans = useMemo(() => {
     return loans.filter((l) =>
       `${l.counterPartyName} ${l.note || ""}`
@@ -70,7 +69,6 @@ export default function LoanPage() {
     );
   }, [loans, searchTerm]);
 
-  // TODO summary
   const summary = useMemo(() => {
     let totalLend = 0;
     let totalBorrow = 0;
@@ -88,13 +86,11 @@ export default function LoanPage() {
     return { totalLend, totalBorrow, totalRemaining };
   }, [loans]);
 
-  //TODO Sửa
   const handleEditClick = (loan: LoanItem) => {
     setEditingLoan(loan);
     setIsEditOpen(true);
   };
 
-  //TODO Xoá
   const handleConfirmDelete = async () => {
     if (!deleteLoanItem) return;
 
@@ -114,176 +110,235 @@ export default function LoanPage() {
 
   return (
     <Layout>
-      <div className="max-w-8xl mx-auto px-4 space-y-4">
-        <div className="flex justify-between items-center">
-          <SearchInput
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder={t.loan.searchLoan}
-          />
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
+        <div className="mx-auto max-w-8xl px-2 sm:px-4 space-y-5">
+          {/* Top tools */}
+          <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+            <div className="w-full lg:max-w-md">
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder={t.loan.searchLoan}
+              />
+            </div>
 
-          <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-[1.2rem] w-fit">
-            {[
-              { key: "all", label: t.common.all },
-              { key: "active", label: t.loan.active },
-              { key: "completed", label: t.loan.completed },
-            ].map((item) => (
-              <button
-                key={item.key}
-                onClick={() =>
-                  setViewMode(item.key as "all" | "active" | "completed")
-                }
-                className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                  viewMode === item.key
-                    ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm"
-                    : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-indigo-600 text-white p-4 rounded-2xl">
-            <p className="text-xs uppercase opacity-80">{t.common.lend}</p>
-            <h2 className="text-lg font-black">
-              {formatMoney(summary.totalLend, currency)}
-            </h2>
-          </div>
-
-          <div className="bg-rose-600 text-white p-4 rounded-2xl">
-            <p className="text-xs uppercase opacity-80">{t.common.borrow}</p>
-            <h2 className="text-lg font-black">
-              {formatMoney(summary.totalBorrow, currency)}
-            </h2>
+            <div
+              className="flex bg-[#F4E7C5]/70 dark:bg-[#F4E7C5]/10
+              p-1 rounded-[1.2rem] w-fit
+              border border-[#D6B56D]/35 dark:border-[#F4E7C5]/10"
+            >
+              {[
+                { key: "all", label: t.common.all },
+                { key: "active", label: t.loan.active },
+                { key: "completed", label: t.loan.completed },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() =>
+                    setViewMode(item.key as "all" | "active" | "completed")
+                  }
+                  className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                    viewMode === item.key
+                      ? "bg-[#263B2B] dark:bg-[#F4E7C5] text-[#F4E7C5] dark:text-[#263B2B] shadow-sm"
+                      : "text-[#6F8F72] dark:text-[#D6B56D] hover:text-[#C86B3C] dark:hover:text-[#F4E7C5]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="bg-gray-900 text-white p-4 rounded-2xl">
-            <p className="text-xs uppercase opacity-80">
-              {t.loan.remainingBalance}
-            </p>
-            <h2 className="text-lg font-black">
-              {formatMoney(summary.totalRemaining, currency)}
-            </h2>
+          {/* Summary cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div
+              className="relative overflow-hidden bg-[#6F8F72] text-[#FFF4D8]
+              p-5 rounded-[2rem]
+              shadow-[0_18px_45px_rgba(111,143,114,0.22)]"
+            >
+              <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-[#D6B56D]/20 blur-3xl" />
+
+              <p className="relative z-10 text-[10px] font-black uppercase tracking-[0.18em] text-[#FFF4D8]/75">
+                {t.common.lend}
+              </p>
+
+              <h2 className="relative z-10 mt-2 text-xl font-black">
+                {formatMoney(summary.totalLend, currency)}
+              </h2>
+            </div>
+
+            <div
+              className="relative overflow-hidden bg-[#C86B3C] text-[#FFF4D8]
+              p-5 rounded-[2rem]
+              shadow-[0_18px_45px_rgba(200,107,60,0.22)]"
+            >
+              <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-[#D6B56D]/20 blur-3xl" />
+
+              <p className="relative z-10 text-[10px] font-black uppercase tracking-[0.18em] text-[#FFF4D8]/75">
+                {t.common.borrow}
+              </p>
+
+              <h2 className="relative z-10 mt-2 text-xl font-black">
+                {formatMoney(summary.totalBorrow, currency)}
+              </h2>
+            </div>
+
+            <div
+              className="relative overflow-hidden bg-[#263B2B] text-[#F4E7C5]
+              p-5 rounded-[2rem]
+              shadow-[0_18px_45px_rgba(38,59,43,0.22)]
+              dark:bg-[#F4E7C5] dark:text-[#263B2B]"
+            >
+              <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-[#D6B56D]/20 blur-3xl" />
+
+              <p className="relative z-10 text-[10px] font-black uppercase tracking-[0.18em] text-[#D6B56D] dark:text-[#9F4D2E]">
+                {t.loan.remainingBalance}
+              </p>
+
+              <h2 className="relative z-10 mt-2 text-xl font-black">
+                {formatMoney(summary.totalRemaining, currency)}
+              </h2>
+            </div>
           </div>
-        </div>
 
-        <div className="bg-white dark:bg-[#111827] rounded-[1.25rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
-          <div className="overflow-auto max-h-[500px]">
-            <table className="w-full table-fixed text-left">
-              <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
-                <tr className="text-xs uppercase text-gray-400">
-                  <th className="p-4 w-[40%]">
-                    {t.common.lend + "/" + t.common.borrow}
-                  </th>
-                  <th className="p-4 w-[20%] hidden md:table-cell">
-                    {t.common.lendWho.replace("Cho ", "")}
-                  </th>
-                  <th className="p-4 w-[20%]">{t.loan.remainingBalance}</th>
-                  <th className="p-4 w-[20%] text-right">{t.common.actions}</th>
-                </tr>
-              </thead>
+          {/* Table */}
+          <div
+            className="relative overflow-hidden
+            bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+            rounded-[2rem]
+            border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+            shadow-[0_18px_45px_rgba(38,59,43,0.08)]"
+          >
+            <div className="pointer-events-none absolute -top-20 right-10 h-48 w-48 rounded-full bg-[#D6B56D]/16 blur-3xl" />
 
-              <tbody>
-                {filteredLoans.map((item) => (
-                  <tr
-                    key={item.id}
-                    onClick={() => {
-                      setSelectedLoan(item);
-                      setIsDetailOpen(true);
-                    }}
-                    className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer"
-                  >
-                    <td className="p-3">
-                      <div className="flex gap-3 items-center">
-                        <div
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                            item.isLending
-                              ? "bg-purple-100 text-purple-600"
-                              : "bg-orange-100 text-orange-600"
-                          }`}
-                        >
-                          <DynamicIcon
-                            name={item.isLending ? "HandHeart" : "HandCoins"}
-                            size={18}
-                          />
-                        </div>
+            <div className="relative z-10 overflow-auto max-h-[500px] custom-scrollbar">
+              <table className="w-full table-fixed text-left">
+                <thead className="sticky top-0 bg-[#F4E7C5] dark:bg-[#1F2E24] z-10">
+                  <tr className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black tracking-wider">
+                    <th className="p-4 w-[40%]">
+                      {t.common.lend + "/" + t.common.borrow}
+                    </th>
+                    <th className="p-4 w-[20%] hidden md:table-cell">
+                      {t.common.lendWho.replace("Cho ", "")}
+                    </th>
+                    <th className="p-4 w-[20%]">
+                      {t.loan.remainingBalance}
+                    </th>
+                    <th className="p-4 w-[20%] text-right">
+                      {t.common.actions}
+                    </th>
+                  </tr>
+                </thead>
 
-                        <div>
-                          <p className="font-bold dark:text-white text-sm">
-                            {item.counterPartyName || t.common.notFound}
-                          </p>
-                          <p className="text-[10px] text-gray-400">
-                            {item.isLending ? t.common.lend : t.common.borrow}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="p-3 hidden text-gray-500 md:table-cell text-sm">
-                      {item.counterPartyName}
-                    </td>
-
-                    <td
-                      className={`p-3 text-sm font-bold ${
-                        item.isLending ? "text-emerald-500" : "text-rose-500"
-                      }`}
+                <tbody>
+                  {filteredLoans.map((item) => (
+                    <tr
+                      key={item.id}
+                      onClick={() => {
+                        setSelectedLoan(item);
+                        setIsDetailOpen(true);
+                      }}
+                      className="border-t border-[#D6B56D]/30 dark:border-[#F4E7C5]/10
+                      hover:bg-[#F4E7C5]/60 dark:hover:bg-[#F4E7C5]/10
+                      cursor-pointer transition-all"
                     >
-                      {formatMoney(item.remainingAmount || 0, item.currency)}
-                    </td>
+                      <td className="p-3">
+                        <div className="flex gap-3 items-center">
+                          <div
+                            className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                              item.isLending
+                                ? "bg-[#6F8F72]/15 text-[#6F8F72]"
+                                : "bg-[#C86B3C]/15 text-[#C86B3C]"
+                            }`}
+                          >
+                            <DynamicIcon
+                              name={item.isLending ? "HandHeart" : "HandCoins"}
+                              size={18}
+                            />
+                          </div>
 
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        {!item.isCompleted && (
+                          <div className="min-w-0">
+                            <p className="font-black text-[#263B2B] dark:text-[#F4E7C5] text-sm truncate">
+                              {item.counterPartyName || t.common.notFound}
+                            </p>
+
+                            <p className="text-[10px] text-[#6F8F72] dark:text-[#D6B56D] font-bold uppercase tracking-wider">
+                              {item.isLending ? t.common.lend : t.common.borrow}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="p-3 hidden text-[#7A6F45] dark:text-[#F4E7C5]/65 md:table-cell text-sm font-semibold">
+                        {item.counterPartyName}
+                      </td>
+
+                      <td
+                        className={`p-3 text-sm font-black ${
+                          item.isLending ? "text-[#6F8F72]" : "text-[#C86B3C]"
+                        }`}
+                      >
+                        {formatMoney(item.remainingAmount || 0, item.currency)}
+                      </td>
+
+                      <td className="p-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          {!item.isCompleted && (
+                            <button
+                              title={t.loan.repay}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedLoan(item);
+                                setIsRepayOpen(true);
+                              }}
+                              className="flex items-center justify-center p-2 rounded-xl
+                              text-[#6F8F72]
+                              hover:bg-[#6F8F72]/15
+                              active:scale-95 transition-all"
+                            >
+                              <HandCoins size={16} />
+                            </button>
+                          )}
+
                           <button
-                            title={t.loan.repay}
+                            title={t.common.edit}
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedLoan(item);
-                              setIsRepayOpen(true);
+                              handleEditClick(item);
                             }}
-                            className="flex items-center justify-center px-2 py-2 rounded-lg text-emerald-500  active:scale-95 transition-all"
+                            className="p-2 rounded-xl text-[#5F8A8B]
+                            hover:bg-[#5F8A8B]/15
+                            active:scale-95 transition-all"
                           >
-                            <HandCoins size={16} />
+                            <Edit2 size={16} />
                           </button>
-                        )}
 
-                        <button
-                          title={t.common.edit}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditClick(item);
-                          }}
-                          className="p-2 text-indigo-500"
-                        >
-                          <Edit2 size={16} />
-                        </button>
+                          <button
+                            title={t.common.delete}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteLoanItem(item);
+                              setIsConfirmOpen(true);
+                            }}
+                            className="p-2 rounded-xl text-[#C86B3C]
+                            hover:bg-[#C86B3C]/15
+                            active:scale-95 transition-all"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-                        <button
-                          title={t.common.delete}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteLoanItem(item);
-                            setIsConfirmOpen(true);
-                          }}
-                          className="p-2 text-red-500"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {filteredLoans.length === 0 && (
-              <div className="p-10 text-center text-gray-400">
-                {t.common.noData}
-              </div>
-            )}
+              {filteredLoans.length === 0 && (
+                <div className="p-10 text-center text-[#7A6F45] dark:text-[#F4E7C5]/60 font-bold">
+                  {t.common.noData}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -319,6 +374,7 @@ export default function LoanPage() {
           onSuccess={fetchLoans}
         />
       )}
+
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => {

@@ -37,7 +37,7 @@ interface LoanFormPayload {
   interestRate: number;
   interestUnit: string;
   duration: number;
-  durationUnit?: "day" | "month" | "year";
+  durationUnit?: "days" | "months" | "years";
   isRecurringReminder: boolean;
   reminderBeforeDays: number;
   reminderFrequency: string;
@@ -419,32 +419,60 @@ export default function TransactionForm({
   };
   return (
     <>
-      <div className="max-w-4xl mx-auto mb-24  p-2 rounded-2xl animate-in fade-in duration-500">
-        <div className="flex p-1.5 border-none  mb-2 ">
+      <div className="max-w-4xl mx-auto my-4 rounded-2xl animate-in fade-in duration-500">
+        {/* Transaction Type Tabs */}
+        <div className="flex p-1.5 mb-4 rounded-[1.5rem] bg-[#F4E7C5]/70 dark:bg-[#F4E7C5]/10 border border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
           {(["expense", "income", "lend", "borrow"] as TransactionType[]).map(
-            (id) => (
-              <button
-                key={id}
-                onClick={() => setType(id)}
-                className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase transition-all duration-300 ${type === id ? (id === "expense" ? "bg-rose-500" : id === "income" ? "bg-emerald-500" : "bg-blue-600") + " text-white shadow-lg" : "text-gray-400"}`}
-              >
-                {id === "expense"
-                  ? t.common.expense
+            (id) => {
+              const isActive = type === id;
+
+              const activeClass =
+                id === "expense"
+                  ? "bg-[#C86B3C] text-[#FFF4D8] shadow-[0_10px_24px_rgba(200,107,60,0.28)]"
                   : id === "income"
-                    ? t.common.income
-                    : id === "lend"
-                      ? t.common.lend
-                      : t.common.borrow}
-              </button>
-            ),
+                    ? "bg-[#6F8F72] text-[#FFF4D8] shadow-[0_10px_24px_rgba(111,143,114,0.28)]"
+                    : "bg-[#263B2B] text-[#F4E7C5] shadow-[0_10px_24px_rgba(38,59,43,0.24)] dark:bg-[#F4E7C5] dark:text-[#263B2B]";
+
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setType(id)}
+                  className={`flex-1 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 active:scale-95 ${
+                    isActive
+                      ? activeClass
+                      : "text-[#6F8F72] hover:bg-[#E7C87D]/35 hover:text-[#C86B3C] dark:text-[#F4E7C5]/70 dark:hover:bg-[#F4E7C5]/10"
+                  }`}
+                >
+                  {id === "expense"
+                    ? t.common.expense
+                    : id === "income"
+                      ? t.common.income
+                      : id === "lend"
+                        ? t.common.lend
+                        : t.common.borrow}
+                </button>
+              );
+            },
           )}
         </div>
 
-        <div className="group bg-white dark:bg-gray-900 rounded-[1.25rem] border border-gray-100 dark:border-gray-800 shadow-xl p-4 mb-4 relative overflow-hidden">
+        {/* Amount Card */}
+        <div className="group relative overflow-hidden rounded-[2rem] bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70 border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10 shadow-[0_18px_45px_rgba(38,59,43,0.08)] p-2 mb-5">
           <div
-            className={`absolute top-0 left-0 w-1.5 h-full ${isDebt ? "bg-blue-600" : "bg-indigo-600"}`}
-          ></div>
-          <div className="relative flex items-center justify-center py-2">
+            className={`absolute top-0 left-0 w-1.5 h-full ${
+              type === "expense"
+                ? "bg-[#C86B3C]"
+                : type === "income"
+                  ? "bg-[#6F8F72]"
+                  : "bg-[#263B2B] dark:bg-[#D6B56D]"
+            }`}
+          />
+
+          <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-[#D6B56D]/18 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-12 h-40 w-40 rounded-full bg-[#C86B3C]/10 blur-3xl" />
+
+          <div className="relative z-10 flex items-center justify-center py-3 gap-3">
             <input
               type="text"
               value={amount}
@@ -457,49 +485,59 @@ export default function TransactionForm({
               }}
               placeholder="0"
               inputMode="decimal"
-              className="w-full max-w-[500px] text-4xl font-black text-center bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-300 transition-all"
+              className="w-full max-w-[500px] text-4xl sm:text-5xl font-black text-center bg-transparent outline-none
+            text-[#263B2B] dark:text-[#F4E7C5]
+            placeholder:text-[#D6B56D]/55 dark:placeholder:text-[#F4E7C5]/25
+            transition-all"
               autoFocus
             />
-            <div className="relative group/curr">
+
+            <div className="relative group/curr shrink-0">
               <select
                 value={selectedCurrency}
                 onChange={(e) => {
                   const newCurr = e.target.value;
-                  //Lấy giá trị thuần từ input
                   const rawValue = parseInputToNumber(amount, selectedCurrency);
-                  //Cập nhật state currency mới
+
                   setSelectedCurrency(newCurr);
 
-                  //Format lại hiện thị cửa sổ tiền theo chuẩn của đồng tiền
                   setAmount(
                     formatInputByCurrency(rawValue.toString(), newCurr),
                   );
                 }}
-                className="appearance-none pl-3 pr-8 py-2 rounded-2xl bg-indigo-50 dark:bg-gray-800 text-indigo-600 font-black text-sm hover:bg-indigo-100 transition-all cursor-pointer outline-none border border-indigo-100 dark:border-gray-700"
+                className="appearance-none pl-3 pr-8 py-2.5 rounded-2xl
+              bg-[#F4E7C5]/80 dark:bg-[#F4E7C5]/10
+              text-[#9F4D2E] dark:text-[#D6B56D]
+              font-black text-sm
+              hover:bg-[#E7C87D]/45
+              transition-all cursor-pointer outline-none
+              border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10"
               >
                 {CURRENCIES.map((curr) => (
                   <option
                     key={curr.code}
                     value={curr.code}
-                    className="bg-white dark:bg-gray-900 text-gray-800 dark:text-white"
+                    className="bg-[#FFF9E8] text-[#263B2B]"
                   >
                     {curr.code} ({curr.symbol})
                   </option>
                 ))}
               </select>
+
               <ChevronDown
                 size={14}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none group-hover/curr:translate-y-[-40%] transition-transform"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C86B3C] pointer-events-none group-hover/curr:translate-y-[-40%] transition-transform"
               />
             </div>
           </div>
+
           {!rateLoading &&
             selectedAccount &&
             selectedCurrency !== selectedAccount.currency &&
             parseInputToNumber(amount, selectedCurrency) > 0 && (
-              <div className="text-[11px] text-gray-500 mt-2 text-center animate-in fade-in">
+              <div className="relative z-10 text-[11px] text-[#6F8F72] dark:text-[#D6B56D] mt-2 text-center animate-in fade-in font-semibold">
                 {t.rate.equivalent}{" "}
-                <span className="font-bold text-indigo-600">
+                <span className="font-black text-[#C86B3C]">
                   {new Intl.NumberFormat().format(
                     parseInputToNumber(amount, selectedCurrency) * rate,
                   )}{" "}
@@ -508,18 +546,23 @@ export default function TransactionForm({
                 ({t.rate.rate} 1 {selectedCurrency} = {rate})
               </div>
             )}
+
           {rateLoading && (
-            <div className="text-[10px] text-center mt-2">{t.rate.rating}</div>
+            <div className="relative z-10 text-[10px] text-center mt-2 text-[#6F8F72] dark:text-[#D6B56D] font-bold">
+              {t.rate.rating}
+            </div>
           )}
         </div>
 
         <div className="space-y-6">
+          {/* Account + Category / Person */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase flex items-center gap-2 ml-2  text-gray-400">
+              <label className="text-[10px] font-black uppercase flex items-center gap-2 ml-2 text-[#6F8F72] dark:text-[#D6B56D] tracking-wider">
                 <Landmark size={12} />
                 {t.common.accounts}
               </label>
+
               <SearchableSelect
                 items={accounts}
                 value={selectedAccount || null}
@@ -538,7 +581,6 @@ export default function TransactionForm({
                 isOpen={isAccDropdownOpen}
                 setIsOpen={setIsAccDropdownOpen}
                 onAdd={() => setShowAddAccount(true)}
-                // ICON
                 renderIcon={(acc) =>
                   acc?.type === "Bank" ? (
                     acc.logo ? (
@@ -548,18 +590,19 @@ export default function TransactionForm({
                         className="w-5 h-auto object-contain"
                       />
                     ) : (
-                      <Landmark size={20} className="text-blue-500" />
+                      <Landmark size={20} className="text-[#5F8A8B]" />
                     )
                   ) : (
-                    <Banknote size={20} className="text-emerald-500" />
+                    <Banknote size={20} className="text-[#6F8F72]" />
                   )
                 }
-                // ITEM UI
                 renderItem={(acc, selected) => (
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        acc.type === "Bank" ? "bg-blue-50" : "bg-emerald-50"
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                        acc.type === "Bank"
+                          ? "bg-[#5F8A8B]/12"
+                          : "bg-[#6F8F72]/15"
                       }`}
                     >
                       {acc.type === "Bank" ? (
@@ -570,31 +613,39 @@ export default function TransactionForm({
                             className="w-5 h-auto object-contain"
                           />
                         ) : (
-                          <Landmark size={16} className="text-blue-500" />
+                          <Landmark size={16} className="text-[#5F8A8B]" />
                         )
                       ) : (
-                        <Banknote size={16} className="text-emerald-500" />
+                        <Banknote size={16} className="text-[#6F8F72]" />
                       )}
                     </div>
 
                     <div className="flex flex-col items-start">
-                      <span className="text-sm font-bold">{acc.name}</span>
-                      <span className="text-[9px] text-gray-400">
+                      <span className="text-sm font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                        {acc.name}
+                      </span>
+
+                      <span className="text-[9px] font-bold text-[#6F8F72] dark:text-[#D6B56D]">
                         {acc.balance?.toLocaleString()} {acc.currency}
                       </span>
                     </div>
 
                     {selected && (
-                      <div className="ml-auto w-2 h-2 bg-indigo-600 rounded-full" />
+                      <div className="ml-auto w-2 h-2 bg-[#C86B3C] rounded-full" />
                     )}
                   </div>
                 )}
               />
             </div>
+
             {type !== "income" && (
               <div className="space-y-2">
                 <label
-                  className={`text-[10px] font-black uppercase flex items-center gap-2 ml-2 ${isDebt ? "text-blue-600" : "text-gray-400"}`}
+                  className={`text-[10px] font-black uppercase flex items-center gap-2 ml-2 tracking-wider ${
+                    isDebt
+                      ? "text-[#C86B3C]"
+                      : "text-[#6F8F72] dark:text-[#D6B56D]"
+                  }`}
                 >
                   {isDebt ? <Landmark size={12} /> : <Tag size={12} />}
                   {isDebt
@@ -603,13 +654,21 @@ export default function TransactionForm({
                       : t.common.borrowWho
                     : t.common.categories}
                 </label>
+
                 {isDebt ? (
                   <input
                     type="text"
                     value={person}
                     onChange={(e) => setPerson(e.target.value)}
                     placeholder={t.common["lend/borrowWho"]}
-                    className="w-full bg-white dark:text-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                    className="w-full
+                  bg-[#FFF9E8] dark:bg-[#263B2B]/80
+                  text-[#263B2B] dark:text-[#F4E7C5]
+                  border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+                  p-4 rounded-2xl text-sm font-bold outline-none
+                  focus:ring-2 focus:ring-[#C86B3C]/35
+                  placeholder:text-[#8B7A4B]/60
+                  shadow-sm transition-all"
                   />
                 ) : (
                   <SearchableSelect
@@ -636,13 +695,13 @@ export default function TransactionForm({
                           color={cat.color}
                         />
                       ) : (
-                        <Tag size={20} className="text-gray-400" />
+                        <Tag size={20} className="text-[#6F8F72]" />
                       )
                     }
                     renderItem={(cat, selected) => (
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          className="w-8 h-8 rounded-xl flex items-center justify-center"
                           style={{ backgroundColor: cat.color + "20" }}
                         >
                           <DynamicIcon
@@ -652,10 +711,12 @@ export default function TransactionForm({
                           />
                         </div>
 
-                        <span className="text-sm font-bold">{cat.name}</span>
+                        <span className="text-sm font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                          {cat.name}
+                        </span>
 
                         {selected && (
-                          <div className="ml-auto w-2 h-2 bg-indigo-600 rounded-full" />
+                          <div className="ml-auto w-2 h-2 bg-[#C86B3C] rounded-full" />
                         )}
                       </div>
                     )}
@@ -664,17 +725,28 @@ export default function TransactionForm({
               </div>
             )}
           </div>
+
+          {/* Images */}
           <div className="space-y-3">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-2">
+              <label className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] flex items-center gap-2 ml-2 tracking-wider">
                 Ảnh đính kèm
               </label>
 
-              <label className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus-within:ring-2 focus-within:ring-indigo-500 shadow-sm cursor-pointer flex flex-col items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                <span className="text-gray-400 text-xs">
+              <label
+                className="w-full
+              bg-[#FFF9E8] dark:bg-[#263B2B]/80
+              border border-dashed border-[#D6B56D]/70 dark:border-[#F4E7C5]/15
+              p-5 rounded-[1.5rem] text-sm font-bold outline-none
+              focus-within:ring-2 focus-within:ring-[#C86B3C]/30
+              shadow-sm cursor-pointer
+              flex flex-col items-center justify-center gap-2
+              hover:bg-[#F4E7C5]/70 dark:hover:bg-[#F4E7C5]/10
+              transition-all"
+              >
+                <span className="text-[#C86B3C] text-xs font-black uppercase tracking-wider">
                   Chọn ảnh hoặc kéo thả
                 </span>
-
                 <input
                   type="file"
                   multiple
@@ -687,28 +759,36 @@ export default function TransactionForm({
 
             {(existingImages.length > 0 || newPreviews.length > 0) && (
               <div className="grid grid-cols-3 gap-3">
-                {/* ẢNH CŨ */}
                 {existingImages.map((src, index) => (
-                  <div key={`old-${index}`} className="relative group">
+                  <div
+                    key={`old-${index}`}
+                    className="relative group overflow-hidden rounded-2xl border border-[#D6B56D]/40 shadow-sm"
+                  >
                     <img src={src} className="w-full h-24 object-cover" />
 
                     <button
+                      type="button"
                       onClick={() => handleRemoveExisting(index)}
-                      className="absolute top-1 right-1 bg-black/60 text-white px-2 py-1 rounded"
+                      className="absolute top-2 right-2 bg-[#263B2B]/75 text-[#FFF4D8] px-2 py-1 rounded-xl text-xs font-black
+                    opacity-90 hover:bg-[#C86B3C] transition-all"
                     >
                       ✕
                     </button>
                   </div>
                 ))}
 
-                {/* ẢNH MỚI */}
                 {newPreviews.map((src, index) => (
-                  <div key={`new-${index}`} className="relative group">
+                  <div
+                    key={`new-${index}`}
+                    className="relative group overflow-hidden rounded-2xl border border-[#D6B56D]/40 shadow-sm"
+                  >
                     <img src={src} className="w-full h-24 object-cover" />
 
                     <button
+                      type="button"
                       onClick={() => handleRemoveNew(index)}
-                      className="absolute top-1 right-1 bg-black/60 text-white px-2 py-1 rounded"
+                      className="absolute top-2 right-2 bg-[#263B2B]/75 text-[#FFF4D8] px-2 py-1 rounded-xl text-xs font-black
+                    opacity-90 hover:bg-[#C86B3C] transition-all"
                     >
                       ✕
                     </button>
@@ -718,8 +798,9 @@ export default function TransactionForm({
             )}
           </div>
 
-          <div className="space-y-2 dark:text-gray-400">
-            <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-2">
+          {/* From Date */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] flex items-center gap-2 ml-2 tracking-wider">
               <CalendarDays size={12} />
               {t.filter.fromDate}
             </label>
@@ -728,12 +809,20 @@ export default function TransactionForm({
               type="datetime-local"
               value={transactionFromDate}
               onChange={(e) => setTransactionFromDate(e.target.value)}
-              className="w-full bg-white dark:bg-gray-900 font-bold border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm  outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full
+            bg-[#FFF9E8] dark:bg-[#263B2B]/80
+            text-[#263B2B] dark:text-[#F4E7C5]
+            border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+            p-4 rounded-2xl text-sm font-bold outline-none
+            focus:ring-2 focus:ring-[#C86B3C]/35
+            shadow-sm transition-all"
             />
           </div>
+
+          {/* To Date */}
           {isDebt && (
-            <div className="space-y-2 dark:text-gray-400">
-              <label className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-2 ml-2">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-[#C86B3C] flex items-center gap-2 ml-2 tracking-wider">
                 <CalendarDays size={12} />
                 {t.filter.toDate}
               </label>
@@ -742,7 +831,13 @@ export default function TransactionForm({
                 type="datetime-local"
                 value={transactionToDate}
                 onChange={(e) => setTransactionToDate(e.target.value)}
-                className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full
+              bg-[#FFF9E8] dark:bg-[#263B2B]/80
+              text-[#263B2B] dark:text-[#F4E7C5]
+              border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+              p-4 rounded-2xl text-sm font-bold outline-none
+              focus:ring-2 focus:ring-[#C86B3C]/35
+              shadow-sm transition-all"
               />
             </div>
           )}
@@ -769,33 +864,55 @@ export default function TransactionForm({
             />
           )}
 
+          {/* Note */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-2 ml-2">
-              <MessageSquare size={12} className="text-indigo-500" />{" "}
+            <label className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase flex items-center gap-2 ml-2 tracking-wider">
+              <MessageSquare size={12} className="text-[#C86B3C]" />
               {t.common.note}
             </label>
+
             <textarea
               rows={2}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t.common.detail}
-              className="w-full bg-white dark:text-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm resize-none"
+              className="w-full
+            bg-[#FFF9E8] dark:bg-[#263B2B]/80
+            text-[#263B2B] dark:text-[#F4E7C5]
+            border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+            p-4 rounded-2xl text-sm font-bold outline-none
+            focus:ring-2 focus:ring-[#C86B3C]/35
+            placeholder:text-[#8B7A4B]/60
+            shadow-sm resize-none transition-all"
             />
           </div>
 
+          {/* Save Button */}
           <button
+            type="button"
             onClick={handleSave}
             disabled={loading}
-            className={`w-full py-4 rounded-[2.5rem] mt-1 shadow-2xl transition-all active:scale-[0.97] font-black text-white text-xs tracking-tight 
-              ${loading ? "opacity-70 cursor-not-allowed" : ""} 
-              ${isDebt ? "bg-gradient-to-r from-blue-600 to-indigo-700" : "bg-gradient-to-r from-indigo-600 to-violet-600"}`}
+            className={`w-full py-4 rounded-[2.5rem] mt-1
+          shadow-[0_18px_45px_rgba(38,59,43,0.18)]
+          transition-all active:scale-[0.97]
+          font-black text-[#FFF4D8] text-xs uppercase tracking-widest
+          ${
+            loading ? "opacity-70 cursor-not-allowed" : "hover:-translate-y-0.5"
+          }
+          ${
+            isDebt
+              ? "bg-[#263B2B] hover:bg-[#1F2E24] dark:bg-[#F4E7C5] dark:text-[#263B2B]"
+              : type === "income"
+                ? "bg-[#6F8F72] hover:bg-[#55745A]"
+                : "bg-[#C86B3C] hover:bg-[#9F4D2E]"
+          }`}
           >
             <span className="flex items-center justify-center gap-2">
               {loading ? (
                 <>{t.common.loading}</>
               ) : (
                 <>
-                  {isEdit ? t.transaction.update : t.transaction.save}{" "}
+                  {isEdit ? t.transaction.update : t.transaction.save}
                   <ArrowRight size={20} />
                 </>
               )}
@@ -810,6 +927,7 @@ export default function TransactionForm({
         schedule={schedule}
         currency={selectedCurrency}
       />
+
       <AddCategoryModal
         isOpen={showAddCategory}
         onClose={() => setShowAddCategory(false)}
@@ -819,6 +937,7 @@ export default function TransactionForm({
           await createCategory(payload);
         }}
       />
+
       <AddAccountModal
         isOpen={showAddAccount}
         onClose={() => setShowAddAccount(false)}

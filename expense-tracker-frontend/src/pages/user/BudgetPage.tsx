@@ -292,252 +292,290 @@ export default function BudgetPage() {
   const summaryTone =
     totalPercent > 100 ? "danger" : totalPercent >= 80 ? "warning" : "safe";
 
+  const summaryClass =
+    summaryTone === "danger"
+      ? "bg-[#C86B3C] shadow-[0_18px_45px_rgba(200,107,60,0.24)]"
+      : summaryTone === "warning"
+        ? "bg-[#D6B56D] shadow-[0_18px_45px_rgba(214,181,109,0.24)]"
+        : "bg-[#263B2B] shadow-[0_18px_45px_rgba(38,59,43,0.24)]";
+
   if (loading) return <LayoutSkeleton />;
 
   return (
     <Layout>
-      <div className="w-full max-w-screen-2xl mx-auto px-4 pb-4  space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex items-center justify-between gap-3">
-          {/* Search */}
-          <div className="flex-1 max-w-[180px] sm:max-w-[240px] md:max-w-xs">
-            <SearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder={t.common.search}
-            />
-          </div>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Month picker */}
-            <div className="flex items-center gap-1 bg-white dark:bg-gray-800 dark:text-white p-1 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-              <button
-                onClick={() =>
-                  setCurrentMonth(currentMonth.subtract(1, "month"))
-                }
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <ChevronLeft size={16} />
-              </button>
-
-              <div
-                onClick={() =>
-                  (
-                    document.getElementById(
-                      "budget-month-picker",
-                    ) as HTMLInputElement
-                  )?.showPicker?.()
-                }
-                className="px-2 py-2 text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
-              >
-                {currentMonth.format("MMM YYYY")}
-              </div>
-
-              <input
-                id="budget-month-picker"
-                type="month"
-                value={currentMonth.format("YYYY-MM")}
-                onChange={(e) =>
-                  e.target.value && setCurrentMonth(dayjs(e.target.value))
-                }
-                className="absolute opacity-0 pointer-events-none w-0 h-0"
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
+        <div className="w-full max-w-screen-2xl mx-auto px-2 sm:px-4 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="flex items-center justify-between gap-3">
+            {/* Search */}
+            <div className="flex-1 max-w-[180px] sm:max-w-[240px] md:max-w-xs">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder={t.common.search}
               />
+            </div>
 
-              <button
-                onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            {/* Right actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Month picker */}
+              <div
+                className="flex items-center gap-1
+                bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+                text-[#263B2B] dark:text-[#F4E7C5]
+                p-1 rounded-2xl
+                shadow-[0_10px_24px_rgba(38,59,43,0.06)]
+                border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10"
               >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+                <button
+                  onClick={() =>
+                    setCurrentMonth(currentMonth.subtract(1, "month"))
+                  }
+                  className="p-2 hover:bg-[#F4E7C5]/80 dark:hover:bg-[#F4E7C5]/10 rounded-xl transition-all active:scale-95"
+                >
+                  <ChevronLeft size={16} />
+                </button>
 
-            {/* Add button */}
-            <button
-              onClick={handleOpenAddModal}
-              className="flex items-center justify-center gap-1 p-3 sm:px-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 active:scale-95 transition-all"
-            >
-              <Plus size={16} />
-              <span className="hidden sm:inline">{t.common.add}</span>
-            </button>
-          </div>
-        </div>
-
-        <div
-          className={`rounded-[1.5rem] p-5 lg:p-6 text-white ${
-            summaryTone === "danger"
-              ? "bg-rose-600"
-              : summaryTone === "warning"
-                ? "bg-amber-500"
-                : "bg-indigo-600"
-          }`}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_.9fr] gap-4 items-stretch">
-            {/* LEFT */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
-                  <Wallet size={20} className="text-white" />
+                <div
+                  onClick={() =>
+                    (
+                      document.getElementById(
+                        "budget-month-picker",
+                      ) as HTMLInputElement
+                    )?.showPicker?.()
+                  }
+                  className="px-2 py-2 text-xs sm:text-sm font-black cursor-pointer whitespace-nowrap text-[#263B2B] dark:text-[#F4E7C5]"
+                >
+                  {currentMonth.format("MMM YYYY")}
                 </div>
 
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                    {t.budget.monthlyOverview}
-                  </p>
-                  <p className="text-xl lg:text-2xl font-black tracking-tight truncate">
-                    {formatMoney(totalSpent)} / {formatMoney(totalBudget)}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm font-bold text-white/80">
-                    {t.budget.budgetUsage}
-                  </span>
-                  <span className="text-base lg:text-lg font-black">
-                    {totalPercent.toFixed(0)}%
-                  </span>
-                </div>
-
-                <div className="h-3 bg-white/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(totalPercent, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-white/10 p-3">
-                  <p className="text-[10px] uppercase text-white/70 font-bold">
-                    {t.common.budget}
-                  </p>
-
-                  <p className="text-sm font-black break-words">
-                    {formatMoney(totalBudget)}
-                  </p>
-                </div>
-
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-white/10 p-3">
-                  <p className="text-[10px] uppercase text-white/70 font-bold">
-                    {t.budget.spentLabel}
-                  </p>
-                  <p className="text-sm font-black break-words">
-                    {formatMoney(totalSpent)}
-                  </p>
-                </div>
-
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-white/10 p-3">
-                  <p className="text-[10px] uppercase text-white/70 font-bold">
-                    {t.budget.remaining}
-                  </p>
-                  <p className="text-sm font-black break-words">
-                    {formatMoney(totalRemaining)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT */}
-            <div className="grid grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-2 self-stretch">
-              <div className="rounded-2xl bg-white/10 p-3 text-center flex flex-col justify-center">
-                <TriangleAlert className="mx-auto mb-2" size={18} />
-                <p className="text-[10px] uppercase text-white/70 font-bold">
-                  {t.budget.warning}
-                </p>
-                <p className="text-lg font-black mt-1">{warningCount}</p>
-              </div>
-
-              <div className="rounded-2xl bg-white/10 p-3 text-center flex flex-col justify-center">
-                <Flame className="mx-auto mb-2" size={18} />
-                <p className="text-[10px] uppercase text-white/70 font-bold">
-                  {t.budget.exceeded}
-                </p>
-                <p className="text-lg font-black mt-1">{dangerCount}</p>
-              </div>
-
-              <div className="rounded-2xl bg-white/10 p-3 text-center flex flex-col justify-center">
-                <CheckCircle2 className="mx-auto mb-2" size={18} />
-                <p className="text-[10px] uppercase text-white/70 font-bold">
-                  {t.budget.safe}
-                </p>
-                <p className="text-lg font-black mt-1">{safeCount}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-black text-gray-900 dark:text-white">
-                {t.budget.spendingMode}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <select
-                value={spendingMode}
-                onChange={(e) =>
-                  setSpendingMode(e.target.value as SpendingMode)
-                }
-                className="px-4 py-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-sm font-bold dark:text-white outline-none"
-              >
-                {MODE_OPTIONS.map((mode) => (
-                  <option key={mode.value} value={mode.value}>
-                    {language === "vi" ? mode.labelVi : mode.labelEn}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                onClick={handleApplyMode}
-                disabled={bulkApplying || spendingMode === "normal"}
-                className="px-4 py-3 rounded-2xl bg-indigo-600 text-white text-sm font-black disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {bulkApplying ? t.budget.applying : t.budget.applyAll}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-[#111827] rounded-[1.5rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h2 className="text-base font-black text-gray-900 dark:text-white">
-              {t.budget.budgetByCategory}
-            </h2>
-          </div>
-
-          {filteredRows.length === 0 ? (
-            <div className="py-20 flex flex-col items-center text-gray-400">
-              <Target size={32} className="mb-3 opacity-40" />
-              {t.budget.noData}
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              {filteredRows.map((row) => (
-                <BudgetItem
-                  key={row.categoryId}
-                  row={row}
-                  onEdit={handleEditClick}
-                  onDelete={() => handleDeleteBudget(row.budgetId)}
+                <input
+                  id="budget-month-picker"
+                  type="month"
+                  value={currentMonth.format("YYYY-MM")}
+                  onChange={(e) =>
+                    e.target.value && setCurrentMonth(dayjs(e.target.value))
+                  }
+                  className="absolute opacity-0 pointer-events-none w-0 h-0"
                 />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <BudgetModal
-        key={selectedBudget ? `edit-${selectedBudget.categoryId}` : "new"}
-        isOpen={isModalOpen}
-        initialData={selectedBudget}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedBudget(null);
-        }}
-        onSave={handleSaveBudget}
-      />
+                <button
+                  onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
+                  className="p-2 hover:bg-[#F4E7C5]/80 dark:hover:bg-[#F4E7C5]/10 rounded-xl transition-all active:scale-95"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* Add button */}
+              <button
+                onClick={handleOpenAddModal}
+                className="flex items-center justify-center gap-1 p-3 sm:px-4
+                bg-[#C86B3C] hover:bg-[#9F4D2E]
+                text-[#FFF4D8] rounded-2xl
+                font-black text-xs uppercase tracking-wider
+                shadow-[0_14px_32px_rgba(200,107,60,0.25)]
+                active:scale-95 transition-all"
+              >
+                <Plus size={16} strokeWidth={3} />
+                <span className="hidden sm:inline">{t.common.add}</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`relative overflow-hidden rounded-[2rem] p-5 lg:p-6 text-[#FFF4D8] ${summaryClass}`}
+          >
+            <div className="pointer-events-none absolute -top-20 -right-12 h-56 w-56 rounded-full bg-[#D6B56D]/22 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full bg-[#C86B3C]/14 blur-3xl" />
+
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.4fr_.9fr] gap-4 items-stretch">
+              {/* LEFT */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-[#FFF4D8]/15 flex items-center justify-center shrink-0">
+                    <Wallet size={20} className="text-[#FFF4D8]" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#D6B56D]">
+                      {t.budget.monthlyOverview}
+                    </p>
+                    <p className="text-xl lg:text-2xl font-black tracking-tight truncate">
+                      {formatMoney(totalSpent)} / {formatMoney(totalBudget)}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-end mb-2">
+                    <span className="text-sm font-bold text-[#FFF4D8]/80">
+                      {t.budget.budgetUsage}
+                    </span>
+                    <span className="text-base lg:text-lg font-black">
+                      {totalPercent.toFixed(0)}%
+                    </span>
+                  </div>
+
+                  <div className="h-3 bg-[#FFF4D8]/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#FFF4D8] rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(totalPercent, 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-[#FFF4D8]/10 p-3 border border-[#FFF4D8]/10">
+                    <p className="text-[10px] uppercase text-[#FFF4D8]/70 font-bold">
+                      {t.common.budget}
+                    </p>
+
+                    <p className="text-sm font-black break-words">
+                      {formatMoney(totalBudget)}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-[#FFF4D8]/10 p-3 border border-[#FFF4D8]/10">
+                    <p className="text-[10px] uppercase text-[#FFF4D8]/70 font-bold">
+                      {t.budget.spentLabel}
+                    </p>
+                    <p className="text-sm font-black break-words">
+                      {formatMoney(totalSpent)}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-2 rounded-2xl bg-[#FFF4D8]/10 p-3 border border-[#FFF4D8]/10">
+                    <p className="text-[10px] uppercase text-[#FFF4D8]/70 font-bold">
+                      {t.budget.remaining}
+                    </p>
+                    <p className="text-sm font-black break-words">
+                      {formatMoney(totalRemaining)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT */}
+              <div className="grid grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-2 self-stretch">
+                <div className="rounded-2xl bg-[#FFF4D8]/10 border border-[#FFF4D8]/10 p-3 text-center flex flex-col justify-center">
+                  <TriangleAlert className="mx-auto mb-2" size={18} />
+                  <p className="text-[10px] uppercase text-[#FFF4D8]/70 font-bold">
+                    {t.budget.warning}
+                  </p>
+                  <p className="text-lg font-black mt-1">{warningCount}</p>
+                </div>
+
+                <div className="rounded-2xl bg-[#FFF4D8]/10 border border-[#FFF4D8]/10 p-3 text-center flex flex-col justify-center">
+                  <Flame className="mx-auto mb-2" size={18} />
+                  <p className="text-[10px] uppercase text-[#FFF4D8]/70 font-bold">
+                    {t.budget.exceeded}
+                  </p>
+                  <p className="text-lg font-black mt-1">{dangerCount}</p>
+                </div>
+
+                <div className="rounded-2xl bg-[#FFF4D8]/10 border border-[#FFF4D8]/10 p-3 text-center flex flex-col justify-center">
+                  <CheckCircle2 className="mx-auto mb-2" size={18} />
+                  <p className="text-[10px] uppercase text-[#FFF4D8]/70 font-bold">
+                    {t.budget.safe}
+                  </p>
+                  <p className="text-lg font-black mt-1">{safeCount}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <p className="text-lg font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                  {t.budget.spendingMode}
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <select
+                  value={spendingMode}
+                  onChange={(e) =>
+                    setSpendingMode(e.target.value as SpendingMode)
+                  }
+                  className="px-4 py-3 rounded-2xl
+                  bg-[#FFF9E8] dark:bg-[#263B2B]/70
+                  border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+                  text-sm font-bold text-[#263B2B] dark:text-[#F4E7C5]
+                  outline-none focus:ring-2 focus:ring-[#C86B3C]/30"
+                >
+                  {MODE_OPTIONS.map((mode) => (
+                    <option
+                      key={mode.value}
+                      value={mode.value}
+                      className="bg-[#FFF9E8] text-[#263B2B]"
+                    >
+                      {language === "vi" ? mode.labelVi : mode.labelEn}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={handleApplyMode}
+                  disabled={bulkApplying || spendingMode === "normal"}
+                  className="px-4 py-3 rounded-2xl
+                  bg-[#6F8F72] hover:bg-[#55745A]
+                  text-[#FFF4D8]
+                  text-sm font-black uppercase tracking-wider
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  shadow-[0_14px_32px_rgba(111,143,114,0.22)]
+                  active:scale-95 transition-all"
+                >
+                  {bulkApplying ? t.budget.applying : t.budget.applyAll}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+            rounded-[2rem]
+            border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+            overflow-hidden
+            shadow-[0_18px_45px_rgba(38,59,43,0.08)]"
+          >
+            <div className="px-5 py-4 border-b border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
+              <h2 className="text-base font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                {t.budget.budgetByCategory}
+              </h2>
+            </div>
+
+            {filteredRows.length === 0 ? (
+              <div className="py-20 flex flex-col items-center text-[#7A6F45] dark:text-[#D6B56D]">
+                <Target size={32} className="mb-3 opacity-50" />
+                {t.budget.noData}
+              </div>
+            ) : (
+              <div className="divide-y divide-[#D6B56D]/30 dark:divide-[#F4E7C5]/10">
+                {filteredRows.map((row) => (
+                  <BudgetItem
+                    key={row.categoryId}
+                    row={row}
+                    onEdit={handleEditClick}
+                    onDelete={() => handleDeleteBudget(row.budgetId)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <BudgetModal
+          key={selectedBudget ? `edit-${selectedBudget.categoryId}` : "new"}
+          isOpen={isModalOpen}
+          initialData={selectedBudget}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedBudget(null);
+          }}
+          onSave={handleSaveBudget}
+        />
+      </div>
     </Layout>
   );
 }

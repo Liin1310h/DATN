@@ -64,7 +64,7 @@ export default function LoginPage() {
       }
 
       const role = getRoleFromToken(data.token);
-      if (role === "Admin") navigate("/admin");
+      if (role === "Admin") navigate("/admin/dashboard");
       else navigate(redirect);
     } catch (err) {
       console.log(err);

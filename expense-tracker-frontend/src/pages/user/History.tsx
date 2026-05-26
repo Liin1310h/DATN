@@ -9,7 +9,7 @@ import {
   type GetTransactionsParams,
 } from "../../services/transactionsService";
 import { DynamicIcon } from "../../components/Base/DynamicIcon";
-import { Edit2, FileDown, ListFilter, Loader2, Trash2} from "lucide-react";
+import { Edit2, FileDown, ListFilter, Loader2, Trash2 } from "lucide-react";
 import type { Category } from "../../types/category";
 import { getCategories } from "../../services/categoriesService";
 import toast from "react-hot-toast";
@@ -43,7 +43,6 @@ export default function History() {
   const { t, language } = useTranslation();
   const { currency } = useSettings();
 
-  //! tạo navigate
   const [params] = useSearchParams();
   const dateParam = params.get("date");
   const navigate = useNavigate();
@@ -52,13 +51,11 @@ export default function History() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
 
-  //! pagination
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [pageSize, setPageSize] = useState(15);
 
-  //! filter states
   const [showFilter, setShowFilter] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [type, setType] = useState("all");
@@ -68,10 +65,8 @@ export default function History() {
     null,
   );
 
-  //! sort
   const [sortBy, setSortBy] = useState("newest");
 
-  //! detail modal
   const [selectedTransaction, setSelectedTransaction] =
     useState<HistoryTransaction | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -81,19 +76,18 @@ export default function History() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  //! export
   const [exporting, setExporting] = useState(false);
 
-  //TODO lấy danh sách category
   useEffect(() => {
     getCategories().then(setCategories).catch(console.error);
   }, []);
 
-  //TODO lấy danh sách giao dịch với filter, pagination
   const requestIdRef = useRef(0);
+
   const fetchHistory = async (targetPage: number) => {
     const currentRequestId = ++requestIdRef.current;
     setLoading(true);
+
     try {
       const params: GetTransactionsParams = {
         searchQuery: searchTerm || undefined,
@@ -106,7 +100,9 @@ export default function History() {
       };
 
       const response = await getTransactions(params);
+
       if (currentRequestId !== requestIdRef.current) return;
+
       setTransactions(response.items || []);
       setTotalCount(response.totalCount || 0);
       setPage(targetPage);
@@ -123,7 +119,6 @@ export default function History() {
     }
   };
 
-  // Tự động fetch lại khi filter thay đổi, nhưng debounce 150ms để tránh gọi quá nhiều
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchHistory(1);
@@ -132,7 +127,6 @@ export default function History() {
     return () => clearTimeout(timer);
   }, [searchTerm, type, fromDate, toDate, selectedCategoryId, pageSize]);
 
-  //TODO Sắp xếp giao dịch theo sortBy
   const sortedTransactions = useMemo(() => {
     return [...transactions].sort((a, b) => {
       switch (sortBy) {
@@ -160,7 +154,6 @@ export default function History() {
     });
   }, [transactions, sortBy]);
 
-  //TODO Kiểm tra nếu là giao dịch liên quan đến khoản vay thì không cho edit/delete
   const isLoanTransaction = (transaction: HistoryTransaction) => {
     return (
       !!transaction.loan ||
@@ -182,12 +175,14 @@ export default function History() {
 
   const getAmountColor = (transaction: HistoryTransaction) => {
     if (transaction.type === "income" || transaction.type === "borrow") {
-      return "text-emerald-500";
+      return "text-[#6F8F72]";
     }
+
     if (transaction.type === "transfer") {
-      return "text-blue-500";
+      return "text-[#5F8A8B]";
     }
-    return "text-gray-900 dark:text-white";
+
+    return "text-[#C86B3C]";
   };
 
   const getTypeLabel = (item: HistoryTransaction) => {
@@ -210,6 +205,23 @@ export default function History() {
   const getDisplayTitle = (item: HistoryTransaction) => {
     if (item.note && item.note.trim() && item.note !== "0") return item.note;
     return item.categoryName || getTypeLabel(item);
+  };
+
+  const getTypeIconBoxClass = (item: HistoryTransaction) => {
+    switch (item.type) {
+      case "transfer":
+        return "bg-[#5F8A8B]/14 text-[#5F8A8B] dark:bg-[#5F8A8B]/24";
+      case "borrow":
+        return "bg-[#C86B3C]/14 text-[#C86B3C] dark:bg-[#C86B3C]/22";
+      case "lend":
+        return "bg-[#D6B56D]/22 text-[#9F7A2F] dark:bg-[#D6B56D]/20 dark:text-[#D6B56D]";
+      case "income":
+        return "bg-[#6F8F72]/15 text-[#6F8F72] dark:bg-[#6F8F72]/25";
+      case "expense":
+        return "bg-[#C86B3C]/14 text-[#C86B3C] dark:bg-[#C86B3C]/22";
+      default:
+        return "bg-[#F4E7C5]/70 text-[#7A6F45] dark:bg-[#F4E7C5]/10";
+    }
   };
 
   const dynamicTitle = useMemo(() => {
@@ -267,7 +279,6 @@ export default function History() {
     return `${typeLabel}${catLabel}${dateLabel}`;
   }, [type, selectedCategoryId, fromDate, toDate, language, categories, t]);
 
-  //TODO Xử lý edit/delete
   const handleEditClick = (transaction: HistoryTransaction) => {
     if (!canEditOrDelete(transaction)) {
       toast.error(t.loan.loanTransactionCannotEditHere);
@@ -278,7 +289,6 @@ export default function History() {
     setIsEditModalOpen(true);
   };
 
-  //TODO Xử lý delete
   const openDeleteModal = (transaction: HistoryTransaction) => {
     if (!canEditOrDelete(transaction)) {
       toast.error(t.loan.loanTransactionCannotEditHere);
@@ -289,7 +299,6 @@ export default function History() {
     setIsDeleteModalOpen(true);
   };
 
-  //TODO Xử lý confirm delete
   const confirmDelete = async () => {
     if (selectedTransId === null) return;
 
@@ -313,11 +322,9 @@ export default function History() {
     }
   };
 
-  //TODO Download excel
   const downloadTransactionsExcel = async (params: GetTransactionsParams) => {
     try {
       const blob = await exportTransactions(params);
-
       const url = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
@@ -333,7 +340,6 @@ export default function History() {
     }
   };
 
-  //TODO Xử lý export
   const handleExport = async () => {
     try {
       setExporting(true);
@@ -355,350 +361,404 @@ export default function History() {
 
   return (
     <Layout>
-      <div className="flex flex-col max-w-8xl mx-auto px-4 pb-1 h-full overflow-x-hidden">
-        <div className="flex flex-col md:flex-row md:items-end justify-between px-4 pb-3 space-y-2 animate-in fade-in duration-700">
-          <h1 className="text-xl md:text-xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
-            {dynamicTitle}
-          </h1>
-          <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <p className="text-sm text-gray-400 font-medium lowercase">
-              {transactions.length} {t.history.results}
-            </p>
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
+        <div className="flex flex-col max-w-8xl mx-auto px-4 pb-1 min-h-full">
+          <div className="flex flex-col md:flex-row md:items-end justify-between px-2 pb-3 space-y-2 animate-in fade-in duration-700">
+            <h1 className="text-xl md:text-xl font-black text-[#263B2B] dark:text-[#F4E7C5] tracking-tight leading-tight">
+              {dynamicTitle}
+            </h1>
+
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-[#6F8F72] animate-pulse" />
+              <p className="text-sm text-[#6F8F72] dark:text-[#D6B56D] font-bold lowercase">
+                {transactions.length} {t.history.results}
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex justify-between mb-2">
-          <SearchInput
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder={t.common.search}
-          />
-
-          <div className="flex gap-2">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-xs font-bold text-gray-600 dark:text-white outline-none"
-            >
-              <option value="newest">{t.history.newest}</option>
-              <option value="oldest">{t.history.oldest}</option>
-              <option value="az">A → Z</option>
-              <option value="za">Z → A</option>
-            </select>
-
-            <button
-              onClick={() => setShowFilter(!showFilter)}
-              className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-            >
-              <ListFilter size={18} className="dark:text-white" />
-            </button>
-            <button
-              onClick={handleExport}
-              disabled={exporting}
-              className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
-              title="Export Excel"
-            >
-              {exporting ? (
-                <Loader2 size={18} className="animate-spin text-green-500" />
-              ) : (
-                <FileDown
-                  size={18}
-                  className="text-green-600 dark:text-green-400"
-                />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-[#111827] rounded-[1.25rem] border border-gray-100 dark:border-gray-800 overflow-hidden w-full max-w-full">
-          <div className="flex relative">
-            <div className="flex-1 min-w-0">
-              <div className="border-t-0 border-gray-150 overflow-hidden relative flex flex-col lg:h-[420px]">
-                {loading && (
-                  <div className="p-20 flex justify-center">
-                    <Loader2 className="animate-spin text-indigo-500" />
-                  </div>
-                )}
-
-                {!loading && transactions.length > 0 && (
-                  <>
-                    <div className="overflow-auto flex-1">
-                      <table
-                        className={`w-full relative table-fixed ${
-                          showFilter ? "min-w-[600px]" : "min-w-[800px]"
-                        } text-left border-collapse`}
-                      >
-                        <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">
-                          <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
-                            <th className="w-[40%] p-4 text-[11px] font-black uppercase text-gray-500 dark:text-gray-400">
-                              {t.common.transactions} / {t.common.categories}
-                            </th>
-                            <th className="w-[20%] p-4 text-[11px] font-black uppercase text-gray-500 dark:text-gray-400 hidden md:table-cell">
-                              {t.common.accounts}
-                            </th>
-                            <th className="w-[15%] p-4 text-[11px] font-black uppercase text-gray-500 dark:text-gray-400 hidden sm:table-cell">
-                              {t.common.date}
-                            </th>
-                            <th className="w-[15%] p-4 text-[11px] font-black uppercase text-gray-500 dark:text-gray-400 text-right">
-                              {t.common.amount}
-                            </th>
-                            <th className="p-4 text-[11px] font-black uppercase text-gray-500 dark:text-white text-center w-24">
-                              {t.common.actions}
-                            </th>
-                          </tr>
-                        </thead>
-
-                        <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                          {sortedTransactions.map((item) => {
-                            const disabledActions = !canEditOrDelete(item);
-
-                            return (
-                              <tr
-                                key={item.id}
-                                onClick={(e) => {
-                                  if (
-                                    (e.target as HTMLElement).closest("button")
-                                  )
-                                    return;
-                                  setSelectedTransaction(item);
-                                  setIsDetailOpen(true);
-                                }}
-                                className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors cursor-pointer"
-                              >
-                                <td className="p-2">
-                                  <div className="flex items-center gap-3">
-                                    <div
-                                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                                        item.type === "transfer"
-                                          ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                                          : item.type === "borrow"
-                                            ? "bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400"
-                                            : item.type === "lend"
-                                              ? "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400"
-                                              : item.type === "income"
-                                                ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
-                                                : "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
-                                      }`}
-                                    >
-                                      <DynamicIcon
-                                        name={
-                                          item.type === "transfer"
-                                            ? "ArrowLeftRight"
-                                            : item.type === "borrow"
-                                              ? "HandCoins"
-                                              : item.type === "lend"
-                                                ? "HandHeart"
-                                                : item.type === "income"
-                                                  ? "TrendingUp"
-                                                  : item.categoryIcon || "Tag"
-                                        }
-                                        size={18}
-                                      />
-                                    </div>
-
-                                    <div className="min-w-0">
-                                      <p className="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">
-                                        {getDisplayTitle(item)}
-                                      </p>
-                                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                        {getTypeLabel(item)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                <td className="p-2 hidden md:table-cell">
-                                  <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-600 dark:text-gray-400">
-                                    {item.accountName}
-                                  </span>
-                                </td>
-
-                                <td className="p-2 text-xs text-gray-500 dark:text-gray-400 hidden sm:table-cell font-medium">
-                                  {new Date(
-                                    item.transactionDate,
-                                  ).toLocaleDateString("vi-VN")}
-                                </td>
-
-                                <td
-                                  className={`p-2 text-right font-black text-sm whitespace-nowrap ${getAmountColor(item)}`}
-                                >
-                                  {getAmountPrefix(item)}
-                                  {formatMoney(
-                                    item.amount,
-                                    item.currency || currency,
-                                  )}
-                                </td>
-
-                                <td className="p-2 border-b border-gray-150 dark:border-gray-800/50">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditClick(item);
-                                      }}
-                                      disabled={disabledActions}
-                                      className={`p-2 rounded-lg transition-colors ${
-                                        disabledActions
-                                          ? "text-gray-300 cursor-not-allowed"
-                                          : "text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
-                                      }`}
-                                      title={
-                                        disabledActions
-                                          ? t.history.editLoanInLoanScreen
-                                          : t.common.edit
-                                      }
-                                    >
-                                      <Edit2 size={16} />
-                                    </button>
-
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openDeleteModal(item);
-                                      }}
-                                      disabled={disabledActions}
-                                      className={`p-2 rounded-lg transition-colors ${
-                                        disabledActions
-                                          ? "text-gray-300 cursor-not-allowed"
-                                          : "text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
-                                      }`}
-                                      title={
-                                        disabledActions
-                                          ? t.history.editLoanInLoanScreen
-                                          : t.common.delete
-                                      }
-                                    >
-                                      <Trash2 size={16} />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="sticky bottom-0 z-10 px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          {t.common.show}
-                        </span>
-                        <select
-                          value={pageSize}
-                          onChange={(e) => setPageSize(Number(e.target.value))}
-                          className="bg-transparent border border-gray-200 dark:border-gray-700 dark:text-white rounded-md text-[11px] font-bold py-1 px-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        >
-                          {[5, 10, 15, 30, 50, 100].map((size) => (
-                            <option
-                              key={size}
-                              value={size}
-                              className="dark:bg-gray-900"
-                            >
-                              {size}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
-                        {t.common.page} {page} /{" "}
-                        {Math.max(1, Math.ceil(totalCount / pageSize))}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => fetchHistory(page - 1)}
-                          disabled={page === 1 || loading}
-                          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 dark:text-white text-[10px] font-black uppercase hover:bg-white dark:hover:bg-gray-800 disabled:opacity-30 transition-all"
-                        >
-                          {t.common.prev}
-                        </button>
-                        <button
-                          onClick={() => fetchHistory(page + 1)}
-                          disabled={!hasMore || loading}
-                          className="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-[10px] font-black uppercase shadow-md shadow-indigo-200 dark:shadow-none disabled:bg-gray-300 transition-all"
-                        >
-                          {t.common.next}
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {!loading && transactions.length === 0 && (
-                  <div className="p-20 text-center text-red-500 font-bold uppercase text-[15px] tracking-widest">
-                    {t.common.noData}
-                  </div>
-                )}
-              </div>
+          <div className="flex flex-col lg:flex-row justify-between gap-3 mb-3">
+            <div className="w-full lg:max-w-md">
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder={t.common.search}
+              />
             </div>
 
-            <div
-              className={`transition-all duration-300 ${
-                showFilter ? "w-[320px] opacity-100" : "w-0 opacity-0"
-              } overflow-hidden border-l border-gray-200 dark:border-gray-800`}
-            >
-              <FilterBar
-                type={type}
-                setType={setType}
-                fromDate={fromDate}
-                setFromDate={setFromDate}
-                toDate={toDate}
-                setToDate={setToDate}
-                categories={categories}
-                selectedCategoryId={selectedCategoryId}
-                setSelectedCategoryId={setSelectedCategoryId}
-                getCategoryLabel={(c) => c.name}
-                onReset={() => {
-                  setSearchTerm("");
-                  setType("all");
-                  setFromDate("");
-                  setToDate("");
-                  setSelectedCategoryId(null);
-                  navigate("/history");
+            <div className="flex gap-2 justify-end">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 rounded-2xl
+                bg-[#FFF9E8] dark:bg-[#263B2B]/70
+                border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+                text-xs font-black text-[#263B2B] dark:text-[#F4E7C5]
+                outline-none focus:ring-2 focus:ring-[#C86B3C]/25"
+              >
+                <option value="newest">{t.history.newest}</option>
+                <option value="oldest">{t.history.oldest}</option>
+                <option value="az">A → Z</option>
+                <option value="za">Z → A</option>
+              </select>
+
+              <button
+                onClick={() => setShowFilter(!showFilter)}
+                className="p-2.5 rounded-2xl
+                bg-[#FFF9E8] dark:bg-[#263B2B]/70
+                border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+                text-[#6F8F72] dark:text-[#D6B56D]
+                hover:bg-[#F4E7C5]/80 dark:hover:bg-[#F4E7C5]/10
+                hover:text-[#C86B3C]
+                transition-all active:scale-95"
+              >
+                <ListFilter size={18} />
+              </button>
+
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="p-2.5 rounded-2xl
+                bg-[#FFF9E8] dark:bg-[#263B2B]/70
+                border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+                text-[#6F8F72] dark:text-[#D6B56D]
+                hover:bg-[#6F8F72] hover:text-[#FFF4D8]
+                transition-all active:scale-95 disabled:opacity-50"
+                title="Export Excel"
+              >
+                {exporting ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <FileDown size={18} />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div
+            className="bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+            rounded-[2rem]
+            border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+            overflow-hidden w-full max-w-full
+            shadow-[0_18px_45px_rgba(38,59,43,0.08)]"
+          >
+            <div className="flex relative">
+              <div className="flex-1 min-w-0">
+                <div className="overflow-hidden relative flex flex-col lg:h-[450px]">
+                  {loading && (
+                    <div className="p-20 flex justify-center">
+                      <Loader2 className="animate-spin text-[#C86B3C]" />
+                    </div>
+                  )}
+
+                  {!loading && transactions.length > 0 && (
+                    <>
+                      <div className="overflow-auto flex-1 custom-scrollbar">
+                        <table
+                          className={`w-full relative table-fixed ${
+                            showFilter ? "min-w-[600px]" : "min-w-[800px]"
+                          } text-left border-collapse`}
+                        >
+                          <thead className="sticky top-0 z-10 bg-[#F4E7C5] dark:bg-[#1F2E24]">
+                            <tr className="border-b border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
+                              <th className="w-[40%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D]">
+                                {t.common.transactions} / {t.common.categories}
+                              </th>
+
+                              <th className="w-[20%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] hidden md:table-cell">
+                                {t.common.accounts}
+                              </th>
+
+                              <th className="w-[15%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] hidden sm:table-cell">
+                                {t.common.date}
+                              </th>
+
+                              <th className="w-[15%] p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] text-right">
+                                {t.common.amount}
+                              </th>
+
+                              <th className="p-4 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] text-center w-24">
+                                {t.common.actions}
+                              </th>
+                            </tr>
+                          </thead>
+
+                          <tbody className="divide-y divide-[#D6B56D]/25 dark:divide-[#F4E7C5]/10">
+                            {sortedTransactions.map((item) => {
+                              const disabledActions = !canEditOrDelete(item);
+
+                              return (
+                                <tr
+                                  key={item.id}
+                                  onClick={(e) => {
+                                    if (
+                                      (e.target as HTMLElement).closest(
+                                        "button",
+                                      )
+                                    )
+                                      return;
+
+                                    setSelectedTransaction(item);
+                                    setIsDetailOpen(true);
+                                  }}
+                                  className="group hover:bg-[#F4E7C5]/55 dark:hover:bg-[#F4E7C5]/10 transition-colors cursor-pointer"
+                                >
+                                  <td className="p-2">
+                                    <div className="flex items-center gap-3">
+                                      <div
+                                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${getTypeIconBoxClass(
+                                          item,
+                                        )}`}
+                                      >
+                                        <DynamicIcon
+                                          name={
+                                            item.type === "transfer"
+                                              ? "ArrowLeftRight"
+                                              : item.type === "borrow"
+                                                ? "HandCoins"
+                                                : item.type === "lend"
+                                                  ? "HandHeart"
+                                                  : item.type === "income"
+                                                    ? "TrendingUp"
+                                                    : item.categoryIcon || "Tag"
+                                          }
+                                          size={18}
+                                        />
+                                      </div>
+
+                                      <div className="min-w-0">
+                                        <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5] truncate">
+                                          {getDisplayTitle(item)}
+                                        </p>
+
+                                        <p className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-wider">
+                                          {getTypeLabel(item)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  <td className="p-2 hidden md:table-cell">
+                                    <span
+                                      className="px-2 py-1 rounded-xl
+                                      bg-[#F4E7C5]/80 dark:bg-[#F4E7C5]/10
+                                      border border-[#D6B56D]/30 dark:border-[#F4E7C5]/10
+                                      text-[10px] font-bold text-[#7A6F45] dark:text-[#F4E7C5]/70"
+                                    >
+                                      {item.accountName}
+                                    </span>
+                                  </td>
+
+                                  <td className="p-2 text-xs text-[#7A6F45] dark:text-[#F4E7C5]/65 hidden sm:table-cell font-bold">
+                                    {new Date(
+                                      item.transactionDate,
+                                    ).toLocaleDateString("vi-VN")}
+                                  </td>
+
+                                  <td
+                                    className={`p-2 text-right font-black text-sm whitespace-nowrap ${getAmountColor(
+                                      item,
+                                    )}`}
+                                  >
+                                    {getAmountPrefix(item)}
+                                    {formatMoney(
+                                      item.amount,
+                                      item.currency || currency,
+                                    )}
+                                  </td>
+
+                                  <td className="p-2">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditClick(item);
+                                        }}
+                                        disabled={disabledActions}
+                                        className={`p-2 rounded-xl transition-colors ${
+                                          disabledActions
+                                            ? "text-[#BFA66A]/50 cursor-not-allowed"
+                                            : "text-[#5F8A8B] hover:text-[#FFF4D8] hover:bg-[#5F8A8B]"
+                                        }`}
+                                        title={
+                                          disabledActions
+                                            ? t.history.editLoanInLoanScreen
+                                            : t.common.edit
+                                        }
+                                      >
+                                        <Edit2 size={16} />
+                                      </button>
+
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openDeleteModal(item);
+                                        }}
+                                        disabled={disabledActions}
+                                        className={`p-2 rounded-xl transition-colors ${
+                                          disabledActions
+                                            ? "text-[#BFA66A]/50 cursor-not-allowed"
+                                            : "text-[#C86B3C] hover:text-[#FFF4D8] hover:bg-[#C86B3C]"
+                                        }`}
+                                        title={
+                                          disabledActions
+                                            ? t.history.editLoanInLoanScreen
+                                            : t.common.delete
+                                        }
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div
+                        className="sticky bottom-0 z-10 px-4 py-3
+                        border-t border-[#D6B56D]/35 dark:border-[#F4E7C5]/10
+                        bg-[#F4E7C5]/80 dark:bg-[#1F2E24]/95
+                        flex flex-col sm:flex-row items-center justify-between gap-4"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-widest">
+                            {t.common.show}
+                          </span>
+
+                          <select
+                            value={pageSize}
+                            onChange={(e) =>
+                              setPageSize(Number(e.target.value))
+                            }
+                            className="bg-[#FFF9E8] dark:bg-[#263B2B]
+                            border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+                            text-[#263B2B] dark:text-[#F4E7C5]
+                            rounded-xl text-[11px] font-black py-1 px-2
+                            focus:outline-none focus:ring-2 focus:ring-[#C86B3C]/25"
+                          >
+                            {[5, 10, 15, 30, 50, 100].map((size) => (
+                              <option
+                                key={size}
+                                value={size}
+                                className="bg-[#FFF9E8] text-[#263B2B]"
+                              >
+                                {size}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="text-[11px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-widest">
+                          {t.common.page} {page} /{" "}
+                          {Math.max(1, Math.ceil(totalCount / pageSize))}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => fetchHistory(page - 1)}
+                            disabled={page === 1 || loading}
+                            className="px-3 py-1.5 rounded-xl
+                            border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+                            text-[#7A6F45] dark:text-[#F4E7C5]
+                            text-[10px] font-black uppercase
+                            hover:bg-[#FFF9E8] dark:hover:bg-[#F4E7C5]/10
+                            disabled:opacity-30 transition-all"
+                          >
+                            {t.common.prev}
+                          </button>
+
+                          <button
+                            onClick={() => fetchHistory(page + 1)}
+                            disabled={!hasMore || loading}
+                            className="px-4 py-1.5 rounded-xl
+                            bg-[#C86B3C] text-[#FFF4D8]
+                            text-[10px] font-black uppercase
+                            shadow-[0_10px_24px_rgba(200,107,60,0.22)]
+                            disabled:bg-[#BFA66A] disabled:opacity-60
+                            transition-all"
+                          >
+                            {t.common.next}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {!loading && transactions.length === 0 && (
+                    <div className="p-20 text-center text-[#C86B3C] font-black uppercase text-[15px] tracking-widest">
+                      {t.common.noData}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div
+                className={`transition-all duration-300 ${
+                  showFilter ? "w-[320px] opacity-100" : "w-0 opacity-0"
+                } overflow-hidden border-l border-[#D6B56D]/35 dark:border-[#F4E7C5]/10`}
+              >
+                <FilterBar
+                  type={type}
+                  setType={setType}
+                  fromDate={fromDate}
+                  setFromDate={setFromDate}
+                  toDate={toDate}
+                  setToDate={setToDate}
+                  categories={categories}
+                  selectedCategoryId={selectedCategoryId}
+                  setSelectedCategoryId={setSelectedCategoryId}
+                  getCategoryLabel={(c) => c.name}
+                  onReset={() => {
+                    setSearchTerm("");
+                    setType("all");
+                    setFromDate("");
+                    setToDate("");
+                    setSelectedCategoryId(null);
+                    navigate("/history");
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <ConfirmModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => {
+              setIsDeleteModalOpen(false);
+              setSelectedTransId(null);
+            }}
+            onConfirm={confirmDelete}
+            title={t.history.confirmDeleteTitle}
+            description={t.history.confirmDeleteDesc}
+            confirmText={t.common.delete}
+            cancelText={t.common.cancel}
+            variant="danger"
+          />
+
+          <EditTransactionModal
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setEditingTransaction(null);
+            }}
+            transactionData={editingTransaction}
+            onSuccess={() => fetchHistory(1)}
+          />
+
+          {isDetailOpen && selectedTransaction && (
+            <div className="fixed inset-0 z-[1000] bg-[#263B2B]/78 backdrop-blur-xl flex items-center justify-center p-4">
+              <TransactionDetail
+                transaction={selectedTransaction}
+                onClose={() => {
+                  setIsDetailOpen(false);
+                  setSelectedTransaction(null);
                 }}
               />
             </div>
-          </div>
+          )}
         </div>
-
-        <ConfirmModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => {
-            setIsDeleteModalOpen(false);
-            setSelectedTransId(null);
-          }}
-          onConfirm={confirmDelete}
-          title={t.history.confirmDeleteTitle}
-          description={t.history.confirmDeleteDesc}
-          confirmText={t.common.delete}
-          cancelText={t.common.cancel}
-          variant="danger"
-        />
-
-        <EditTransactionModal
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setEditingTransaction(null);
-          }}
-          transactionData={editingTransaction}
-          onSuccess={() => fetchHistory(1)}
-        />
-
-        {isDetailOpen && selectedTransaction && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <TransactionDetail
-              transaction={selectedTransaction}
-              onClose={() => {
-                setIsDetailOpen(false);
-                setSelectedTransaction(null);
-              }}
-            />
-          </div>
-        )}
       </div>
     </Layout>
   );

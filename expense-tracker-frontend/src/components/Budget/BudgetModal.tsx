@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Target, DollarSign, LayoutGrid } from "lucide-react";
 import { useTranslation } from "../../hook/useTranslation";
 import { useSettings } from "../../context/SettingsContext";
-import { CURRENCIES, getCurrencySymbol } from "../../constants/currencies";
+import { CURRENCIES } from "../../constants/currencies";
 import {
   formatInputByCurrency,
   parseInputToNumber,
@@ -24,7 +24,6 @@ export default function BudgetModal({
   );
   const [categories, setCategories] = useState([]);
 
-  // Định dạng số tiền ban đầu nếu có dữ liệu cũ
   const initialAmount = initialData?.amount
     ? formatInputByCurrency(
         initialData.amount.toString(),
@@ -45,6 +44,7 @@ export default function BudgetModal({
 
   const handleSave = () => {
     const rawAmount = parseInputToNumber(amount, currency);
+
     if (!amount || rawAmount <= 0) {
       toast.error(t.transaction.errorInput);
       return;
@@ -54,59 +54,102 @@ export default function BudgetModal({
       toast.error(t.error.errorCategory);
       return;
     }
+
     onSave({
       id: initialData?.id,
       categoryId: Number(categoryId),
       amount: rawAmount,
-      currency: currency,
+      currency,
     });
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
-      {/* Backdrop mờ ảo */}
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 overflow-hidden">
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-[#263B2B]/78 backdrop-blur-xl animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Modal Card */}
-      <div className="relative bg-white dark:bg-gray-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-white/20 dark:border-gray-800 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div
+        className="relative w-full max-w-md overflow-hidden
+        rounded-[2.5rem]
+        bg-[#FFF9E8] dark:bg-[#263B2B]
+        border border-[#D6B56D]/50 dark:border-[#F4E7C5]/10
+        shadow-[0_30px_90px_rgba(0,0,0,0.38)]
+        animate-in zoom-in-95 duration-200"
+      >
+        <div className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-[#D6B56D]/22 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-[#C86B3C]/16 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_1px_1px,#263B2B_1px,transparent_0)] [background-size:16px_16px]" />
+
         {/* Header */}
-        <div className="p-6 border-b border-gray-50 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
+        <div
+          className="relative z-10 p-6
+          border-b border-[#D6B56D]/35 dark:border-[#F4E7C5]/10
+          flex justify-between items-center
+          bg-[#F4E7C5]/55 dark:bg-[#F4E7C5]/10"
+        >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500 rounded-xl text-white">
+            <div
+              className="p-2.5 bg-[#C86B3C] rounded-2xl text-[#FFF4D8]
+              shadow-[0_10px_24px_rgba(200,107,60,0.28)]"
+            >
               <Target size={20} />
             </div>
-            <h2 className="font-black text-lg text-gray-800 dark:text-white uppercase tracking-tight">
+
+            <h2 className="font-black text-lg text-[#263B2B] dark:text-[#F4E7C5] uppercase tracking-tight">
               {initialData ? t.budget.editTitle : t.budget.addNew}
             </h2>
           </div>
+
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400"
+            className="h-10 w-10 rounded-2xl
+            bg-[#F4E7C5]/70 text-[#263B2B]
+            hover:bg-[#C86B3C] hover:text-[#FFF4D8]
+            dark:bg-[#F4E7C5]/10 dark:text-[#F4E7C5]
+            dark:hover:bg-[#C86B3C]
+            transition-all active:scale-95
+            flex items-center justify-center"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-8 space-y-6">
+        <div className="relative z-10 p-8 space-y-6">
           {/* Select Category */}
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-[11px] font-black uppercase text-gray-400 tracking-widest ml-1">
-              <LayoutGrid size={14} />
+            <label className="flex items-center gap-2 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] tracking-widest ml-1">
+              <LayoutGrid size={14} className="text-[#C86B3C]" />
               {t.common.categories}
             </label>
+
             <select
               value={categoryId}
               disabled={!!initialData}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 border-none focus:ring-2 focus:ring-indigo-500 font-bold text-sm text-gray-700 dark:text-gray-200 appearance-none transition-all"
+              className="w-full p-4 rounded-2xl
+              bg-[#FFF9E8] dark:bg-[#263B2B]/80
+              border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+              focus:ring-2 focus:ring-[#C86B3C]/30
+              font-bold text-sm
+              text-[#263B2B] dark:text-[#F4E7C5]
+              appearance-none transition-all outline-none
+              disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <option value="">{t.common.select}</option>
+              <option value="" className="bg-[#FFF9E8] text-[#263B2B]">
+                {t.common.select}
+              </option>
+
               {categories.map((c: any) => (
-                <option key={c.id} value={c.id}>
+                <option
+                  key={c.id}
+                  value={c.id}
+                  className="bg-[#FFF9E8] text-[#263B2B]"
+                >
                   {c.name}
                 </option>
               ))}
@@ -115,17 +158,28 @@ export default function BudgetModal({
 
           {/* Select Currency */}
           <div className="space-y-2">
-            <label className="text-[11px] font-black uppercase text-gray-400 tracking-widest ml-1">
+            <label className="text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] tracking-widest ml-1">
               {t.common.currency}
             </label>
+
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 font-bold text-sm"
+              className="w-full p-4 rounded-2xl
+              bg-[#FFF9E8] dark:bg-[#263B2B]/80
+              border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+              focus:ring-2 focus:ring-[#C86B3C]/30
+              font-bold text-sm
+              text-[#263B2B] dark:text-[#F4E7C5]
+              outline-none"
             >
               {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.symbol}
+                <option
+                  key={c.code}
+                  value={c.code}
+                  className="bg-[#FFF9E8] text-[#263B2B]"
+                >
+                  {c.code} ({c.symbol})
                 </option>
               ))}
             </select>
@@ -133,45 +187,39 @@ export default function BudgetModal({
 
           {/* Input Amount */}
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-[11px] font-black uppercase text-gray-400 tracking-widest ml-1">
-              <DollarSign size={14} />
+            <label className="flex items-center gap-2 text-[11px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] tracking-widest ml-1">
+              <DollarSign size={14} className="text-[#C86B3C]" />
               {t.common.amount}
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={amount}
-                placeholder="0"
-                onChange={(e) => {
-                  const formatted = formatInputByCurrency(
-                    e.target.value,
-                    currency,
-                  );
-                  setAmount(formatted);
-                }}
-                className="w-full p-4 pl-12 rounded-2xl bg-gray-50 dark:bg-gray-800 border-none focus:ring-2 focus:ring-indigo-500 font-black text-xl text-indigo-600 dark:text-indigo-400 transition-all placeholder:text-gray-300"
-              />
-              <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-gray-400 text-lg">
-                {getCurrencySymbol(currency)}
-              </span>
-            </div>
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="p-6 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-50 dark:border-gray-800 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-4 px-6 rounded-2xl text-sm font-black uppercase text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-          >
-            {t.common.cancel}
-          </button>
+            <input
+              value={amount}
+              onChange={(e) =>
+                setAmount(formatInputByCurrency(e.target.value, currency))
+              }
+              placeholder="0"
+              className="w-full p-4 rounded-2xl
+              bg-[#FFF9E8] dark:bg-[#263B2B]/80
+              border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
+              focus:ring-2 focus:ring-[#C86B3C]/30
+              font-black text-xl
+              text-[#263B2B] dark:text-[#F4E7C5]
+              placeholder:text-[#D6B56D]/50
+              outline-none"
+            />
+          </div>
+
+          {/* Save */}
           <button
             onClick={handleSave}
-            disabled={!categoryId || !amount}
-            className="flex-1 py-4 px-6 rounded-2xl bg-indigo-600 text-white text-sm font-black uppercase shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 disabled:opacity-50 disabled:grayscale transition-all active:scale-95"
+            className="w-full py-4 rounded-2xl
+            bg-[#C86B3C] hover:bg-[#9F4D2E]
+            text-[#FFF4D8]
+            font-black text-xs uppercase tracking-widest
+            shadow-[0_18px_45px_rgba(200,107,60,0.24)]
+            transition-all active:scale-95"
           >
-            {initialData ? t.common.edit : t.common.save}
+            {initialData ? t.common.save : t.common.add}
           </button>
         </div>
       </div>

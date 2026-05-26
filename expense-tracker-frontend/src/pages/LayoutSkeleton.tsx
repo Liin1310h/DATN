@@ -2,7 +2,7 @@ export default function LayoutSkeleton() {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-[#0B0F1A] overflow-hidden animate-pulse">
       {/* 1. Sidebar Skeleton */}
-      <aside className="hidden lg:flex flex-col w-64 h-full bg-white dark:bg-[#161E2E] border-r border-gray-200 dark:border-gray-800/60 p-6 space-y-8">
+      <aside className="hidden lg:flex flex-col w-60 h-full bg-white dark:bg-[#161E2E] border-r border-gray-200 dark:border-gray-800/60 p-6 space-y-8">
         <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 rounded-xl mb-4" />{" "}
         {/* Logo */}
         <div className="space-y-4">

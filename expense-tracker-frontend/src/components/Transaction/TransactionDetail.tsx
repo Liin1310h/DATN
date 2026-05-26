@@ -74,44 +74,44 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
   const getTypeIcon = () => {
     switch (transaction.type) {
       case "expense":
-        return <ArrowDownRight size={18} className="text-rose-500" />;
+        return <ArrowDownRight size={18} className="text-[#C86B3C]" />;
       case "income":
-        return <ArrowUpRight size={18} className="text-emerald-500" />;
+        return <ArrowUpRight size={18} className="text-[#6F8F72]" />;
       case "lend":
-        return <HandCoins size={18} className="text-blue-600" />;
+        return <HandCoins size={18} className="text-[#5F8A8B]" />;
       case "borrow":
-        return <Handshake size={18} className="text-orange-500" />;
+        return <Handshake size={18} className="text-[#C86B3C]" />;
       case "transfer":
-        return <ArrowLeftRight size={18} className="text-sky-500" />;
+        return <ArrowLeftRight size={18} className="text-[#5F8A8B]" />;
       default:
-        return <Wallet size={18} className="text-indigo-600" />;
+        return <Wallet size={18} className="text-[#D6B56D]" />;
     }
   };
 
   const getTypeBadgeClass = () => {
     switch (transaction.type) {
       case "expense":
-        return "bg-rose-500 text-white";
+        return "bg-[#C86B3C] text-[#FFF4D8]";
       case "income":
-        return "bg-emerald-500 text-white";
+        return "bg-[#6F8F72] text-[#FFF4D8]";
       case "lend":
-        return "bg-blue-600 text-white";
+        return "bg-[#5F8A8B] text-[#FFF4D8]";
       case "borrow":
-        return "bg-orange-500 text-white";
+        return "bg-[#C86B3C] text-[#FFF4D8]";
       case "transfer":
-        return "bg-sky-500 text-white";
+        return "bg-[#5F8A8B] text-[#FFF4D8]";
       default:
-        return "bg-indigo-600 text-white";
+        return "bg-[#263B2B] text-[#F4E7C5]";
     }
   };
 
   const getAmountColor = () => {
-    if (isExpense) return "text-rose-500";
-    if (isIncome) return "text-emerald-500";
-    if (isBorrow) return "text-emerald-500";
-    if (isLend) return "text-blue-600";
-    if (isTransfer) return "text-sky-500";
-    return "text-indigo-600";
+    if (isExpense) return "text-[#C86B3C]";
+    if (isIncome) return "text-[#6F8F72]";
+    if (isBorrow) return "text-[#6F8F72]";
+    if (isLend) return "text-[#5F8A8B]";
+    if (isTransfer) return "text-[#5F8A8B]";
+    return "text-[#D6B56D]";
   };
 
   const getAmountPrefix = () => {
@@ -124,10 +124,20 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
     !!transaction.categoryId && transaction.type !== "transfer" && !isDebt;
 
   return (
-    <div className="w-full max-w-xl max-h-[90vh] overflow-auto rounded-[1.5rem] bg-white dark:bg-[#0F172A] shadow-2xl animate-in fade-in zoom-in duration-300">
-      <div className="relative p-6 pb-4 text-center border-b border-gray-100 dark:border-gray-800">
+    <div
+      className="relative w-full max-w-xl max-h-[90vh] overflow-auto
+      rounded-[2rem]
+      bg-[#FFF9E8] dark:bg-[#263B2B]
+      border border-[#D6B56D]/50 dark:border-[#F4E7C5]/10
+      shadow-[0_30px_90px_rgba(0,0,0,0.32)]
+      animate-in fade-in zoom-in duration-300 custom-scrollbar"
+    >
+      <div className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-[#D6B56D]/22 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-[#C86B3C]/14 blur-3xl" />
+
+      <div className="relative z-10 p-6 pb-4 text-center border-b border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
         <div
-          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase mb-3 ${getTypeBadgeClass()}`}
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase mb-3 shadow-sm ${getTypeBadgeClass()}`}
         >
           {getTypeIcon()}
           {getTypeLabel()}
@@ -138,25 +148,31 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
           {formatMoney(transaction.amount, transaction.currency)}
         </div>
 
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-        >
-          ✕
-        </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-xl
+            text-[#7A6F45] hover:text-[#FFF4D8]
+            hover:bg-[#C86B3C]
+            dark:text-[#F4E7C5] dark:hover:bg-[#C86B3C]
+            transition active:scale-95"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
-      <div className="p-6 space-y-5">
+      <div className="relative z-10 p-6 space-y-5">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center">
-            <Wallet size={18} className="text-indigo-600" />
+          <div className="w-10 h-10 rounded-xl bg-[#6F8F72]/15 dark:bg-[#6F8F72]/25 flex items-center justify-center">
+            <Wallet size={18} className="text-[#6F8F72]" />
           </div>
 
           <div className="flex-1">
-            <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+            <p className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] mb-1">
               {t.common.accounts}
             </p>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">
+            <p className="text-sm font-bold text-[#263B2B] dark:text-[#F4E7C5]">
               {transaction.accountName || "--"}
             </p>
           </div>
@@ -169,25 +185,25 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
               style={{
                 backgroundColor: transaction.categoryColor
                   ? `${transaction.categoryColor}20`
-                  : "#EEF2FF",
+                  : "rgba(214,181,109,0.22)",
               }}
             >
               {transaction.categoryIcon ? (
                 <DynamicIcon
                   name={transaction.categoryIcon}
                   size={18}
-                  color={transaction.categoryColor || "#6366F1"}
+                  color={transaction.categoryColor || "#C86B3C"}
                 />
               ) : (
-                <Tag size={18} className="text-violet-500" />
+                <Tag size={18} className="text-[#C86B3C]" />
               )}
             </div>
 
             <div className="flex-1">
-              <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+              <p className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] mb-1">
                 {t.common.categories}
               </p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">
+              <p className="text-sm font-bold text-[#263B2B] dark:text-[#F4E7C5]">
                 {transaction.categoryName || "--"}
               </p>
             </div>
@@ -195,15 +211,15 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
         )}
 
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
-            <CalendarDays size={18} className="text-orange-500" />
+          <div className="w-10 h-10 rounded-xl bg-[#C86B3C]/14 dark:bg-[#C86B3C]/22 flex items-center justify-center">
+            <CalendarDays size={18} className="text-[#C86B3C]" />
           </div>
 
           <div className="flex-1">
-            <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+            <p className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] mb-1">
               {t.common.date}
             </p>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">
+            <p className="text-sm font-bold text-[#263B2B] dark:text-[#F4E7C5]">
               {formatDate(transaction.transactionDate)}
             </p>
           </div>
@@ -212,30 +228,33 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
         {transaction.loan && (
           <>
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-                <User size={18} className="text-blue-600" />
+              <div className="w-10 h-10 rounded-xl bg-[#5F8A8B]/15 dark:bg-[#5F8A8B]/25 flex items-center justify-center">
+                <User size={18} className="text-[#5F8A8B]" />
               </div>
 
               <div className="flex-1">
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+                <p className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] mb-1">
                   {t.loan.counterParty}
                 </p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                <p className="text-sm font-bold text-[#263B2B] dark:text-[#F4E7C5]">
                   {transaction.loan.counterPartyName || "--"}
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-                <Percent size={18} className="text-amber-500" />
+              <div className="w-10 h-10 rounded-xl bg-[#D6B56D]/22 dark:bg-[#D6B56D]/20 flex items-center justify-center">
+                <Percent
+                  size={18}
+                  className="text-[#9F7A2F] dark:text-[#D6B56D]"
+                />
               </div>
 
               <div className="flex-1">
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+                <p className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] mb-1">
                   {t.loan.interest}
                 </p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                <p className="text-sm font-bold text-[#263B2B] dark:text-[#F4E7C5]">
                   {transaction.loan.interestRate ?? 0}{" "}
                   {transaction.loan.interestUnit || ""}
                 </p>
@@ -243,21 +262,24 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
-                <Clock3 size={18} className="text-purple-500" />
+              <div className="w-10 h-10 rounded-xl bg-[#263B2B]/10 dark:bg-[#F4E7C5]/10 flex items-center justify-center">
+                <Clock3
+                  size={18}
+                  className="text-[#263B2B] dark:text-[#F4E7C5]"
+                />
               </div>
 
               <div className="flex-1">
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+                <p className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] mb-1">
                   {t.loan.remaining} / {t.loan.due}
                 </p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                <p className="text-sm font-bold text-[#263B2B] dark:text-[#F4E7C5]">
                   {formatMoney(
                     transaction.loan.remainingAmount,
                     transaction.currency,
                   )}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-[#7A6F45] dark:text-[#F4E7C5]/60 mt-1">
                   {formatDate(transaction.loan.dueDate)}
                 </p>
               </div>
@@ -266,16 +288,19 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
         )}
 
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-            <MessageSquare size={18} className="text-gray-500" />
+          <div className="w-10 h-10 rounded-xl bg-[#F4E7C5]/80 dark:bg-[#F4E7C5]/10 flex items-center justify-center">
+            <MessageSquare
+              size={18}
+              className="text-[#7A6F45] dark:text-[#D6B56D]"
+            />
           </div>
 
           <div className="flex-1">
-            <p className="text-[10px] font-black uppercase text-gray-400 mb-1">
+            <p className="text-[10px] font-black uppercase text-[#6F8F72] dark:text-[#D6B56D] mb-1">
               {t.common.note}
             </p>
 
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3 text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+            <div className="rounded-xl bg-[#F4E7C5]/60 dark:bg-[#F4E7C5]/10 border border-[#D6B56D]/35 dark:border-[#F4E7C5]/10 p-3 text-sm text-[#263B2B] dark:text-[#F4E7C5] leading-relaxed">
               {transaction.note?.trim() || "--"}
             </div>
           </div>

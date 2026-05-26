@@ -4,12 +4,18 @@ import type {
   AdminUserListItemDto,
   AdminUpdateUserRoleRequest,
   AdminUpdateUserStatusRequest,
+  AdminUserQueryDto,
+  PagedResultDto,
 } from "../../types/admin";
 
-export async function getAdminUsers(search?: string) {
-  const res = await api.get<AdminUserListItemDto[]>("/admin/users", {
-    params: search ? { search } : undefined,
-  });
+export async function getAdminUsers(query?: AdminUserQueryDto) {
+  const res = await api.get<PagedResultDto<AdminUserListItemDto>>(
+    "/admin/users",
+    {
+      params: query,
+    },
+  );
+
   return res.data;
 }
 

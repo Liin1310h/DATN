@@ -1,32 +1,25 @@
-import { ChevronDown, Filter, X } from "lucide-react";
-import { useState } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { useTranslation } from "../hook/useTranslation";
-interface BaseItem {
-  id: number;
-  name: string;
-}
+import { RotateCcw } from "lucide-react";
 
-interface FilterBarProps<T extends BaseItem> {
+interface FilterBarProps {
   type: string;
-  setType: (val: string) => void;
+  setType: (value: string) => void;
 
   fromDate: string;
-  setFromDate: (val: string) => void;
+  setFromDate: (value: string) => void;
+
   toDate: string;
-  setToDate: (val: string) => void;
+  setToDate: (value: string) => void;
 
-  categories: T[];
+  categories: any[];
   selectedCategoryId: number | null;
-  setSelectedCategoryId: (val: number | null) => void;
+  setSelectedCategoryId: (value: number | null) => void;
 
-  getCategoryLabel: (item: T) => string;
+  getCategoryLabel: (category: any) => string;
 
   onReset: () => void;
 }
 
-export default function FilterBar<T extends BaseItem>({
+export default function FilterBar({
   type,
   setType,
   fromDate,
@@ -38,138 +31,109 @@ export default function FilterBar<T extends BaseItem>({
   setSelectedCategoryId,
   getCategoryLabel,
   onReset,
-}: FilterBarProps<T>) {
-  const { t } = useTranslation();
-  const [dateError, setDateError] = useState("");
+}: FilterBarProps) {
+  const inputClass =
+    "w-full rounded-2xl bg-[#FFF9E8] dark:bg-[#263B2B]/80 border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10 px-3 py-3 text-xs font-bold text-[#263B2B] dark:text-[#F4E7C5] outline-none focus:ring-2 focus:ring-[#C86B3C]/30 focus:border-[#C86B3C]/50 transition-all";
+
+  const labelClass =
+    "text-[10px] font-black uppercase tracking-[0.18em] text-[#6F8F72] dark:text-[#D6B56D]";
 
   return (
-    <div className="h-full p-4 bg-white dark:bg-[#111827] flex flex-col gap-4">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-black uppercase text-gray-400">
-          {t.filter.filter}
-        </h2>
-      </div>
-
-      {/* DATE */}
-      <div className="flex flex-col gap-2">
-        <span className="text-[10px] font-bold text-gray-500 dark:text-white uppercase">
-          {t.filter.time}
-        </span>
-        <div className="flex items-center gap-2 px-2 py-2 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/50">
-          {/* FROM DATE */}
-          <DatePicker
-            selected={fromDate ? new Date(fromDate) : null}
-            onChange={(date: Date | null) => {
-              const value = date?.toISOString().split("T")[0] || "";
-              setFromDate(value);
-
-              if (toDate && value > toDate) {
-                setDateError(t.filter.dateStartBeforeEnd);
-              } else {
-                setDateError("");
-              }
-            }}
-            dateFormat="dd/MM/yyyy"
-            maxDate={toDate ? new Date(toDate) : undefined}
-            placeholderText={t.filter.fromDate}
-            className="bg-transparent text-xs font-bold outline-none text-gray-600 dark:text-white w-full"
-            portalId="root"
-          />
-
-          <span className="text-gray-300">|</span>
-
-          {/* TO DATE */}
-          <DatePicker
-            selected={toDate ? new Date(toDate) : null}
-            onChange={(date: Date | null) => {
-              const value = date?.toISOString().split("T")[0] || "";
-              setToDate(value);
-
-              if (fromDate && value < fromDate) {
-                setDateError(t.filter.dateEndAfterStart);
-              } else {
-                setDateError("");
-              }
-            }}
-            dateFormat="dd/MM/yyyy"
-            minDate={fromDate ? new Date(fromDate) : undefined}
-            placeholderText={t.filter.toDate}
-            className="bg-transparent text-xs font-bold outline-none text-gray-600 dark:text-white w-full text-right"
-            portalId="root"
-          />
+    <aside
+      className="h-full w-full
+      bg-[#FFF9E8]/90 dark:bg-[#263B2B]/80
+      border-l border-[#D6B56D]/35 dark:border-[#F4E7C5]/10
+      p-4 overflow-y-auto custom-scrollbar"
+    >
+      <div className="space-y-3">
+        <div>
+          <h3 className="font-black uppercase tracking-[0.22em] text-[#6F8F72] dark:text-[#D6B56D]">
+            Bộ lọc
+          </h3>
         </div>
-        {dateError && (
-          <p className="text-[10px] text-rose-500 font-bold">{dateError}</p>
-        )}
-      </div>
 
-      {/* TYPE */}
-      <div className="flex flex-col gap-2">
-        <span className="text-[10px] font-bold text-gray-400 uppercase">
-          Loại
-        </span>
-        <div className="flex bg-gray-50 dark:bg-gray-800/60 p-1 rounded-xl border border-gray-100 dark:border-gray-800/50">
-          {[
-            { key: "all", label: t.common.all },
-            { key: "income", label: t.common.income },
-            { key: "expense", label: t.common.expense },
-          ].map((item) => (
-            <button
-              key={item.key}
-              onClick={() => setType(item.key)}
-              className={`flex-1 px-2 py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${
-                type === item.key
-                  ? "bg-white dark:bg-gray-700 text-indigo-600 shadow-sm dark:text-indigo-400"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+        {/* Loại giao dịch */}
+        <div className="space-y-2">
+          <label className={labelClass}>Loại giao dịch</label>
 
-      {/* CATEGORY */}
-      <div className="flex flex-col gap-2">
-        <span className="text-[10px] font-bold text-gray-400 uppercase">
-          {t.common.categories}
-        </span>
-        <div className="relative">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            <Filter size={14} />
-          </div>
           <select
-            value={selectedCategoryId || ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSelectedCategoryId(val === "" ? null : Number(val));
-            }}
-            className="w-full appearance-none pl-9 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/50 text-xs font-bold uppercase text-gray-600 dark:text-white outline-none"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className={inputClass}
           >
-            <option value="">
-              {t.common.all} {t.common.categories}
-            </option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {getCategoryLabel(cat)}
+            <option value="all">Tất cả</option>
+            <option value="expense">Chi tiêu</option>
+            <option value="income">Thu nhập</option>
+            <option value="lend">Cho vay</option>
+            <option value="borrow">Đi vay</option>
+            <option value="transfer">Chuyển khoản</option>
+          </select>
+        </div>
+
+        {/* Danh mục */}
+        <div>
+          <label className={labelClass}>Danh mục</label>
+
+          <select
+            value={selectedCategoryId ?? ""}
+            onChange={(e) =>
+              setSelectedCategoryId(
+                e.target.value ? Number(e.target.value) : null,
+              )
+            }
+            className={inputClass}
+          >
+            <option value="">Tất cả danh mục</option>
+
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {getCategoryLabel(category)}
               </option>
             ))}
           </select>
-          <ChevronDown
-            size={14}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+        </div>
+
+        {/* Ngày bắt đầu */}
+        <div className="space-y-2">
+          <label className={labelClass}>Từ ngày</label>
+
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className={inputClass}
           />
         </div>
-      </div>
 
-      {/* RESET */}
-      <button
-        onClick={onReset}
-        className="mt-auto flex items-center justify-center gap-2 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-xs font-bold uppercase text-rose-500 hover:bg-rose-500 hover:text-white transition-all"
-      >
-        <X size={14} /> {t.filter.reset}
-      </button>
-    </div>
+        {/* Ngày kết thúc */}
+        <div className="space-y-2">
+          <label className={labelClass}>Đến ngày</label>
+
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        {/* Reset */}
+        <button
+          type="button"
+          onClick={onReset}
+          className="w-full rounded-2xl py-3.5
+          bg-[#F4E7C5]/75 hover:bg-[#E7C87D]/60
+          dark:bg-[#F4E7C5]/10 dark:hover:bg-[#F4E7C5]/15
+          border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+          text-[#7A6F45] dark:text-[#D6B56D]
+          font-black text-[10px] uppercase tracking-[0.18em]
+          transition-all active:scale-95
+          flex items-center justify-center gap-2 mt-3"
+        >
+          <RotateCcw size={14} strokeWidth={3} />
+          Đặt lại
+        </button>
+      </div>
+    </aside>
   );
 }

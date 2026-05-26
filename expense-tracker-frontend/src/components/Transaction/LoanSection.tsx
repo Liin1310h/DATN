@@ -53,46 +53,64 @@ export default function LoanSection({
 }: LoanSectionProps) {
   const { t } = useTranslation();
 
+  const inputClass =
+    "w-full bg-[#FFF9E8] dark:bg-[#263B2B]/80 text-[#263B2B] dark:text-[#F4E7C5] border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#C86B3C]/35 shadow-sm transition-all placeholder:text-[#8B7A4B]/60";
+
+  const selectClass =
+    "bg-[#F4E7C5]/80 dark:bg-[#F4E7C5]/10 text-[#263B2B] dark:text-[#F4E7C5] border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10 px-4 rounded-2xl text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-[#C86B3C]/30 shadow-sm transition-all";
+
   return (
     <div className="space-y-5 animate-in slide-in-from-top-4">
       {/* Lãi suất */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-2 ml-2">
-          <Percent size={12} className="text-blue-600" /> {t.loan.interestRate}
-        </label>
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-[#D6B56D]/18 blur-3xl" />
 
-        <div className="flex gap-2">
-          <div className="relative flex-[2]">
-            <input
-              type="number"
-              value={interestRate}
-              onChange={(e) => setInterestRate(e.target.value)}
-              className="w-full bg-white dark:text-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
-              %
-            </span>
+        <div className="relative z-10 space-y-2">
+          <label className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase flex items-center gap-2 ml-1 tracking-wider">
+            <Percent size={12} className="text-[#C86B3C]" />
+            {t.loan.interestRate}
+          </label>
+
+          <div className="flex gap-2">
+            <div className="relative flex-[2]">
+              <input
+                type="number"
+                value={interestRate}
+                onChange={(e) => setInterestRate(e.target.value)}
+                className={`${inputClass} pr-10`}
+              />
+
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C86B3C] font-black">
+                %
+              </span>
+            </div>
+
+            <select
+              value={interestUnit}
+              onChange={(e) => setInterestUnit(e.target.value)}
+              className="flex-1 bg-[#C86B3C] text-[#FFF4D8]
+              px-4 rounded-2xl text-[10px] font-black uppercase outline-none
+              shadow-[0_12px_28px_rgba(200,107,60,0.25)]
+              hover:bg-[#9F4D2E] transition-all"
+            >
+              <option value="year">{t.loan.perYear}</option>
+              <option value="month">{t.loan.perMonth}</option>
+              <option value="day">{t.loan.perDay}</option>
+            </select>
           </div>
-
-          <select
-            value={interestUnit}
-            onChange={(e) => setInterestUnit(e.target.value)}
-            className="flex-1 bg-blue-600 text-white px-4 rounded-2xl text-[10px] font-black uppercase outline-none shadow-lg"
-          >
-            <option value="year">{t.loan.perYear}</option>
-            <option value="month">{t.loan.perMonth}</option>
-            <option value="day">{t.loan.perDay}</option>
-          </select>
         </div>
       </div>
 
       {/* Chi tiết khoản vay */}
       {Number(interestRate) > 0 && (
-        <div className=" rounded-[2.5rem] space-y-6">
+        <div className="relative overflow-hidden ">
+          <div className="pointer-events-none absolute -bottom-16 -left-12 h-40 w-40 rounded-full bg-[#6F8F72]/14 blur-3xl" />
+
           {/* Thời hạn */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-500 dark:text-white uppercase flex items-center gap-2">
-              <Timer size={12} /> {t.loan.term}
+          <div className="relative z-10">
+            <label className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase flex items-center gap-2 ml-1 tracking-wider">
+              <Timer size={12} className="text-[#C86B3C]" />
+              {t.loan.term}
             </label>
 
             <div className="flex gap-2">
@@ -100,13 +118,15 @@ export default function LoanSection({
                 type="number"
                 value={loanDuration}
                 onChange={(e) => setLoanDuration(e.target.value)}
-                className="flex-[2] bg-white dark:text-white dark:bg-gray-900 p-4 rounded-xl text-sm font-bold outline-none ring-1 ring-blue-100 dark:ring-blue-900 focus:ring-2 focus:ring-blue-500"
+                className={`flex-[2] ${inputClass}`}
               />
 
               <select
                 value={durationUnit}
-                onChange={(e) => setDurationUnit(e.target.value)}
-                className="flex-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-4 rounded-xl text-[10px] font-bold uppercase"
+                onChange={(e) =>
+                  setDurationUnit(e.target.value as DurationUnit)
+                }
+                className={`flex-1 ${selectClass}`}
               >
                 <option value="year">{t.loan.year}</option>
                 <option value="month">{t.loan.month}</option>
@@ -117,82 +137,108 @@ export default function LoanSection({
 
           {/* Kết quả tính toán */}
           {schedule && (
-            <div className="mt-4 p-6 bg-gray-900 rounded-[2rem] text-white shadow-2xl animate-in zoom-in">
-              {/* Header */}
-              <div className="flex justify-between items-start mb-6">
+            <div
+              className="relative z-10 mt-4 overflow-hidden rounded-[2rem]
+              bg-[#263B2B] text-[#F4E7C5]
+              border border-[#D6B56D]/25
+  
+              p-5 animate-in zoom-in"
+            >
+              <div className="pointer-events-none absolute -top-16 -right-12 h-44 w-44 rounded-full bg-[#D6B56D]/18 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-20 -left-12 h-44 w-44 rounded-full bg-[#C86B3C]/18 blur-3xl" />
+
+              <div className="relative z-10 flex justify-between items-start mb-6 gap-4">
                 <div>
-                  <p className="text-[9px] text-gray-400 uppercase font-black mb-1 flex items-center gap-1">
-                    <CircleDollarSign size={10} className="text-emerald-400" />
+                  <p className="text-[9px] text-[#D6B56D] uppercase font-black mb-1 flex items-center gap-1 tracking-wider">
+                    <CircleDollarSign size={10} className="text-[#D6B56D]" />
                     {t.loan.periodicPayment}
                   </p>
 
-                  <p className="text-2xl font-black text-emerald-400">
+                  <p className="text-2xl font-black text-[#FFF4D8]">
                     {Math.round(schedule.monthlyPayment).toLocaleString()}{" "}
-                    <span className="text-[10px]">{currency}</span>
+                    <span className="text-[10px] text-[#D6B56D]">
+                      {currency}
+                    </span>
                   </p>
                 </div>
 
                 <div className="text-right">
-                  <p className="text-[9px] text-gray-400 uppercase font-black mb-1">
+                  <p className="text-[9px] text-[#D6B56D] uppercase font-black mb-1 tracking-wider">
                     {t.loan.totalInterest}
                   </p>
-                  <p className="text-lg font-black text-rose-400">
+
+                  <p className="text-lg font-black text-[#C86B3C]">
                     + {Math.round(schedule.totalInterest).toLocaleString()}
                   </p>
                 </div>
               </div>
 
-              {/* Progress bar */}
-              <div className="space-y-2">
-                <div className="h-2 w-full bg-gray-800 rounded-full flex overflow-hidden">
+              <div className="relative z-10 space-y-2">
+                <div className="h-2.5 w-full bg-[#1F2E24] rounded-full flex overflow-hidden border border-[#F4E7C5]/10">
                   <div
-                    className="bg-emerald-500 h-full transition-all duration-1000"
+                    className="bg-[#6F8F72] h-full transition-all duration-1000"
                     style={{ width: `${schedule.principalPercent}%` }}
                   />
-                  <div className="bg-rose-500 h-full flex-1" />
+
+                  <div className="bg-[#C86B3C] h-full flex-1" />
+                </div>
+
+                <div className="flex justify-between text-[9px] font-black uppercase tracking-wider text-[#D6B56D]">
+                  <span>Gốc</span>
+                  <span>Lãi</span>
                 </div>
               </div>
 
-              {/* Button */}
               <button
                 onClick={onOpenSchedule}
-                className="w-full mt-4 py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 flex items-center justify-center gap-2"
+                className="relative z-10 w-full mt-4 py-4
+                bg-[#FFF4D8]/10 hover:bg-[#FFF4D8]/16
+                rounded-2xl text-[10px] font-black uppercase tracking-widest
+                transition-all border border-[#FFF4D8]/12
+                flex items-center justify-center gap-2
+                text-[#FFF4D8] active:scale-95"
               >
-                <Calculator size={14} /> {t.loan.viewSchedule}
+                <Calculator size={14} />
+                {t.loan.viewSchedule}
               </button>
             </div>
           )}
         </div>
       )}
+
       {/* Nhắc hạn khoản vay */}
-      <div className="space-y-3 p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <label className="text-[10px] font-black text-gray-500 dark:text-gray-300 uppercase flex items-center gap-2">
-            <BellRing size={13} className="text-amber-500" />
+      <div className="relative overflow-hidden gap-3">
+        <div className="pointer-events-none absolute -top-12 right-0 h-36 w-36 rounded-full bg-[#D6B56D]/16 blur-3xl" />
+
+        <div className="relative z-10 flex items-center justify-between gap-3">
+          <label className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase flex items-center gap-2 tracking-wider ml-2">
+            <BellRing size={13} className="text-[#C86B3C]" />
             Nhắc hạn khoản vay
           </label>
 
           <button
             type="button"
             onClick={() => setIsRecurringReminder(!isRecurringReminder)}
-            className={`relative w-12 h-7 rounded-full transition-all ${
+            className={`relative w-12 h-7 rounded-full transition-all border ${
               isRecurringReminder
-                ? "bg-blue-600"
-                : "bg-gray-300 dark:bg-gray-700"
+                ? "bg-[#C86B3C] border-[#C86B3C]"
+                : "bg-[#F4E7C5] border-[#D6B56D]/60 dark:bg-[#F4E7C5]/10 dark:border-[#F4E7C5]/10"
             }`}
           >
             <span
-              className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all ${
-                isRecurringReminder ? "translate-x-5" : "translate-x-0"
+              className={`absolute top-1 left-1 w-5 h-5 rounded-full transition-all shadow-md ${
+                isRecurringReminder
+                  ? "translate-x-5 bg-[#FFF4D8]"
+                  : "translate-x-0 bg-[#7A6F45] dark:bg-[#D6B56D]"
               }`}
             />
           </button>
         </div>
 
         {isRecurringReminder && (
-          <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-2">
+          <div className="relative z-10 grid grid-cols-2 gap-3 animate-in slide-in-from-top-2">
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-gray-400 uppercase">
+              <label className="text-[9px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-wider ml-2">
                 Nhắc trước
               </label>
 
@@ -202,24 +248,24 @@ export default function LoanSection({
                   min={0}
                   value={reminderBeforeDays}
                   onChange={(e) => setReminderBeforeDays(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-950 dark:text-white border border-gray-100 dark:border-gray-800 p-4 pr-12 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`${inputClass} pr-12 rounded-xl`}
                 />
 
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-black uppercase">
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-[#C86B3C] font-black uppercase">
                   ngày
                 </span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-gray-400 uppercase">
+              <label className="text-[9px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-wider ml-2">
                 Chu kỳ nhắc
               </label>
 
               <select
                 value={reminderFrequency}
                 onChange={(e) => setReminderFrequency(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-gray-950 dark:text-white border border-gray-100 dark:border-gray-800 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full ${selectClass} p-4 rounded-xl`}
               >
                 <option value="Daily">Hằng ngày</option>
                 <option value="Weekly">Hằng tuần</option>

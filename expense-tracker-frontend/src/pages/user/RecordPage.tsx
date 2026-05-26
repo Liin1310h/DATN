@@ -8,7 +8,6 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "../../hook/useTranslation";
 import { createLoan } from "../../services/loanService";
 import LayoutSkeleton from "../LayoutSkeleton";
-import { uploadImages } from "../../services/mediaService";
 import AIInputMenu from "../../components/AI/AIInputMenu";
 import CameraModal from "../../components/AI/CameraModal";
 import VoiceModal from "../../components/AI/VoiceModal";
@@ -17,28 +16,29 @@ import ReceiptPreviewList from "../../components/AI/ReceiptReviewList";
 import API from "../../services/api";
 import { getCategories } from "../../services/categoriesService";
 import { getAccounts } from "../../services/accountsService";
+import { Sparkles } from "lucide-react";
 
 export default function RecordPage() {
   const { t } = useTranslation();
+
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // ! Camera + Voice
+  // AI input menu giữ nguyên vị trí dưới góc phải
   const [isAIMenuOpen, setIsAIMenuOpen] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
 
-  // ! OCR Processing State
+  // OCR state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<any>(null);
   const ocrTimeoutRef = useRef<number | null>(null);
 
-  // ! State cho category và account
+  // Metadata cho form và OCR preview
   const [categories, setCategories] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [isMetaLoading, setIsMetaLoading] = useState(false);
 
-  // TODO Hàm load category và account
   const loadMetaData = async () => {
     try {
       setIsMetaLoading(true);
@@ -62,7 +62,6 @@ export default function RecordPage() {
     loadMetaData();
   }, []);
 
-  // TODO Hàm clear timeout
   const clearOcrTimeout = () => {
     if (ocrTimeoutRef.current) {
       window.clearTimeout(ocrTimeoutRef.current);
@@ -70,13 +69,13 @@ export default function RecordPage() {
     }
   };
 
-  //TODO Hàm xử lý khi ocr lỗi
   const handleOcrFailed = (errorData: any) => {
     console.log("OCR failed in RecordPage:", errorData);
 
     setIsOcrProcessing(false);
     setOcrResult(null);
     setShowCamera(false);
+    setUploadProgress(0);
 
     toast.error(
       errorData?.message || errorData?.error || "AI xử lý hóa đơn thất bại",
@@ -84,15 +83,16 @@ export default function RecordPage() {
         id: "ocr-processing",
       },
     );
+
     clearOcrTimeout();
   };
 
-  // TODO Hàm xử lý khi ocr thành công
   const handleOcrCompleted = (ocrData: any) => {
     console.log("OCR Data received in RecordPage:", ocrData);
 
     setIsOcrProcessing(false);
     setShowCamera(false);
+    setUploadProgress(0);
 
     const previewData = ocrData?.data ? ocrData.data : ocrData;
 
@@ -104,10 +104,10 @@ export default function RecordPage() {
     toast.success("AI đã đọc xong hóa đơn!", {
       id: "ocr-processing",
     });
+
     clearOcrTimeout();
   };
 
-  // TODO Khởi tạo SignalR
   useEffect(() => {
     const connection = startNotificationConnection(
       (notification) => {
@@ -117,14 +117,13 @@ export default function RecordPage() {
       handleOcrFailed,
     );
 
-    const eventHandler = (event: Event) => {
+    const completedEventHandler = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log("OCR_COMPLETED_EVENT received:", customEvent.detail);
 
       handleOcrCompleted(customEvent.detail);
     };
 
-    window.addEventListener("OCR_COMPLETED_EVENT", eventHandler);
     const failedEventHandler = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log("OCR_FAILED_EVENT received:", customEvent.detail);
@@ -132,23 +131,27 @@ export default function RecordPage() {
       handleOcrFailed(customEvent.detail);
     };
 
+    window.addEventListener("OCR_COMPLETED_EVENT", completedEventHandler);
     window.addEventListener("OCR_FAILED_EVENT", failedEventHandler);
+
     return () => {
-      window.removeEventListener("OCR_COMPLETED_EVENT", eventHandler);
+      window.removeEventListener("OCR_COMPLETED_EVENT", completedEventHandler);
       window.removeEventListener("OCR_FAILED_EVENT", failedEventHandler);
 
       if (connection) {
         connection.off("OCR_DONE");
         connection.off("OCR_FAILED");
       }
+
+      clearOcrTimeout();
     };
   }, []);
 
-  //TODO Xử lý khi chọn file
   const handleOcrUpload = async (file: File) => {
     try {
       setIsOcrProcessing(true);
       setOcrResult(null);
+      setUploadProgress(0);
       clearOcrTimeout();
 
       const formData = new FormData();
@@ -160,6 +163,15 @@ export default function RecordPage() {
         {
           headers: {
             "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            if (!progressEvent.total) return;
+
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
+
+            setUploadProgress(percent);
           },
         },
       );
@@ -179,6 +191,7 @@ export default function RecordPage() {
       ocrTimeoutRef.current = window.setTimeout(() => {
         setIsOcrProcessing(false);
         setOcrResult(null);
+        setUploadProgress(0);
 
         toast.error("OCR xử lý quá lâu hoặc bị lỗi. Vui lòng thử lại.", {
           id: "ocr-processing",
@@ -188,26 +201,30 @@ export default function RecordPage() {
       }, 480000);
     } catch (error) {
       console.error("OCR upload error:", error);
+
       clearOcrTimeout();
       setIsOcrProcessing(false);
       setOcrResult(null);
+      setUploadProgress(0);
 
       toast.dismiss("ocr-processing");
       toast.error("Không thể tải hóa đơn lên");
     }
   };
 
-  //TODO Hàm lưu chính thức từ list preview
   const handleConfirmOcr = async (finalData: any) => {
     setLoading(true);
+
     try {
       await API.post("/receipt-transactions/create", {
         jobId: finalData.jobId,
         transactions: finalData.transactions,
       });
+
       toast.success("Đã lưu các giao dịch từ hóa đơn!");
-      setOcrResult(null); // Đóng preview
+      setOcrResult(null);
     } catch (error) {
+      console.error("Create OCR transactions error:", error);
       toast.error("Lỗi khi lưu giao dịch");
     } finally {
       setLoading(false);
@@ -216,23 +233,27 @@ export default function RecordPage() {
 
   const handleCreate = async (data: TransactionFormSubmitData) => {
     setLoading(true);
+
     try {
-      let imageUrls = data.imageUrls ?? [];
+      const imageUrls = data.imageUrls ?? [];
 
       console.log("Transaction submit data:", data);
       console.log("Final imageUrls to save:", imageUrls);
 
       if (data.type === "lend" || data.type === "borrow") {
-        await createLoan({
+        const loanPayload = {
           counterPartyName: data.loan?.counterPartyName ?? "",
           principalAmount: data.amount,
           currency: data.currency,
 
           interestRate: data.loan?.interestRate ?? 0,
           interestUnit: (data.loan?.interestUnit ?? "percent_per_month") as
-            | "percentage_per_month"
-            | "percentage_per_year"
+            | "percent_per_month"
+            | "percent_per_year"
             | "fixed_amount",
+
+          duration: Number(data.loan?.duration ?? 0),
+          durationUnit: data.loan?.durationUnit ?? "months",
 
           startDate: data.transactionFromDate,
           dueDate: data.transactionToDate ?? null,
@@ -240,7 +261,11 @@ export default function RecordPage() {
           isLending: data.type === "lend",
           accountId: data.accountId,
           note: data.note,
-        });
+        };
+
+        console.log("CREATE LOAN PAYLOAD:", loanPayload);
+
+        await createLoan(loanPayload);
 
         toast.success(t.record.addLoanSuccess);
       } else {
@@ -269,47 +294,118 @@ export default function RecordPage() {
 
   return (
     <Layout>
-      <div className="w-full">
-        {/* Hiện thị list preview khi có kết quả OCR */}
-        {ocrResult && !isOcrProcessing && !showCamera && (
-          <ReceiptPreviewList
-            data={ocrResult}
-            accounts={accounts}
-            categories={categories}
-            onConfirm={handleConfirmOcr}
-            onCancel={() => {
-              setOcrResult(null);
-              setIsOcrProcessing(false);
-            }}
-          />
-        )}
-        {/* Loading */}
-        {uploadProgress > 0 && uploadProgress < 100 && (
-          <div className="mb-4">
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-indigo-500 transition-all"
-                style={{ width: `${uploadProgress}%` }}
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 scroll-smooth">
+        {/* Background decor */}
+        <div className="pointer-events-none absolute -top-10 -left-10 h-40 w-40 rounded-full bg-[#D6B56D]/20 blur-3xl" />
+        <div className="pointer-events-none absolute top-40 -right-12 h-56 w-56 rounded-full bg-[#C86B3C]/12 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-10 left-1/3 h-48 w-48 rounded-full bg-[#6F8F72]/12 blur-3xl" />
+        <div className="relative z-10 mx-auto max-w-5xl space-y-5">
+          {/* OCR processing */}
+          {isOcrProcessing && (
+            <section
+              className="relative overflow-hidden rounded-[2rem]
+              bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+              border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+              p-4 sm:p-5"
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="h-12 w-12 shrink-0 rounded-2xl
+                  bg-[#D6B56D]/25 text-[#9F7A2F]
+                  dark:text-[#D6B56D]
+                  flex items-center justify-center"
+                >
+                  <Sparkles size={22} className="animate-pulse" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                    AI đang phân tích hóa đơn
+                  </p>
+
+                  <p className="mt-1 text-xs font-semibold text-[#6F8F72] dark:text-[#D6B56D]">
+                    Vui lòng giữ trang mở trong khi hệ thống nhận diện nội dung.
+                  </p>
+
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#F4E7C5] dark:bg-[#F4E7C5]/10">
+                    <div className="h-full w-1/2 rounded-full bg-[#C86B3C] animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Upload progress */}
+          {uploadProgress > 0 && uploadProgress < 100 && (
+            <section
+              className="rounded-[2rem]
+              bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+              border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+              p-4"
+            >
+              <div className="h-2.5 bg-[#F4E7C5] dark:bg-[#F4E7C5]/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#C86B3C] transition-all rounded-full"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+
+              <p className="text-xs font-bold text-[#6F8F72] dark:text-[#D6B56D] mt-2">
+                Đang upload ảnh... {uploadProgress}%
+              </p>
+            </section>
+          )}
+
+          {/* OCR preview */}
+          {ocrResult && !isOcrProcessing && !showCamera && (
+            <section
+              className="relative overflow-hidden rounded-[2rem]
+              bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+              border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+              p-4 sm:p-5"
+            >
+              <div className="mb-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#6F8F72] dark:text-[#D6B56D]">
+                  OCR Preview
+                </p>
+
+                <h3 className="mt-1 text-xl font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                  Kiểm tra giao dịch nhận diện từ hóa đơn
+                </h3>
+              </div>
+
+              <ReceiptPreviewList
+                data={ocrResult}
+                accounts={accounts}
+                categories={categories}
+                onConfirm={handleConfirmOcr}
+                onCancel={() => {
+                  setOcrResult(null);
+                  setIsOcrProcessing(false);
+                }}
+              />
+            </section>
+          )}
+
+          {/* Manual form */}
+          <section
+            className="relative overflow-hidden rounded-[2rem]
+            bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
+            border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
+            backdrop-blur-sm"
+          >
+            <div className="relative z-10">
+              <TransactionForm
+                categories={categories}
+                accounts={accounts}
+                onMetaChange={loadMetaData}
+                onSubmit={handleCreate}
+                loading={loading}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Đang upload ảnh... {uploadProgress}%
-            </p>
-          </div>
-        )}
-
-        {/* Nhập thủ công */}
-        <div className="max-w-3xl mx-auto">
-          <TransactionForm
-            categories={categories}
-            accounts={accounts}
-            onMetaChange={loadMetaData}
-            onSubmit={handleCreate}
-            loading={loading}
-          />
+          </section>
         </div>
-
-        {/* Modal AI */}
+        {/* Giữ cụm icon OCR / Voice ở dưới như giao diện cũ */}
         <AIInputMenu
           isOpen={isAIMenuOpen}
           setIsOpen={setIsAIMenuOpen}
@@ -325,7 +421,6 @@ export default function RecordPage() {
           onFileSelect={handleOcrUpload}
           isProcessing={isOcrProcessing}
         />
-
         <VoiceModal isOpen={showVoice} onClose={() => setShowVoice(false)} />
       </div>
     </Layout>

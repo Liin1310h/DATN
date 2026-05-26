@@ -30,21 +30,21 @@ export default function BudgetRowItem({
 
   const progressColor =
     row.status === "danger"
-      ? "bg-rose-500"
+      ? "bg-[#C86B3C]"
       : row.status === "warning"
-        ? "bg-yellow-400"
+        ? "bg-[#D6B56D]"
         : row.status === "safe"
-          ? "bg-emerald-500"
-          : "bg-gray-300";
+          ? "bg-[#6F8F72]"
+          : "bg-[#BFA66A]";
 
   const badgeClass =
     row.status === "danger"
-      ? "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400"
+      ? "bg-[#C86B3C]/14 text-[#C86B3C] dark:bg-[#C86B3C]/20 dark:text-[#F0A07C]"
       : row.status === "warning"
-        ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-300"
+        ? "bg-[#D6B56D]/22 text-[#9F7A2F] dark:bg-[#D6B56D]/20 dark:text-[#D6B56D]"
         : row.status === "safe"
-          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
-          : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400";
+          ? "bg-[#6F8F72]/15 text-[#6F8F72] dark:bg-[#6F8F72]/25 dark:text-[#A8C7A3]"
+          : "bg-[#F4E7C5]/80 text-[#7A6F45] dark:bg-[#F4E7C5]/10 dark:text-[#F4E7C5]/70";
 
   const badgeLabel =
     row.status === "danger"
@@ -64,8 +64,17 @@ export default function BudgetRowItem({
           ? "Safe"
           : "Unset";
 
+  const alertColor =
+    row.status === "danger"
+      ? "text-[#C86B3C]"
+      : row.status === "warning"
+        ? "text-[#9F7A2F] dark:text-[#D6B56D]"
+        : row.status === "safe"
+          ? "text-[#6F8F72]"
+          : "text-[#7A6F45] dark:text-[#F4E7C5]/60";
+
   return (
-    <div className="px-4 md:px-5 py-4 hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition-colors">
+    <div className="px-4 md:px-5 py-4 hover:bg-[#F4E7C5]/55 dark:hover:bg-[#F4E7C5]/10 transition-colors">
       {/* Mobile / tablet card */}
       <div className="xl:hidden space-y-4">
         <div className="flex items-start gap-3">
@@ -76,16 +85,17 @@ export default function BudgetRowItem({
             <DynamicIcon
               name={row.categoryIcon || "Tag"}
               size={18}
-              color={row.categoryColor || "#6366F1"}
+              color={row.categoryColor || "#C86B3C"}
             />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-black text-sm text-gray-900 dark:text-white truncate">
+                <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5] truncate">
                   {row.categoryName}
                 </p>
+
                 <span
                   className={`inline-flex mt-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${badgeClass}`}
                 >
@@ -96,7 +106,10 @@ export default function BudgetRowItem({
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => onEdit(row)}
-                  className="p-2 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+                  className="p-2 rounded-xl
+                  text-[#5F8A8B]
+                  hover:text-[#FFF4D8] hover:bg-[#5F8A8B]
+                  transition-all active:scale-95"
                   title="Edit"
                 >
                   <Edit2 size={16} />
@@ -104,7 +117,10 @@ export default function BudgetRowItem({
 
                 <button
                   onClick={onDelete}
-                  className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                  className="p-2 rounded-xl
+                  text-[#C86B3C]
+                  hover:text-[#FFF4D8] hover:bg-[#C86B3C]
+                  transition-all active:scale-95"
                   title="Delete"
                 >
                   <Trash2 size={16} />
@@ -115,36 +131,40 @@ export default function BudgetRowItem({
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-3">
-            <p className="text-[10px] uppercase text-gray-400 font-black mb-1">
+          <div className="rounded-2xl bg-[#F4E7C5]/65 dark:bg-[#F4E7C5]/10 border border-[#D6B56D]/30 dark:border-[#F4E7C5]/10 p-3">
+            <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black mb-1">
               Budget
             </p>
-            <p className="font-black text-sm text-gray-900 dark:text-white break-words">
+
+            <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5] break-words">
               {formatMoney(row.amount, row.currency)}
             </p>
+
             {row.originalAmount !== row.amount && (
-              <p className="text-[10px] text-gray-400 mt-1">
+              <p className="text-[10px] text-[#7A6F45] dark:text-[#F4E7C5]/60 mt-1">
                 Gốc: {formatMoney(row.originalAmount, row.currency)}
               </p>
             )}
           </div>
 
-          <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-3">
-            <p className="text-[10px] uppercase text-gray-400 font-black mb-1">
+          <div className="rounded-2xl bg-[#F4E7C5]/65 dark:bg-[#F4E7C5]/10 border border-[#D6B56D]/30 dark:border-[#F4E7C5]/10 p-3">
+            <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black mb-1">
               Spent
             </p>
-            <p className="font-black text-sm text-gray-900 dark:text-white break-words">
+
+            <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5] break-words">
               {formatMoney(row.spent, row.currency)}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-3">
-            <p className="text-[10px] uppercase text-gray-400 font-black mb-1">
+          <div className="rounded-2xl bg-[#F4E7C5]/65 dark:bg-[#F4E7C5]/10 border border-[#D6B56D]/30 dark:border-[#F4E7C5]/10 p-3">
+            <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black mb-1">
               Left
             </p>
+
             <p
               className={`font-black text-sm break-words ${
-                row.remaining < 0 ? "text-rose-500" : "text-emerald-500"
+                row.remaining < 0 ? "text-[#C86B3C]" : "text-[#6F8F72]"
               }`}
             >
               {formatMoney(row.remaining, row.currency)}
@@ -152,32 +172,26 @@ export default function BudgetRowItem({
           </div>
         </div>
 
-        <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/50 p-3">
+        <div className="rounded-2xl bg-[#F4E7C5]/65 dark:bg-[#F4E7C5]/10 border border-[#D6B56D]/30 dark:border-[#F4E7C5]/10 p-3">
           <div className="flex justify-between items-center mb-2">
-            <p className="text-[10px] uppercase text-gray-400 font-black">
+            <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black">
               Progress
             </p>
+
             <div className="flex items-center gap-2">
-              <p className="text-xs font-black text-gray-600 dark:text-gray-300">
+              <p className="text-xs font-black text-[#263B2B] dark:text-[#F4E7C5]">
                 {row.amount > 0 ? `${row.percent.toFixed(0)}%` : "--"}
               </p>
+
               <span
-                className={`text-[10px] font-black uppercase ${
-                  row.status === "danger"
-                    ? "text-rose-500"
-                    : row.status === "warning"
-                      ? "text-yellow-500"
-                      : row.status === "safe"
-                        ? "text-emerald-500"
-                        : "text-gray-400"
-                }`}
+                className={`text-[10px] font-black uppercase ${alertColor}`}
               >
                 {alertLabel}
               </span>
             </div>
           </div>
 
-          <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-2.5 bg-[#FFF9E8] dark:bg-[#263B2B]/80 rounded-full overflow-hidden border border-[#D6B56D]/25 dark:border-[#F4E7C5]/10">
             <div
               className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
               style={{ width: `${progressWidth}%` }}
@@ -196,14 +210,15 @@ export default function BudgetRowItem({
             <DynamicIcon
               name={row.categoryIcon || "Tag"}
               size={18}
-              color={row.categoryColor || "#6366F1"}
+              color={row.categoryColor || "#C86B3C"}
             />
           </div>
 
           <div className="min-w-0">
-            <p className="font-black text-sm text-gray-900 dark:text-white truncate">
+            <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5] truncate">
               {row.categoryName}
             </p>
+
             <span
               className={`inline-flex mt-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${badgeClass}`}
             >
@@ -213,35 +228,39 @@ export default function BudgetRowItem({
         </div>
 
         <div>
-          <p className="text-[10px] uppercase text-gray-400 font-black mb-1">
+          <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black mb-1">
             Budget
           </p>
-          <p className="font-black text-sm text-gray-900 dark:text-white">
+
+          <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5]">
             {formatMoney(row.amount, row.currency)}
           </p>
+
           {row.originalAmount !== row.amount && (
-            <p className="text-[11px] text-gray-400 mt-1">
+            <p className="text-[11px] text-[#7A6F45] dark:text-[#F4E7C5]/60 mt-1">
               Gốc: {formatMoney(row.originalAmount, row.currency)}
             </p>
           )}
         </div>
 
         <div>
-          <p className="text-[10px] uppercase text-gray-400 font-black mb-1">
+          <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black mb-1">
             Spent
           </p>
-          <p className="font-black text-sm text-gray-900 dark:text-white">
+
+          <p className="font-black text-sm text-[#263B2B] dark:text-[#F4E7C5]">
             {formatMoney(row.spent, row.currency)}
           </p>
         </div>
 
         <div>
-          <p className="text-[10px] uppercase text-gray-400 font-black mb-1">
+          <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black mb-1">
             Remaining
           </p>
+
           <p
             className={`font-black text-sm ${
-              row.remaining < 0 ? "text-rose-500" : "text-emerald-500"
+              row.remaining < 0 ? "text-[#C86B3C]" : "text-[#6F8F72]"
             }`}
           >
             {formatMoney(row.remaining, row.currency)}
@@ -250,15 +269,16 @@ export default function BudgetRowItem({
 
         <div>
           <div className="flex justify-between items-center mb-1.5">
-            <p className="text-[10px] uppercase text-gray-400 font-black">
+            <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black">
               Progress
             </p>
-            <p className="text-xs font-black text-gray-600 dark:text-gray-300">
+
+            <p className="text-xs font-black text-[#263B2B] dark:text-[#F4E7C5]">
               {row.amount > 0 ? `${row.percent.toFixed(0)}%` : "--"}
             </p>
           </div>
 
-          <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-2.5 bg-[#F4E7C5]/65 dark:bg-[#F4E7C5]/10 rounded-full overflow-hidden border border-[#D6B56D]/25 dark:border-[#F4E7C5]/10">
             <div
               className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
               style={{ width: `${progressWidth}%` }}
@@ -267,28 +287,20 @@ export default function BudgetRowItem({
         </div>
 
         <div className="text-center">
-          <p className="text-[10px] uppercase text-gray-400 font-black mb-1">
+          <p className="text-[10px] uppercase text-[#6F8F72] dark:text-[#D6B56D] font-black mb-1">
             Alert
           </p>
-          <p
-            className={`font-black text-sm ${
-              row.status === "danger"
-                ? "text-rose-500"
-                : row.status === "warning"
-                  ? "text-yellow-500"
-                  : row.status === "safe"
-                    ? "text-emerald-500"
-                    : "text-gray-400"
-            }`}
-          >
-            {alertLabel}
-          </p>
+
+          <p className={`font-black text-sm ${alertColor}`}>{alertLabel}</p>
         </div>
 
         <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => onEdit(row)}
-            className="p-2 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+            className="p-2 rounded-xl
+            text-[#5F8A8B]
+            hover:text-[#FFF4D8] hover:bg-[#5F8A8B]
+            transition-all active:scale-95"
             title="Edit"
           >
             <Edit2 size={16} />
@@ -296,7 +308,10 @@ export default function BudgetRowItem({
 
           <button
             onClick={onDelete}
-            className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+            className="p-2 rounded-xl
+            text-[#C86B3C]
+            hover:text-[#FFF4D8] hover:bg-[#C86B3C]
+            transition-all active:scale-95"
             title="Delete"
           >
             <Trash2 size={16} />
