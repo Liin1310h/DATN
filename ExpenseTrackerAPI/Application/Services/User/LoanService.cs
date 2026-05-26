@@ -23,7 +23,6 @@ public class LoanService : ILoanService
     /// <param name="accountId"></param>
     /// <param name="userId"></param>
     /// <returns></returns>
-    /// <exception cref="Exception"></exception>
     private async Task<Account> GetOwnedAccountAsync(int accountId, int userId)
     {
         var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
@@ -47,6 +46,13 @@ public class LoanService : ILoanService
         return await _currencyService.ConvertAsync(amount, fromCurrency, toCurrency);
     }
 
+    /// <summary>
+    /// Tính ngày nhắc nợ tiếp theo
+    /// </summary>
+    /// <param name="dueDate"></param>
+    /// <param name="isRecurringReminder"></param>
+    /// <param name="reminderBeforeDays"></param>
+    /// <returns></returns>
     private DateTime? CalculateNextReminderDate(DateTime? dueDate, bool isRecurringReminder, int reminderBeforeDays)
     {
         if (!isRecurringReminder || !dueDate.HasValue) return null;
@@ -55,7 +61,7 @@ public class LoanService : ILoanService
         return dueDate.Value.AddDays(-reminderBeforeDays);
     }
     /// <summary>
-    /// Tạo loan
+    /// Tạo loan 
     /// </summary>
     /// <param name="request"></param>
     /// <param name="userId"></param>
@@ -91,12 +97,17 @@ public class LoanService : ILoanService
                 ReminderBeforeDays = request.ReminderBeforeDays,
                 ReminderFrequency = string.IsNullOrWhiteSpace(request.ReminderFrequency) ? "Monthly" : request.ReminderFrequency,
                 NextReminderDate = CalculateNextReminderDate(
-        request.DueDate,
-        request.IsRecurringReminder,
-        request.ReminderBeforeDays)
+                    request.DueDate,
+                    request.IsRecurringReminder,
+                    request.ReminderBeforeDays)
             };
 
             _context.Loans.Add(loan);
+            await _context.SaveChangesAsync();
+
+            var durationMonths = ResolveDurationMonths(request.Duration, request.DurationUnit);
+            Console.WriteLine($"GENERATE loanId={loan.Id}, duration={request.Duration}, unit={request.DurationUnit}, months={durationMonths}");
+            GenerateRepaymentSchedules(loan, durationMonths);
             await _context.SaveChangesAsync();
 
             // Xác định loại giao dịch: Cho vay (Lend) -> Ví giảm | Đi vay (Borrow) -> Ví tăng
@@ -195,7 +206,7 @@ public class LoanService : ILoanService
     }
 
     /// <summary>
-    /// Trả tiền
+    /// Trả tiền theo kỳ hạn
     /// </summary>
     /// <param name="request"></param>
     /// <param name="userId"></param>
@@ -205,6 +216,7 @@ public class LoanService : ILoanService
         using var dbTransaction = await _context.Database.BeginTransactionAsync();
         try
         {
+            // Validate
             if (request.Amount <= 0)
                 throw new Exception("Số tiền thanh toán phải lớn hơn 0.");
 
@@ -224,6 +236,10 @@ public class LoanService : ILoanService
             if (initialTrans == null)
                 throw new Exception("Không tìm thấy giao dịch gốc của khoản vay.");
 
+            var transactionDate = request.TransactionDate == default
+                ? DateTime.UtcNow
+                : request.TransactionDate.ToUniversalTime();
+
             var loanCurrency = initialTrans.Currency;
             var repaymentCurrency = string.IsNullOrWhiteSpace(request.Currency)
                 ? account.Currency
@@ -231,17 +247,16 @@ public class LoanService : ILoanService
 
             var accountAppliedAmount = await ConvertIdNeededAsync(request.Amount, repaymentCurrency, account.Currency);
 
-            var principalPaidInLoanCurrency = request.PrincipalPaid.HasValue
-                ? await ConvertIdNeededAsync(request.PrincipalPaid.Value, repaymentCurrency, loanCurrency)
-                : await ConvertIdNeededAsync(request.Amount, repaymentCurrency, loanCurrency);
+            var totalPaidInLoanCurrency = await ConvertIdNeededAsync(
+            request.Amount,
+            repaymentCurrency,
+            loanCurrency
+        );
 
-            if (principalPaidInLoanCurrency <= 0)
-                throw new Exception("PrincipalPaid không hợp lệ.");
+            if (totalPaidInLoanCurrency <= 0)
+                throw new Exception("Số tiền thanh toán không hợp lệ.");
 
-            if (principalPaidInLoanCurrency > loan.RemainingAmount)
-                throw new Exception("Số tiền gốc thanh toán vượt quá dư nợ còn lại.");
-
-            string repayTransType = initialTrans?.Type == "lend" ? "income" : "expense";
+            string repayTransType = initialTrans.Type == "lend" ? "income" : "expense";
             decimal balanceBefore = account.Balance;
 
             // Cập nhật số dư tài khoản
@@ -256,16 +271,35 @@ public class LoanService : ILoanService
                 account.Balance += accountAppliedAmount;
             }
 
-            loan.RemainingAmount -= principalPaidInLoanCurrency;
+            var allocation = await ApplyPaymentToSchedulesAsync(
+            loan.Id,
+            request.Period,
+            totalPaidInLoanCurrency,
+            transactionDate
+        );
+
+            if (allocation.TotalPaid <= 0)
+                throw new Exception("Không thể phân bổ số tiền thanh toán vào kỳ hạn.");
+
+            if (allocation.PrincipalPaid > loan.RemainingAmount)
+                throw new Exception("Số tiền gốc thanh toán vượt quá dư nợ còn lại.");
+
+            loan.RemainingAmount -= allocation.PrincipalPaid;
 
             if (loan.RemainingAmount <= 0)
             {
                 loan.RemainingAmount = 0;
                 loan.IsCompleted = true;
-
                 loan.IsRecurringReminder = false;
                 loan.NextReminderDate = null;
             }
+
+            var note = request.Note
+                ?? $"[Trả nợ] Thanh toán cho: {loan.CounterPartyName}";
+
+            note += $" | Gốc: {allocation.PrincipalPaid:N0} {loanCurrency}";
+            note += $" | Lãi: {allocation.InterestPaid:N0} {loanCurrency}";
+
 
             // Ghi nhận Transaction trả nợ
             var repaymentTransaction = new Transaction
@@ -281,9 +315,9 @@ public class LoanService : ILoanService
 
                 BalanceBefore = balanceBefore,
                 BalanceAfter = account.Balance,
-                TransactionDate = request.TransactionDate,
+                TransactionDate = transactionDate,
                 LoanId = loan.Id,
-                Note = request.Note ?? $"[Trả nợ] Thanh toán cho: {loan.CounterPartyName}"
+                Note = note
             };
 
             _context.Transactions.Add(repaymentTransaction);
@@ -310,7 +344,10 @@ public class LoanService : ILoanService
     /// <returns></returns>
     public async Task<IEnumerable<Loan>> GetUserLoansAsync(int userId, bool? isCompleted)
     {
-        var query = _context.Loans.Where(l => l.UserId == userId);
+        var query = _context.Loans
+            .Include(l => l.Schedules.OrderBy(s => s.Period))
+            .Include(l => l.Transactions.OrderByDescending(t => t.TransactionDate))
+            .Where(l => l.UserId == userId);
 
         if (isCompleted.HasValue)
             query = query.Where(l => l.IsCompleted == isCompleted.Value);
@@ -330,6 +367,7 @@ public class LoanService : ILoanService
     {
         return await _context.Loans
             .Include(l => l.Transactions.OrderByDescending(t => t.TransactionDate))
+            .Include(l => l.Schedules.OrderBy(s => s.Period))
             .FirstOrDefaultAsync(l => l.Id == loanId && l.UserId == userId);
     }
 
@@ -415,4 +453,153 @@ public class LoanService : ILoanService
             throw;
         }
     }
+
+    #region Helper
+    private static int ResolveDurationMonths(int duration, string? durationUnit)
+    {
+        if (duration <= 0) return 0;
+
+        var unit = durationUnit?.Trim().ToLower() ?? "months";
+
+        return unit switch
+        {
+            "month" or "months" => duration,
+            "year" or "years" => duration * 12,
+            "day" or "days" => Math.Max(1, (int)Math.Ceiling(duration / 30m)),
+            _ => duration
+        };
+    }
+    /// <summary>
+    /// Tạo kế hoạch trả nợ
+    /// </summary>
+    /// <param name="loan"></param>
+    /// <param name="durationMonths"></param>
+    /// <returns></returns>
+
+    private void GenerateRepaymentSchedules(Loan loan, int durationMonths)
+    {
+        if (durationMonths <= 0) return;
+
+        var monthlyPrincipal = Math.Round(loan.PrincipalAmount / durationMonths, 2);
+
+        var monthlyInterestRate = loan.InterestUnit switch
+        {
+            "percent_per_year" => loan.InterestRate / 100 / 12,
+            "percent_per_month" => loan.InterestRate / 100,
+            _ => loan.InterestRate / 100
+        };
+
+        decimal remaining = loan.PrincipalAmount;
+
+        for (int i = 1; i <= durationMonths; i++)
+        {
+            var principal = i == durationMonths
+                ? remaining
+                : monthlyPrincipal;
+
+            var interest = Math.Round(remaining * monthlyInterestRate, 2);
+            var total = principal + interest;
+
+            remaining -= principal;
+            if (remaining < 0) remaining = 0;
+
+            _context.RepaymentSchedules.Add(new RepaymentSchedule
+            {
+                LoanId = loan.Id,
+                Period = i,
+                PrincipalAmount = principal,
+                InterestAmount = interest,
+                TotalAmount = total,
+                RemainingBalance = remaining,
+                DueDate = loan.StartDate.AddMonths(i),
+
+                IsPaid = false,
+                PaidDate = null,
+                PaidPrincipalAmount = 0,
+                PaidInterestAmount = 0,
+                PaidTotalAmount = 0
+            });
+        }
+    }
+
+    private async Task<(decimal PrincipalPaid, decimal InterestPaid, decimal TotalPaid)> ApplyPaymentToSchedulesAsync(int loanId, int? period, decimal totalPaid, DateTime paidDate)
+    {
+        Console.WriteLine($"APPLY loanId={loanId}, period={period}, totalPaid={totalPaid}");
+        var schedulesQuery = _context.RepaymentSchedules
+            .Where(s => s.LoanId == loanId && !s.IsPaid);
+
+        if (period.HasValue)
+        {
+            schedulesQuery = schedulesQuery.Where(s => s.Period == period.Value);
+        }
+
+        var schedules = await schedulesQuery
+            .OrderBy(s => s.Period)
+            .ToListAsync();
+
+        Console.WriteLine($"SCHEDULE COUNT={schedules.Count}");
+
+        foreach (var s in schedules)
+        {
+            Console.WriteLine(
+                $"Period={s.Period}, Total={s.TotalAmount}, Paid={s.PaidTotalAmount}, IsPaid={s.IsPaid}"
+            );
+        }
+        if (!schedules.Any())
+            return (0, 0, 0);
+
+        var remainingPayment = totalPaid;
+
+        decimal totalPrincipalPaid = 0;
+        decimal totalInterestPaid = 0;
+        decimal totalApplied = 0;
+
+        foreach (var schedule in schedules)
+        {
+            if (remainingPayment <= 0)
+                break;
+
+            var unpaidInterest = schedule.InterestAmount - schedule.PaidInterestAmount;
+            var unpaidPrincipal = schedule.PrincipalAmount - schedule.PaidPrincipalAmount;
+
+            if (unpaidInterest < 0) unpaidInterest = 0;
+            if (unpaidPrincipal < 0) unpaidPrincipal = 0;
+
+            var applyInterest = Math.Min(remainingPayment, unpaidInterest);
+
+            schedule.PaidInterestAmount += applyInterest;
+            remainingPayment -= applyInterest;
+            totalInterestPaid += applyInterest;
+            totalApplied += applyInterest;
+
+            if (remainingPayment > 0)
+            {
+                var applyPrincipal = Math.Min(remainingPayment, unpaidPrincipal);
+
+                schedule.PaidPrincipalAmount += applyPrincipal;
+                remainingPayment -= applyPrincipal;
+                totalPrincipalPaid += applyPrincipal;
+                totalApplied += applyPrincipal;
+            }
+
+            UpdateSchedulePaidStatus(schedule, paidDate);
+        }
+
+        return (totalPrincipalPaid, totalInterestPaid, totalApplied);
+    }
+
+    private static void UpdateSchedulePaidStatus(
+    RepaymentSchedule schedule,
+    DateTime paidDate)
+    {
+        schedule.PaidTotalAmount =
+            schedule.PaidPrincipalAmount + schedule.PaidInterestAmount;
+
+        if (schedule.PaidTotalAmount >= schedule.TotalAmount)
+        {
+            schedule.IsPaid = true;
+            schedule.PaidDate = paidDate;
+        }
+    }
+    #endregion
 }

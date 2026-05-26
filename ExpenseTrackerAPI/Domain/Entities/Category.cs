@@ -21,6 +21,18 @@ public class Category
     [MaxLength(20)]
     public string Color { get; set; } = "#000000"; // Mã màu hex
 
+    /// <summary>
+    /// Mô tả thêm về danh mục
+    /// </summary>
+    [MaxLength(500)]
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Từ khoá gợi ý cho sematic classification
+    /// </summary>
+    [MaxLength(1000)]
+    public string? Keywords { get; set; }
+
     // UserId = null => danh mục hệ thống
     public int? UserId { get; set; }
 

@@ -14,41 +14,76 @@ public class AdminUserService : IAdminUserService
         _context = context;
     }
 
-    public async Task<IEnumerable<AdminUserListItemDto>> GetUsersAsync(string? search)
+    public async Task<PagedResultDto<AdminUserListItemDto>> GetUsersAsync(AdminUserQueryDto query)
     {
-        var query = _context.Users.AsQueryable();
+        var page = query.Page <= 0 ? 1 : query.Page;
+        var pageSize = query.PageSize <= 0 ? 20 : query.PageSize;
+        pageSize = Math.Min(pageSize, 100);
 
-        if (!string.IsNullOrWhiteSpace(search))
+        var usersQuery = _context.Users.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            var keyword = search.Trim().ToLower();
-            query = query.Where(x =>
+            var keyword = query.Search.Trim().ToLower();
+
+            usersQuery = usersQuery.Where(x =>
                 x.FullName.ToLower().Contains(keyword) ||
                 x.Email.ToLower().Contains(keyword));
         }
 
-        return await query
-            .OrderByDescending(x => x.CreatedAt)
-            .Select(x => new AdminUserListItemDto
-            {
-                Id = x.Id,
-                FullName = x.FullName,
-                Email = x.Email,
-                Role = x.Role,
-                IsActive = x.IsActive,
-                CreatedAt = x.CreatedAt,
-                LastLoginAt = x.LastLoginAt,
+        if (!string.IsNullOrWhiteSpace(query.Role) && query.Role != "all")
+        {
+            usersQuery = usersQuery.Where(x => x.Role == query.Role);
+        }
 
-                AccountCount = _context.Accounts.Count(a => a.UserId == x.Id),
-                TransactionCount = _context.Transactions.Count(t => t.UserId == x.Id),
-                BudgetCount = _context.Budgets.Count(b => b.UserId == x.Id),
-                LoanCount = _context.Loans.Count(l => l.UserId == x.Id),
-            })
+        if (query.IsActive.HasValue)
+        {
+            usersQuery = usersQuery.Where(x => x.IsActive == query.IsActive.Value);
+        }
+
+        var projectedQuery = usersQuery.Select(x => new AdminUserListItemDto
+        {
+            Id = x.Id,
+            FullName = x.FullName,
+            Email = x.Email,
+            Role = x.Role,
+            IsActive = x.IsActive,
+            CreatedAt = x.CreatedAt,
+            LastLoginAt = x.LastLoginAt,
+
+            AccountCount = _context.Accounts.Count(a => a.UserId == x.Id),
+            TransactionCount = _context.Transactions.Count(t => t.UserId == x.Id),
+            BudgetCount = _context.Budgets.Count(b => b.UserId == x.Id),
+            LoanCount = _context.Loans.Count(l => l.UserId == x.Id),
+        });
+
+        projectedQuery = ApplySorting(
+            projectedQuery,
+            query.SortBy,
+            query.SortDirection
+        );
+
+        var totalCount = await projectedQuery.CountAsync();
+
+        var items = await projectedQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return new PagedResultDto<AdminUserListItemDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+        };
     }
 
     public async Task<AdminUserDetailDto?> GetUserByIdAsync(int userId)
     {
-        return await _context.Users
+        var user = await _context.Users
+            .AsNoTracking()
             .Where(x => x.Id == userId)
             .Select(x => new AdminUserDetailDto
             {
@@ -64,13 +99,27 @@ public class AdminUserService : IAdminUserService
                 TransactionCount = _context.Transactions.Count(t => t.UserId == x.Id),
                 BudgetCount = _context.Budgets.Count(b => b.UserId == x.Id),
                 LoanCount = _context.Loans.Count(l => l.UserId == x.Id),
+                LastTransactionDate = _context.Transactions
+                .Where(t => t.UserId == x.Id)
+                .OrderByDescending(t => t.TransactionDate)
+                .Select(t => (DateTime?)t.TransactionDate)
+                .FirstOrDefault(),
+
+                ActiveLoanCount = _context.Loans
+                .Count(l => l.UserId == x.Id && !l.IsCompleted)
             })
             .FirstOrDefaultAsync();
+
+        if (user == null)
+            return null;
+
+        return user;
     }
 
     public async Task UpdateUserStatusAsync(int userId, bool isActive)
     {
         var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+
         if (user == null)
             throw new Exception("User không tồn tại.");
 
@@ -84,6 +133,7 @@ public class AdminUserService : IAdminUserService
             throw new Exception("Role không hợp lệ.");
 
         var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+
         if (user == null)
             throw new Exception("User không tồn tại.");
 
@@ -94,10 +144,51 @@ public class AdminUserService : IAdminUserService
     public async Task SoftDeleteUserAsync(int userId)
     {
         var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+
         if (user == null)
             throw new Exception("User không tồn tại.");
 
         user.IsActive = false;
         await _context.SaveChangesAsync();
+    }
+
+    private static IQueryable<AdminUserListItemDto> ApplySorting(
+        IQueryable<AdminUserListItemDto> query,
+        string? sortBy,
+        string? sortDirection
+    )
+    {
+        var isAsc = sortDirection?.ToLower() == "asc";
+
+        return sortBy switch
+        {
+            "fullName" => isAsc
+                ? query.OrderBy(x => x.FullName)
+                : query.OrderByDescending(x => x.FullName),
+
+            "email" => isAsc
+                ? query.OrderBy(x => x.Email)
+                : query.OrderByDescending(x => x.Email),
+
+            "lastLoginAt" => isAsc
+                ? query.OrderBy(x => x.LastLoginAt)
+                : query.OrderByDescending(x => x.LastLoginAt),
+
+            "transactionCount" => isAsc
+                ? query.OrderBy(x => x.TransactionCount)
+                : query.OrderByDescending(x => x.TransactionCount),
+
+            "accountCount" => isAsc
+                ? query.OrderBy(x => x.AccountCount)
+                : query.OrderByDescending(x => x.AccountCount),
+
+            "loanCount" => isAsc
+                ? query.OrderBy(x => x.LoanCount)
+                : query.OrderByDescending(x => x.LoanCount),
+
+            _ => isAsc
+                ? query.OrderBy(x => x.CreatedAt)
+                : query.OrderByDescending(x => x.CreatedAt)
+        };
     }
 }

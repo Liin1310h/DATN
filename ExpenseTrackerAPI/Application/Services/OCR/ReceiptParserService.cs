@@ -83,31 +83,49 @@ public class ReceiptParserService : IReceiptParserService
         if (string.IsNullOrWhiteSpace(rawText))
             return null;
 
-        rawText = rawText.Replace("\n", " ").Trim();
+        rawText = rawText
+               .Replace("\n", " ")
+               .Replace("\r", " ")
+               .Trim();
+
+        rawText = Regex.Replace(rawText, @"\s+", " ");
 
         var patterns = new[]
         {
-        // dd/MM/yyyy HH:mm:ss hoặc dd/MM/yyyy-HH:mm
-        @"(?<day>\d{1,2})[\/\-\.](?<month>\d{1,2})[\/\-\.](?<year>\d{4})[\s\-T]?(?<hour>\d{1,2}):(?<minute>\d{2})(?::(?<second>\d{2}))?",
+            // dd/MM/yyyy HH:mm:ss hoặc dd/MM/yyyy-HH:mm
+            @"(?<day>\d{1,2})[\/\-\.](?<month>\d{1,2})[\/\-\.](?<year>\d{2,4})[\s\-T]+(?<hour>\d{1,2}):(?<minute>\d{2})(?::(?<second>\d{2}))?",
 
-        // yyyy-MM-dd HH:mm:ss
-        @"(?<year>\d{4})[\/\-\.](?<month>\d{1,2})[\/\-\.](?<day>\d{1,2})[\s\-T]?(?<hour>\d{1,2}):(?<minute>\d{2})(?::(?<second>\d{2}))?",
+            // yyyy-MM-dd HH:mm:ss
+            @"(?<year>\d{4})[\/\-\.](?<month>\d{1,2})[\/\-\.](?<day>\d{1,2})[\s\-T]+(?<hour>\d{1,2}):(?<minute>\d{2})(?::(?<second>\d{2}))?",
 
-        // dd/MM/yyyy
-        @"(?<day>\d{1,2})[\/\-\.](?<month>\d{1,2})[\/\-\.](?<year>\d{4})",
+            // dd/MM/yyyy
+            @"(?<day>\d{1,2})[\/\-\.](?<month>\d{1,2})[\/\-\.](?<year>\d{2,4})",
 
-        // yyyy-MM-dd
-        @"(?<year>\d{4})[\/\-\.](?<month>\d{1,2})[\/\-\.](?<day>\d{1,2})"
-    };
+            // yyyy-MM-dd
+            @"(?<year>\d{4})[\/\-\.](?<month>\d{1,2})[\/\-\.](?<day>\d{1,2})",
+
+            // Ngày: x tháng xx, xxxx
+            // Ngày x tháng xx năm xxxx
+            // x tháng xx năm xxxx
+            @"(?:ngày|ngay)?\s*:?\s*(?<day>\d{1,2})\s*(?:tháng|thang)\s*(?<month>\d{1,2})\s*(?:,|\s)*(?:năm|nam)?\s*(?<year>\d{2,4})",
+
+            // Ngày: x/xx năm xxxx
+            // Ngày x-xx năm xxxx
+            @"(?:ngày|ngay)?\s*:?\s*(?<day>\d{1,2})[\/\-\.](?<month>\d{1,2})\s*(?:năm|nam)\s*(?<year>\d{2,4})",
+
+            // Ngày x tháng xx lúc xx:xx năm xxxx
+            @"(?:ngày|ngay)?\s*:?\s*(?<day>\d{1,2})\s*(?:tháng|thang)\s*(?<month>\d{1,2}).{0,20}?(?:năm|nam)\s*(?<year>\d{2,4})"
+        };
+
 
         foreach (var pattern in patterns)
         {
-            var match = Regex.Match(rawText, pattern);
+            var match = Regex.Match(rawText, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             if (!match.Success) continue;
 
             try
             {
-                int year = int.Parse(match.Groups["year"].Value);
+                int year = NormalizeYear(match.Groups["year"].Value);
                 int month = int.Parse(match.Groups["month"].Value);
                 int day = int.Parse(match.Groups["day"].Value);
 
@@ -115,17 +133,24 @@ public class ReceiptParserService : IReceiptParserService
                 int minute = match.Groups["minute"].Success ? int.Parse(match.Groups["minute"].Value) : 0;
                 int second = match.Groups["second"].Success ? int.Parse(match.Groups["second"].Value) : 0;
 
+                if (year < 2000 | year > DateTime.Now.Year + 1) continue; // lọc năm không hợp lệ
                 return new DateTime(year, month, day, hour, minute, second);
             }
             catch
             {
-                continue; // ❗ KHÔNG return null ngay → thử pattern khác
+                continue;
             }
         }
 
         return null;
     }
-
+    private int NormalizeYear(string yearText)
+    {
+        int year = int.Parse(yearText);
+        if (year < 100)
+            year += 2000;
+        return year;
+    }
 
     /// <summary>
     /// Xác định tổng tiền dựa vào keyword

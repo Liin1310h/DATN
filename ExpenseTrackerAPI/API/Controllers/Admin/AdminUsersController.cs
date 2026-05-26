@@ -18,9 +18,9 @@ public class AdminUsersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetUsers([FromQuery] string? search)
+    public async Task<IActionResult> GetUsers([FromQuery] AdminUserQueryDto query)
     {
-        var result = await _adminUserService.GetUsersAsync(search);
+        var result = await _adminUserService.GetUsersAsync(query);
         return Ok(result);
     }
 

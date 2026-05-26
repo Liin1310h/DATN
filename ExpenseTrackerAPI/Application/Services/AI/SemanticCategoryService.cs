@@ -30,10 +30,13 @@ public class SemanticCategoryService : ISemanticCategoryService
                 Id = c.Id,
                 Name = c.Name,
 
-                // hiện tại entity Category chưa có Description/Keywords
-                // nên tạm build từ Name
-                Description = BuildDefaultDescription(c.Name),
-                Keywords = BuildDefaultKeywords(c.Name)
+                Description = !string.IsNullOrWhiteSpace(c.Description)
+                    ? c.Description
+                    : BuildDefaultDescription(c.Name),
+
+                Keywords = !string.IsNullOrWhiteSpace(c.Keywords)
+                    ? c.Keywords
+                    : BuildDefaultKeywords(c.Name)
             })
             .ToListAsync();
 

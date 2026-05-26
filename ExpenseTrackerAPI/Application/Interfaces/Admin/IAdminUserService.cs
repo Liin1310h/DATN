@@ -4,7 +4,7 @@ namespace ExpenseTrackerAPI.Application.Interfaces.Admin;
 
 public interface IAdminUserService
 {
-    Task<IEnumerable<AdminUserListItemDto>> GetUsersAsync(string? search);
+    Task<PagedResultDto<AdminUserListItemDto>> GetUsersAsync(AdminUserQueryDto query);
     Task<AdminUserDetailDto?> GetUserByIdAsync(int userId);
     Task UpdateUserStatusAsync(int userId, bool isActive);
     Task UpdateUserRoleAsync(int userId, string role);

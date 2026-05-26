@@ -59,7 +59,6 @@ public class CategoryPredictionService : ICategoryPredictionService
 
         // TODO Gọi ML global
         var mlResult = await _globalCategoryPythonMlService.PredictAsync(request.Note, request.Amount, type);
-        Console.WriteLine($"ML result: category={mlResult?.CategoryId}, confidence={mlResult?.Confidence}, source={mlResult?.Source}");
         if (mlResult?.CategoryId != null && mlResult.Confidence >= 0)
         {
             var category = await _context.Categories
