@@ -9,15 +9,17 @@ namespace ExpenseTrackerAPI.Application.Services.Admin;
 public class AdminCategoryService : IAdminCategoryService
 {
     private readonly AppDbContext _context;
-
     public AdminCategoryService(AppDbContext context)
     {
         _context = context;
     }
 
-    public async Task<IEnumerable<AdminCategoryDto>> GetSystemCategoriesAsync(
-        string? search
-    )
+    /// <summary>
+    /// Lấy danh sách danh mục hệ thống với tìm kiếm
+    /// </summary>
+    /// <param name="search"></param>
+    /// <returns></returns>
+    public async Task<IEnumerable<AdminCategoryDto>> GetSystemCategoriesAsync(string? search)
     {
         var query = _context.Categories
             .AsNoTracking()
@@ -59,9 +61,13 @@ public class AdminCategoryService : IAdminCategoryService
             .ToListAsync();
     }
 
-    public async Task<AdminCategoryDto> CreateSystemCategoryAsync(
-        AdminCategoryRequest request
-    )
+    /// <summary>
+    /// Tạo danh mục hệ thống mới
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<AdminCategoryDto> CreateSystemCategoryAsync(AdminCategoryRequest request)
     {
         var name = request.Name.Trim();
 
@@ -104,10 +110,14 @@ public class AdminCategoryService : IAdminCategoryService
         return await MapToAdminCategoryDtoAsync(category.Id);
     }
 
-    public async Task<AdminCategoryDto> UpdateSystemCategoryAsync(
-        int id,
-        AdminCategoryRequest request
-    )
+    /// <summary>
+    /// Cập nhật danh mục hệ thống
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<AdminCategoryDto> UpdateSystemCategoryAsync(int id, AdminCategoryRequest request)
     {
         var category = await _context.Categories
             .FirstOrDefaultAsync(x => x.Id == id && x.UserId == null);
@@ -152,6 +162,12 @@ public class AdminCategoryService : IAdminCategoryService
         return await MapToAdminCategoryDtoAsync(category.Id);
     }
 
+    /// <summary>
+    /// Xoá danh mục hệ thống
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public async Task DeleteSystemCategoryAsync(int id)
     {
         var category = await _context.Categories
@@ -160,9 +176,7 @@ public class AdminCategoryService : IAdminCategoryService
         if (category == null)
             throw new Exception("Danh mục hệ thống không tồn tại.");
 
-        var isUsed = await _context.Transactions.AnyAsync(x =>
-            x.CategoryId == id
-        );
+        var isUsed = await _context.Transactions.AnyAsync(x => x.CategoryId == id);
 
         if (isUsed)
             throw new Exception("Danh mục đang được sử dụng, không thể xóa.");
@@ -171,6 +185,12 @@ public class AdminCategoryService : IAdminCategoryService
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Chuyển dữ liệu Category sang AdminCategoryDto => return cho frontend
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     private async Task<AdminCategoryDto> MapToAdminCategoryDtoAsync(int id)
     {
         var result = await _context.Categories
@@ -198,6 +218,11 @@ public class AdminCategoryService : IAdminCategoryService
         return result;
     }
 
+    /// <summary>
+    /// Tạo default description dựa trên tên danh mục, giúp admin không phải nhập tay nếu muốn
+    /// </summary>
+    /// <param name="categoryName"></param>
+    /// <returns></returns>
     private static string BuildDefaultDescription(string categoryName)
     {
         var name = categoryName.Trim().ToLower();
@@ -229,6 +254,11 @@ public class AdminCategoryService : IAdminCategoryService
         };
     }
 
+    /// <summary>
+    /// Tạo default keywords dựa trên tên danh mục, giúp admin không phải nhập tay nếu muốn
+    /// </summary>
+    /// <param name="categoryName"></param>
+    /// <returns></returns>
     private static string BuildDefaultKeywords(string categoryName)
     {
         var name = categoryName.Trim().ToLower();
