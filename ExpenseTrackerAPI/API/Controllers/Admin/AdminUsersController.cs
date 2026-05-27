@@ -17,6 +17,11 @@ public class AdminUsersController : ControllerBase
         _adminUserService = adminUserService;
     }
 
+    /// <summary>
+    /// Danh sách user
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
     [HttpGet]
     public async Task<IActionResult> GetUsers([FromQuery] AdminUserQueryDto query)
     {
@@ -24,6 +29,11 @@ public class AdminUsersController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Chi tiết 1 user
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(int id)
     {
@@ -34,6 +44,12 @@ public class AdminUsersController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Update trạng thái
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="request"></param>
+    /// <returns></returns>
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] AdminUpdateUserStatusRequest request)
     {
@@ -41,6 +57,12 @@ public class AdminUsersController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Update role
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="request"></param>
+    /// <returns></returns>
     [HttpPut("{id}/role")]
     public async Task<IActionResult> UpdateRole(int id, [FromBody] AdminUpdateUserRoleRequest request)
     {
@@ -48,6 +70,11 @@ public class AdminUsersController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Xoá mềm
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpDelete("{id}")]
     public async Task<IActionResult> SoftDeleteUser(int id)
     {

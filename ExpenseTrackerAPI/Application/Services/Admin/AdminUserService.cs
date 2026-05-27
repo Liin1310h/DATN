@@ -14,6 +14,11 @@ public class AdminUserService : IAdminUserService
         _context = context;
     }
 
+    /// <summary>
+    /// Lấy danh sách người dùng với lọc và sắp xếp, phân trang
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
     public async Task<PagedResultDto<AdminUserListItemDto>> GetUsersAsync(AdminUserQueryDto query)
     {
         var page = query.Page <= 0 ? 1 : query.Page;
@@ -80,6 +85,11 @@ public class AdminUserService : IAdminUserService
         };
     }
 
+    /// <summary>
+    /// Chi tiết 1 user
+    /// </summary>
+    /// <param name="userId">id</param>
+    /// <returns></returns>
     public async Task<AdminUserDetailDto?> GetUserByIdAsync(int userId)
     {
         var user = await _context.Users
@@ -116,6 +126,13 @@ public class AdminUserService : IAdminUserService
         return user;
     }
 
+    /// <summary>
+    /// Update trạng thái của 1 người dùng (active hoặc inactive)
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="isActive"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public async Task UpdateUserStatusAsync(int userId, bool isActive)
     {
         var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
@@ -127,6 +144,13 @@ public class AdminUserService : IAdminUserService
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Update role (user<=>admin)
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="role"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public async Task UpdateUserRoleAsync(int userId, string role)
     {
         if (role != "User" && role != "Admin")
@@ -141,6 +165,12 @@ public class AdminUserService : IAdminUserService
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Xoá mềm (inactive=true)
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public async Task SoftDeleteUserAsync(int userId)
     {
         var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
@@ -152,6 +182,13 @@ public class AdminUserService : IAdminUserService
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Phần sắp xếp
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="sortBy"></param>
+    /// <param name="sortDirection"></param>
+    /// <returns></returns>
     private static IQueryable<AdminUserListItemDto> ApplySorting(
         IQueryable<AdminUserListItemDto> query,
         string? sortBy,
