@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, Palette, Search, FileText, Tags, Sparkles } from "lucide-react";
+import { X, Palette, Search, FileText, Tags } from "lucide-react";
 import { HexColorPicker } from "react-colorful";
 import toast from "react-hot-toast";
 import { DynamicIcon } from "../Base/DynamicIcon";
@@ -69,54 +69,6 @@ const AVAILABLE_COLORS = [
   "#9C6B38",
   "#5E6E4A",
 ];
-
-function buildDefaultDescription(name: string) {
-  const lower = name.trim().toLowerCase();
-
-  switch (lower) {
-    case "ăn uống":
-      return "Các khoản chi cho ăn uống, đồ ăn, đồ uống, cafe, trà sữa, nhà hàng.";
-    case "di chuyển":
-      return "Các khoản chi cho đi lại, taxi, grab, xe bus, xăng xe, gửi xe, vé tàu, vé máy bay.";
-    case "mua sắm":
-      return "Các khoản chi cho quần áo, giày dép, mỹ phẩm, điện thoại, laptop, đồ gia dụng.";
-    case "giải trí":
-      return "Các khoản chi cho xem phim, karaoke, du lịch, cắm trại, game, concert, netflix.";
-    case "hóa đơn":
-    case "hoá đơn":
-      return "Các khoản chi cho điện nước, internet, wifi, tiền nhà, bảo hiểm, trả góp.";
-    case "sức khỏe":
-      return "Các khoản chi cho khám bệnh, thuốc, bệnh viện, nha khoa, bảo hiểm y tế, chăm sóc sức khỏe.";
-    case "giáo dục":
-      return "Các khoản chi cho học phí, sách vở, khóa học, tài liệu, chứng chỉ, đào tạo.";
-    default:
-      return name.trim() ? `Danh mục chi tiêu: ${name.trim()}.` : "";
-  }
-}
-
-function buildDefaultKeywords(name: string) {
-  const lower = name.trim().toLowerCase();
-
-  switch (lower) {
-    case "ăn uống":
-      return "ăn, uống, phở, bún, cơm, cafe, cà phê, trà sữa, nhà hàng, đồ ăn, nước uống";
-    case "di chuyển":
-      return "grab, taxi, xe bus, xăng, gửi xe, rửa xe, sửa xe, vé tàu, vé máy bay, đi lại";
-    case "mua sắm":
-      return "mua, áo, giày, quần, mỹ phẩm, điện thoại, laptop, tai nghe, đồ gia dụng";
-    case "giải trí":
-      return "xem phim, karaoke, du lịch, cắm trại, game, concert, netflix, picnic";
-    case "hóa đơn":
-    case "hoá đơn":
-      return "điện, nước, internet, wifi, tiền nhà, bảo hiểm, trả góp, thẻ tín dụng";
-    case "sức khỏe":
-      return "thuốc, khám bệnh, bệnh viện, nha khoa, bảo hiểm y tế, sức khỏe, bác sĩ";
-    case "giáo dục":
-      return "học phí, sách, khoá học, tài liệu, chứng chỉ, đào tạo, học tập";
-    default:
-      return name.trim();
-  }
-}
 
 export default function AdminCategoryModal({
   isOpen,
@@ -202,31 +154,9 @@ export default function AdminCategoryModal({
     onClose();
   };
 
-  const handleGenerateSemantic = () => {
-    if (!name.trim()) {
-      toast.error("Nhập tên danh mục trước khi tạo semantic");
-      return;
-    }
-
-    setDescription((prev) => prev || buildDefaultDescription(name));
-    setKeywords((prev) => prev || buildDefaultKeywords(name));
-
-    toast.success("Đã tạo mô tả và từ khóa gợi ý");
-  };
-
   const handleSubmit = async () => {
     if (!name.trim()) {
       toast.error("Vui lòng nhập tên danh mục");
-      return;
-    }
-
-    if (!description.trim()) {
-      toast.error("Vui lòng nhập mô tả semantic");
-      return;
-    }
-
-    if (!keywords.trim()) {
-      toast.error("Vui lòng nhập từ khóa semantic");
       return;
     }
 
@@ -237,8 +167,8 @@ export default function AdminCategoryModal({
         name: name.trim(),
         icon: selectedIcon,
         color: selectedColor,
-        description: description.trim(),
-        keywords: keywords.trim(),
+        description: description.trim() || null,
+        keywords: keywords.trim() || null,
       };
 
       await onSubmit(payload, initialData?.id);
@@ -347,14 +277,13 @@ export default function AdminCategoryModal({
               <div
                 className="rounded-[2rem]
                 bg-[#FFF9E8] dark:bg-[#263B2B]/80
-                border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
-                p-4"
+                border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10 p-4"
               >
                 <label className="ml-2 text-[10px] font-black uppercase tracking-wider text-[#6F8F72] dark:text-[#D6B56D]">
                   Icon
                 </label>
 
-                <div className="relative mt-3">
+                <div className="relative mt-1">
                   <Search
                     size={16}
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6F8F72] dark:text-[#D6B56D]"
@@ -373,7 +302,7 @@ export default function AdminCategoryModal({
                   />
                 </div>
 
-                <div className="mt-3 grid grid-cols-8 sm:grid-cols-10 gap-2 max-h-44 overflow-y-auto custom-scrollbar pr-1">
+                <div className="mt-2 grid grid-cols-8 sm:grid-cols-10 gap-2 max-h-45 overflow-y-auto custom-scrollbar pr-1">
                   {filteredIcons.map((icon) => (
                     <button
                       key={icon}
@@ -454,31 +383,7 @@ export default function AdminCategoryModal({
             </div>
 
             {/* Semantic fields */}
-            <div
-              className="rounded-[2rem]
-              bg-[#FFF9E8] dark:bg-[#263B2B]/80
-              border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
-              p-4 space-y-4"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p className="text-lg font-black uppercase tracking-[0.22em] text-[#6F8F72] dark:text-[#D6B56D]">
-                  Semantic metadata
-                </p>
-
-                <button
-                  type="button"
-                  onClick={handleGenerateSemantic}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl
-                  bg-[#6F8F72] hover:bg-[#55745A]
-                  text-[#FFF4D8]
-                  font-black text-[10px] uppercase tracking-widest
-                  transition-all active:scale-95"
-                >
-                  <Sparkles size={15} />
-                  Auto fill
-                </button>
-              </div>
-
+            <div className="gap-4">
               <div>
                 <label className="flex items-center gap-2 ml-2 text-[10px] font-black uppercase tracking-wider text-[#6F8F72] dark:text-[#D6B56D]">
                   <FileText size={13} className="text-[#C86B3C]" />
