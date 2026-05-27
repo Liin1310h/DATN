@@ -110,7 +110,7 @@ export default function LoanPage() {
 
   return (
     <Layout>
-      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
         <div className="mx-auto max-w-8xl px-2 sm:px-4 space-y-5">
           {/* Top tools */}
           <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
@@ -221,9 +221,7 @@ export default function LoanPage() {
                     <th className="p-4 w-[20%] hidden md:table-cell">
                       {t.common.lendWho.replace("Cho ", "")}
                     </th>
-                    <th className="p-4 w-[20%]">
-                      {t.loan.remainingBalance}
-                    </th>
+                    <th className="p-4 w-[20%]">{t.loan.remainingBalance}</th>
                     <th className="p-4 w-[20%] text-right">
                       {t.common.actions}
                     </th>

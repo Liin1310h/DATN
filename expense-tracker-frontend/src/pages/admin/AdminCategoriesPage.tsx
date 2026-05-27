@@ -371,7 +371,7 @@ export default function AdminCategoriesPage() {
 
   return (
     <Layout mode="admin">
-      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
         <div className="space-y-4">
           {/* Tools */}
           <section className="relative overflow-hidden">

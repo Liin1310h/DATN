@@ -78,7 +78,7 @@ export default function AccountManager() {
   };
 
   return (
-    <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
+    <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
       <div className="w-full max-w-full space-y-6 animate-in fade-in duration-700">
         {/* HEADER */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-2">

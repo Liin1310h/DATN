@@ -19,85 +19,10 @@ import type {
 import { getAdminDashboard } from "../../services/admin/adminDashboardService";
 import toast from "react-hot-toast";
 import LayoutSkeleton from "../LayoutSkeleton";
+import StatCard from "../../components/Base/StatCard";
 
 function formatNumber(value?: number) {
   return Number(value || 0).toLocaleString("vi-VN");
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  sub,
-  tone = "teal",
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  sub?: string;
-  tone?: "teal" | "green" | "gold" | "orange" | "dark";
-}) {
-  const toneClass =
-    tone === "green"
-      ? "bg-[#6F8F72]/15 text-[#6F8F72] dark:bg-[#6F8F72]/25"
-      : tone === "gold"
-        ? "bg-[#D6B56D]/22 text-[#9F7A2F] dark:bg-[#D6B56D]/20 dark:text-[#D6B56D]"
-        : tone === "orange"
-          ? "bg-[#C86B3C]/14 text-[#C86B3C] dark:bg-[#C86B3C]/22"
-          : tone === "dark"
-            ? "bg-[#263B2B]/10 text-[#263B2B] dark:bg-[#F4E7C5]/10 dark:text-[#F4E7C5]"
-            : "bg-[#5F8A8B]/14 text-[#5F8A8B] dark:bg-[#5F8A8B]/24";
-
-  return (
-    <div
-      className="group relative overflow-hidden rounded-[2rem]
-    border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
-    bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
-    p-5 shadow-[0_14px_35px_rgba(38,59,43,0.06)]
-    hover:shadow-[0_20px_50px_rgba(38,59,43,0.13)]
-    transition-all duration-300 hover:-translate-y-1"
-    >
-      <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-[#D6B56D]/14 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      {/* Dòng 1: icon + label + value */}
-      <div className="relative z-10 flex items-center justify-between gap-3 min-w-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${toneClass}`}
-          >
-            {icon}
-          </div>
-
-          <p
-            className="min-w-0 text-[10px] uppercase tracking-[0.18em]
-          text-[#6F8F72] dark:text-[#D6B56D]
-          font-black leading-tight truncate"
-          >
-            {label}
-          </p>
-        </div>
-
-        <p
-          className="shrink-0 text-2xl font-black tracking-tight
-        text-[#263B2B] dark:text-[#F4E7C5]
-        leading-none"
-        >
-          {value}
-        </p>
-      </div>
-
-      {/* Dòng 2: sub */}
-      {sub && (
-        <p
-          className="relative z-10 mt-1 ml-2 text-xs font-bold
-        text-[#7A6F45] dark:text-[#F4E7C5]/60
-        truncate"
-        >
-          {sub}
-        </p>
-      )}
-    </div>
-  );
 }
 
 function MiniBarChart({
@@ -305,7 +230,7 @@ export default function AdminDashboardPage() {
 
   return (
     <Layout mode="admin">
-      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
         <div className="space-y-5">
           {/* HERO */}
           <div
