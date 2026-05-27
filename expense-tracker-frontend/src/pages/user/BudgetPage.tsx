@@ -303,7 +303,7 @@ export default function BudgetPage() {
 
   return (
     <Layout>
-      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-28 pr-1 scroll-smooth">
+      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
         <div className="w-full max-w-screen-2xl mx-auto px-2 sm:px-4 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="flex items-center justify-between gap-3">
             {/* Search */}
