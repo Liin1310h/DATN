@@ -1,30 +1,72 @@
 namespace ExpenseTrackerAPI.Application.DTOs;
 
+/// !Lấy danh sách người dùng
+/// <summary>
+/// Dto để lấy danh sách user
+/// </summary>
 public class AdminUserQueryDto
 {
+    /// <summary>
+    /// Từ khoá tìm kiếm
+    /// </summary>
     public string? Search { get; set; }
-    public string? Role { get; set; } // "Admin", "User", "all"
+    /// <summary>
+    /// Role: Admin, User, all
+    /// </summary>
+    public string? Role { get; set; }
+    /// <summary>
+    /// Active?
+    /// </summary>
     public bool? IsActive { get; set; }
-
+    /// <summary>
+    /// Sx dựa trên: createdAt, lastLoginAt, transactionCount, accountCount, loanCount
+    /// </summary>
     public string SortBy { get; set; } = "createdAt";
-    // createdAt, lastLoginAt, transactionCount, accountCount, loanCount
-
+    /// <summary>
+    /// Tăng/ giảm
+    /// </summary>
     public string SortDirection { get; set; } = "desc";
-    // asc, desc
-
+    /// <summary>
+    /// Trang hiện tại
+    /// </summary>
     public int Page { get; set; } = 1;
+    /// <summary>
+    /// Kích thước trang
+    /// </summary>
     public int PageSize { get; set; } = 20;
 }
 
+/// <summary>
+/// DTO return cho frontend
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public class PagedResultDto<T>
 {
+    /// <summary>
+    /// Danh sách các user
+    /// </summary>
     public List<T> Items { get; set; } = new();
+    /// <summary>
+    /// Tổng cộng
+    /// </summary>
     public int TotalCount { get; set; }
+    /// <summary>
+    /// Trang hiện tại
+    /// </summary>
     public int Page { get; set; }
+    /// <summary>
+    /// Kích thước trang
+    /// </summary>
     public int PageSize { get; set; }
+    /// <summary>
+    /// Tổng số trang
+    /// </summary>
     public int TotalPages { get; set; }
 }
 
+/// <summary>
+/// Danh sách các người dùng
+/// </summary>
 public class AdminUserListItemDto
 {
     public int Id { get; set; }
@@ -43,6 +85,11 @@ public class AdminUserListItemDto
     public int LoanCount { get; set; }
 }
 
+
+
+///! <summary>
+///! Chi tiết 1 user
+/// </summary>
 public class AdminUserDetailDto
 {
     public int Id { get; set; }
@@ -71,39 +118,4 @@ public class AdminUpdateUserStatusRequest
 public class AdminUpdateUserRoleRequest
 {
     public string Role { get; set; } = "User";
-}
-
-public class AdminUserAccountSummaryDto
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
-    public string Currency { get; set; } = "VND";
-    public decimal Balance { get; set; }
-}
-
-public class AdminUserRecentTransactionDto
-{
-    public int Id { get; set; }
-    public string Type { get; set; } = string.Empty;
-    public decimal Amount { get; set; }
-    public string Currency { get; set; } = "VND";
-    public string? Note { get; set; }
-    public DateTime TransactionDate { get; set; }
-    public string? CategoryName { get; set; }
-    public string? FromAccountName { get; set; }
-    public string? ToAccountName { get; set; }
-    public string? AccountName { get; set; }
-}
-
-public class AdminUserLoanSummaryDto
-{
-    public int Id { get; set; }
-    public string CounterPartyName { get; set; } = string.Empty;
-    public decimal PrincipalAmount { get; set; }
-    public decimal RemainingAmount { get; set; }
-    public string Currency { get; set; } = "VND";
-    public bool IsLending { get; set; }
-    public bool IsCompleted { get; set; }
-    public DateTime? DueDate { get; set; }
 }
