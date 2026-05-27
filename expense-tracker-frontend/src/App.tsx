@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -18,6 +24,15 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminUsersPage from "./pages/admin/AdminUserPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import { useEffect } from "react";
+import { NotificationProvider } from "./context/NotificationContext";
+
+function NotificationScope() {
+  return (
+    <NotificationProvider>
+      <Outlet />
+    </NotificationProvider>
+  );
+}
 
 function App() {
   useEffect(() => {
@@ -52,24 +67,31 @@ function App() {
         <Route path="/login" element={<LoginPage />}></Route>
         <Route path="/loading" element={<LayoutSkeleton />}></Route>
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/addExpense" element={<RecordPage />}></Route>
-          <Route path="/history" element={<History />}></Route>
-          <Route
-            path="/categoryManager"
-            element={<CategoryManagement />}
-          ></Route>
-          <Route path="/accountManager" element={<AccountManagement />}></Route>
-          <Route path="/budget" element={<BudgetPage />}></Route>
-          <Route path="/loan" element={<LoanPage />}></Route>
-          <Route path="/analytics" element={<Analytics />}></Route>
+          <Route element={<NotificationScope />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/addExpense" element={<RecordPage />}></Route>
+            <Route path="/history" element={<History />}></Route>
+            <Route
+              path="/categoryManager"
+              element={<CategoryManagement />}
+            ></Route>
+            <Route
+              path="/accountManager"
+              element={<AccountManagement />}
+            ></Route>
+            <Route path="/budget" element={<BudgetPage />}></Route>
+            <Route path="/loan" element={<LoanPage />}></Route>
+            <Route path="/analytics" element={<Analytics />}></Route>
+          </Route>
         </Route>
 
         {/* Admin */}
         <Route element={<AdminRoute />}>
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-          <Route path="/admin/users" element={<AdminUsersPage />} />
-          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+          <Route element={<NotificationScope />}>
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />
