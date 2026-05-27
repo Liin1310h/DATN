@@ -113,7 +113,7 @@ export default function LoanPage() {
       <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
         <div className="mx-auto max-w-8xl px-2 sm:px-4 space-y-5">
           {/* Top tools */}
-          <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+          <div className="flex flex-row justify-between items-center gap-4">
             <div className="w-full lg:max-w-md">
               <SearchInput
                 value={searchTerm}

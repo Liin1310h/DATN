@@ -392,8 +392,8 @@ export default function History() {
           </div>
 
           {/* Toolbar */}
-          <div className="flex flex-col lg:flex-row justify-between gap-3 mb-3">
-            <div className="w-full lg:max-w-md">
+          <div className="flex flex-row justify-between gap-3 mb-3">
+            <div className="w-full max-w-md">
               <SearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}
@@ -634,7 +634,7 @@ export default function History() {
                     className="px-4 py-3
                     border-t border-[#D6B56D]/35 dark:border-[#F4E7C5]/10
                     bg-[#F4E7C5]/80 dark:bg-[#1F2E24]/95
-                    flex flex-col sm:flex-row items-center justify-between gap-4"
+                    flex flex-row items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase tracking-widest">

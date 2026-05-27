@@ -427,7 +427,7 @@ export default function Analytics() {
           <section className="relative overflow-hidden">
             <div className="pointer-events-none absolute -top-16 -right-12 h-40 w-40 rounded-full bg-[#D6B56D]/16 blur-3xl" />
 
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="relative z-10 flex flex-row items-center justify-between gap-3">
               {/* Period navigation */}
               <div
                 className="flex items-center justify-between sm:justify-center gap-2
