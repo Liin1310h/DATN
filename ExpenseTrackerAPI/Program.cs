@@ -124,12 +124,13 @@ builder.Services.AddScoped<ICategoryPredictionService, CategoryPredictionService
 builder.Services.AddScoped<IPersonalCategoryRuleService, PersonalCategoryRuleService>();
 builder.Services.AddHttpClient<IGlobalCategoryMlService, GlobalCategoryMlService>(client =>
 {
-    var mlUrl = builder.Configuration["ML_URL"] ?? "http://ml-service:8001";
+    var mlUrl = builder.Configuration["ML_URL"] ?? "http://ml:8001";
     client.BaseAddress = new Uri(mlUrl);
 });
 builder.Services.AddHttpClient<ISemanticCategoryService, SemanticCategoryService>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:8001");
+    var semanticUrl = builder.Configuration["ML_URL"] ?? "http://ml:8001";
+    client.BaseAddress = new Uri(semanticUrl);
 });
 builder.Services.AddHttpClient<IAIReceiptParser, AIReceiptParser>((sp, client) =>
 {
