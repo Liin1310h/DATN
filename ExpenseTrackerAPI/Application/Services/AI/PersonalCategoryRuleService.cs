@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
 using ExpenseTrackerAPI.Domain.Entities;
 using ExpenseTrackerAPI.Infrastructure.Data;
@@ -107,20 +108,49 @@ public class PersonalCategoryRuleService : IPersonalCategoryRuleService
     private static List<string> ExtractKeywords(string note)
     {
         var stopWords = new HashSet<string>
-        {
-            "cho", "cua", "của", "va", "và", "voi", "với",
-            "mua", "tra", "trả", "thanh", "toan", "toán",
-            "chuyen", "chuyển", "khoan", "khoản"
-        };
+    {
+        "cho", "cua", "của", "va", "và", "voi", "với",
+        "mua", "tra", "trả", "thanh", "toan", "toán",
+        "chuyen", "chuyển", "khoan", "khoản",
+        "tien", "tiền", "phi", "phí",
+        "don", "đơn", "hang", "hàng",
+        "online", "ck", "bill",
+        "ngay", "ngày", "hom", "hôm", "nay",
+        "bang", "bằng", "qua"
+    };
 
-        return note
-            .Trim()
-            .ToLowerInvariant()
+        note = note.Trim().ToLowerInvariant();
+
+        // Bỏ dấu câu, ký tự đặc biệt nhưng vẫn giữ chữ tiếng Việt và số
+        note = Regex.Replace(note, @"[^\p{L}\p{N}\s]", " ");
+
+        var words = note
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Select(x => x.Trim())
             .Where(x => x.Length >= 2)
             .Where(x => !stopWords.Contains(x))
+            .ToList();
+
+        var keywords = new List<string>();
+
+        // Ưu tiên cụm 3 từ
+        for (int i = 0; i < words.Count - 2; i++)
+        {
+            keywords.Add($"{words[i]} {words[i + 1]} {words[i + 2]}");
+        }
+
+        // Cụm 2 từ
+        for (int i = 0; i < words.Count - 1; i++)
+        {
+            keywords.Add($"{words[i]} {words[i + 1]}");
+        }
+
+        // Từ đơn
+        keywords.AddRange(words);
+
+        return keywords
             .Distinct()
+            .Take(10)
             .ToList();
     }
 }

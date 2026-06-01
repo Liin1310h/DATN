@@ -4,7 +4,10 @@ using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTrackerAPI.Application.Services.AI;
-
+/// <summary>
+/// TODO Hàm dự đoán category dựa trên note và type
+/// <rule personal> => <rule global ML> => <semantic fallback>
+/// </summary>
 public class CategoryPredictionService : ICategoryPredictionService
 {
     private readonly AppDbContext _context;
@@ -16,6 +19,11 @@ public class CategoryPredictionService : ICategoryPredictionService
         _globalCategoryPythonMlService = globalCategoryPythonMlService;
         _semanticCategoryService = semanticCategoryService;
     }
+
+    // Các ngưỡng conf
+    const double PersonalRuleThreshold = 0.5;
+    const double MlThreshold = 0.65;
+    const double SemanticThreshold = 0.5;
 
     /// <summary>
     /// Hàm dự đoán category dựa trên note và type
@@ -54,44 +62,53 @@ public class CategoryPredictionService : ICategoryPredictionService
         // TODO Rule cá nhân dựa trên lịch sử giao dịch của user
         var personal = await PredictByPersonalRuleAsync(userId, note, type);
 
-        if (personal.CategoryId != null && personal.Confidence >= 0.5)
+        if (personal.CategoryId != null && personal.Confidence >= PersonalRuleThreshold)
             return personal;
 
         // TODO Gọi ML global
         var mlResult = await _globalCategoryPythonMlService.PredictAsync(request.Note, request.Amount, type);
-        if (mlResult?.CategoryId != null && mlResult.Confidence >= 0)
+        Console.WriteLine($"ML global returned: CategoryId={mlResult?.CategoryId}, Confidence={mlResult?.Confidence}");
+        if (mlResult?.CategoryId != null && mlResult.Confidence >= MlThreshold)
         {
             var category = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Id == mlResult.CategoryId.Value);
-
-            return new PredictCategoryResponse
+                .FirstOrDefaultAsync(c =>
+                    c.Id == mlResult.CategoryId.Value &&
+                    (c.UserId == null || c.UserId == userId));
+            Console.WriteLine($"ML returned CategoryId={mlResult.CategoryId.Value}, but category was not found in database.");
+            if (category != null)
             {
-                CategoryId = mlResult.CategoryId,
-                CategoryName = category?.Name,
-                Confidence = mlResult.Confidence,
-                Source = "ml_global",
-                Message = "Gợi ý bằng ML global Python."
-            };
+                return new PredictCategoryResponse
+                {
+                    CategoryId = category?.Id,
+                    CategoryName = category?.Name,
+                    Confidence = mlResult.Confidence,
+                    Source = "ml_global",
+                    Message = "Gợi ý bằng ML global Python."
+                };
+            }
         }
 
         // TODO semantic fallback
         var semantic = await _semanticCategoryService.PredictAsync(userId, request);
 
-        if (semantic != null && semantic.CategoryId != null && semantic.Confidence >= 0.5)
+        if (semantic != null && semantic.CategoryId != null && semantic.Confidence >= SemanticThreshold)
         {
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c =>
                     c.Id == semantic.CategoryId.Value &&
                     (c.UserId == null || c.UserId == userId));
 
-            return new PredictCategoryResponse
+            if (category != null)
             {
-                CategoryId = semantic.CategoryId,
-                CategoryName = category?.Name,
-                Confidence = semantic.Confidence,
-                Source = "semantic",
-                Message = semantic.Reason ?? "Gợi ý bằng semantic embedding."
-            };
+                return new PredictCategoryResponse
+                {
+                    CategoryId = category?.Id,
+                    CategoryName = category?.Name,
+                    Confidence = semantic.Confidence,
+                    Source = "semantic",
+                    Message = semantic.Reason ?? "Gợi ý bằng semantic embedding."
+                };
+            }
         }
 
         if (personal.CategoryId != null)
@@ -168,8 +185,9 @@ public class CategoryPredictionService : ICategoryPredictionService
             .First();
 
         var totalScore = rules.Sum(x => x.Count);
+        var usageFactor = Math.Min(1.0, Math.Log10(grouped.Score + 1));
         var confidence = totalScore > 0
-            ? Math.Min(0.99, (double)grouped.Score / totalScore)
+            ? Math.Min(0.99, ((double)grouped.Score / totalScore) * usageFactor)
             : 0;
 
         return new PredictCategoryResponse
@@ -187,9 +205,11 @@ public class CategoryPredictionService : ICategoryPredictionService
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
-    private static string Normalize(string value)
+    private static string Normalize(string? value)
     {
-        return value.Trim().ToLowerInvariant();
+        return string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : value.Trim().ToLowerInvariant();
     }
 
     /// <summary>
@@ -251,26 +271,5 @@ public class CategoryPredictionService : ICategoryPredictionService
         return result
             .Distinct()
             .ToList();
-    }
-
-    /// <summary>
-    /// Hàm tính điểm khớp giữa note cũ và các keyword
-    /// </summary>
-    /// <param name="oldNote"></param>
-    /// <param name="keywords"></param>
-    /// <returns></returns>
-    private static double CalculateKeywordMatchScore(string oldNote, List<string> keywords)
-    {
-        double score = 0;
-
-        foreach (var keyword in keywords)
-        {
-            if (oldNote.Contains(keyword))
-            {
-                score += 1;
-            }
-        }
-
-        return score;
     }
 }

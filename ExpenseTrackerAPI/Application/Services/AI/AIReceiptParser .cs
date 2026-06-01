@@ -4,6 +4,9 @@ using ExpenseTrackerAPI.Application.Interfaces.AI;
 
 namespace ExpenseTrackerAPI.Application.Services.AI
 {
+    /// <summary>
+    /// Gửi raw text lên AI, nhận về JSON đã parse sẵn
+    /// </summary>
     public class AIReceiptParser : IAIReceiptParser
     {
         private readonly HttpClient _http;
@@ -13,10 +16,17 @@ namespace ExpenseTrackerAPI.Application.Services.AI
             _http = http;
         }
 
+        /// <summary>
+        /// Hàm gửi raw text lên AI
+        /// </summary>
+        /// <param name="rawText"></param>
+        /// <returns></returns>
         public async Task<ParsedReceiptDto?> ParseAsync(string rawText)
         {
+            // Tạo prompt
             var prompt = BuildPrompt(rawText);
 
+            // Tạo request body
             var request = new
             {
                 model = "gpt-4.1-mini",
@@ -27,17 +37,24 @@ namespace ExpenseTrackerAPI.Application.Services.AI
                 temperature = 0
             };
 
+            // Gửi request và nhận về response
             var response = await _http.PostAsJsonAsync(
                 "v1/chat/completions",
                 request
             );
 
+            // Đọc response content
             var json = await response.Content.ReadAsStringAsync();
 
             // parse response → ParsedReceiptDto
             return ParseJson(json);
         }
 
+        /// <summary>
+        /// Build response json=> Dto
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
         private ParsedReceiptDto? ParseJson(string json)
         {
             try
