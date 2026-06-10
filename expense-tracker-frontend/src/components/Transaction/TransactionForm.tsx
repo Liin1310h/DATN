@@ -621,11 +621,9 @@ export default function TransactionForm({
                     </div>
 
                     <div className="flex flex-col items-start">
-                      <span className="text-sm font-black text-[#263B2B] dark:text-[#F4E7C5]">
-                        {acc.name}
-                      </span>
+                      <span className="text-sm font-black">{acc.name}</span>
 
-                      <span className="text-[9px] font-bold text-[#6F8F72] dark:text-[#D6B56D]">
+                      <span className="text-[9px] font-bold">
                         {acc.balance?.toLocaleString()} {acc.currency}
                       </span>
                     </div>
@@ -711,7 +709,7 @@ export default function TransactionForm({
                           />
                         </div>
 
-                        <span className="text-sm font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                        <span className="text-sm font-black">
                           {cat.name}
                         </span>
 
