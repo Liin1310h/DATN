@@ -50,4 +50,11 @@ public class AdminCategoriesController : ControllerBase
         await _adminCategoryService.DeleteSystemCategoryAsync(id);
         return NoContent();
     }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var result = await _adminCategoryService.GetSystemCategoryByIdAsync(id);
+        return Ok(result);
+    }
 }

@@ -186,6 +186,64 @@ public class AdminCategoryService : IAdminCategoryService
     }
 
     /// <summary>
+    /// Lấy chi tiết danh mục hệ thống
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<AdminCategoryDetailDto> GetSystemCategoryByIdAsync(int id)
+    {
+        var category = await _context.Categories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id && x.UserId == null);
+
+        if (category == null)
+            throw new Exception("Danh mục hệ thống không tồn tại.");
+
+        var transactionQuery = _context.Transactions
+            .AsNoTracking()
+            .Where(t => t.CategoryId == id);
+
+        var transactionCount = await transactionQuery.CountAsync();
+
+        var usedUserCount = await transactionQuery
+            .Select(t => t.UserId)
+            .Distinct()
+            .CountAsync();
+
+        var lastUsedAt = await transactionQuery
+            .OrderByDescending(t => t.TransactionDate)
+            .Select(t => (DateTime?)t.TransactionDate)
+            .FirstOrDefaultAsync();
+
+        var typeStats = await transactionQuery
+            .GroupBy(t => t.Type)
+            .Select(g => new AdminCategoryTypeStatDto
+            {
+                Type = g.Key,
+                Count = g.Count()
+            })
+            .OrderByDescending(x => x.Count)
+            .ToListAsync();
+
+        return new AdminCategoryDetailDto
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Icon = category.Icon,
+            Color = category.Color,
+            Description = category.Description,
+            Keywords = category.Keywords,
+            UserId = category.UserId,
+
+            TransactionCount = transactionCount,
+            UsedUserCount = usedUserCount,
+            LastUsedAt = lastUsedAt,
+            CanDelete = transactionCount == 0,
+            TypeStats = typeStats
+        };
+    }
+    /// <summary>
     /// Chuyển dữ liệu Category sang AdminCategoryDto => return cho frontend
     /// </summary>
     /// <param name="id"></param>

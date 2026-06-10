@@ -9,4 +9,5 @@ public interface IAdminCategoryService
     Task<AdminCategoryDto> CreateSystemCategoryAsync(AdminCategoryRequest request);
     Task<AdminCategoryDto> UpdateSystemCategoryAsync(int id, AdminCategoryRequest request);
     Task DeleteSystemCategoryAsync(int id);
+    Task<AdminCategoryDetailDto> GetSystemCategoryByIdAsync(int id);
 }

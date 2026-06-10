@@ -67,14 +67,14 @@ public class CategoryPredictionService : ICategoryPredictionService
 
         // TODO Gọi ML global
         var mlResult = await _globalCategoryPythonMlService.PredictAsync(request.Note, request.Amount, type);
-        Console.WriteLine($"ML global returned: CategoryId={mlResult?.CategoryId}, Confidence={mlResult?.Confidence}");
+
         if (mlResult?.CategoryId != null && mlResult.Confidence >= MlThreshold)
         {
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c =>
                     c.Id == mlResult.CategoryId.Value &&
                     (c.UserId == null || c.UserId == userId));
-            Console.WriteLine($"ML returned CategoryId={mlResult.CategoryId.Value}, but category was not found in database.");
+
             if (category != null)
             {
                 return new PredictCategoryResponse
