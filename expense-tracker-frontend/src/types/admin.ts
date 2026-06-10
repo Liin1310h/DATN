@@ -123,3 +123,27 @@ export interface AdminCategory {
   userId?: number | null;
   transactionCount: number;
 }
+
+export interface AdminCategoryDetail {
+  id: number;
+  name: string;
+  icon: string;
+  color: string;
+
+  description?: string | null;
+  keywords?: string | null;
+
+  userId?: number | null;
+
+  transactionCount: number;
+  usedUserCount: number;
+  canDelete: boolean;
+  lastUsedAt?: string | null;
+
+  typeStats: AdminCategoryTypeStat[];
+}
+
+export interface AdminCategoryTypeStat {
+  type: string;
+  count: number;
+}
