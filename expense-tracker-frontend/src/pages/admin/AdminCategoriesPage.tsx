@@ -9,22 +9,25 @@ import {
   Hash,
   Grid3X3,
   List,
+  Eye,
 } from "lucide-react";
 import Layout from "../Layout";
 import toast from "react-hot-toast";
 import LayoutSkeleton from "../LayoutSkeleton";
 import { DynamicIcon } from "../../components/Base/DynamicIcon";
-import type { AdminCategory } from "../../types/admin";
+import type { AdminCategory, AdminCategoryDetail } from "../../types/admin";
 import {
   createAdminCategory,
   deleteAdminCategory,
   getAdminCategories,
+  getAdminCategoryById,
   updateAdminCategory,
 } from "../../services/admin/adminCategoryService";
 import SearchInput from "../../components/Base/SearchInput";
 import { useTranslation } from "../../hook/useTranslation";
 import { trainGlobalCategoryModel } from "../../services/admin/adminCategoryModelService";
 import AdminCategoryModal from "../../components/Admin/AdminCategoryModal";
+import AdminCategoryDetailModal from "../../components/Admin/AdminCategoryDetailModal";
 
 type ViewMode = "grid" | "list";
 
@@ -42,9 +45,13 @@ export default function AdminCategoriesPage() {
     null,
   );
 
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [categoryDetail, setCategoryDetail] =
+    useState<AdminCategoryDetail | null>(null);
+
   const fetchCategories = async () => {
     setLoading(true);
-
     try {
       const res = await getAdminCategories(search.trim() || undefined);
       setCategories(res);
@@ -65,19 +72,6 @@ export default function AdminCategoriesPage() {
   }, [search]);
 
   const filtered = useMemo(() => categories, [categories]);
-
-  const totalTransactions = useMemo(() => {
-    return categories.reduce(
-      (sum, item) => sum + Number(item.transactionCount || 0),
-      0,
-    );
-  }, [categories]);
-
-  const missingSemanticCount = useMemo(() => {
-    return categories.filter(
-      (item) => !item.description?.trim() || !item.keywords?.trim(),
-    ).length;
-  }, [categories]);
 
   const openCreateModal = () => {
     setEditingCategory(null);
@@ -123,6 +117,23 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const openDetailModal = async (item: AdminCategory) => {
+    try {
+      setIsDetailOpen(true);
+      setDetailLoading(true);
+      setCategoryDetail(null);
+
+      const detail = await getAdminCategoryById(item.id);
+      setCategoryDetail(detail);
+    } catch (error) {
+      console.error(error);
+      toast.error("Không tải được chi tiết category");
+      setIsDetailOpen(false);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const renderCategoryCard = (item: AdminCategory) => {
     const hasDescription = !!item.description?.trim();
     const hasKeywords = !!item.keywords?.trim();
@@ -142,7 +153,7 @@ export default function AdminCategoriesPage() {
         >
           <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-[#D6B56D]/12 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
-          <div className="relative z-10 grid grid-cols-1 xl:grid-cols-[1.1fr_1.4fr_1.1fr_auto] gap-4 items-center">
+          <div className="relative z-10 grid grid-cols-1 xl:grid-cols-[0.75fr_1.4fr_1.4fr_auto] gap-4 items-center">
             <div className="flex items-center gap-3 min-w-0">
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0
@@ -215,6 +226,13 @@ export default function AdminCategoriesPage() {
 
               <div className="flex gap-2 shrink-0">
                 <button
+                  onClick={() => openDetailModal(item)}
+                  className="p-2 rounded-xl text-[#7A6F45] hover:bg-[#7A6F45] hover:text-[#FFF4D8] transition-all active:scale-95"
+                  title="View category detail"
+                >
+                  <Eye size={16} />
+                </button>
+                <button
                   onClick={() => openEditModal(item)}
                   className="p-2 rounded-xl
                   text-[#5F8A8B]
@@ -283,6 +301,13 @@ export default function AdminCategoriesPage() {
           </div>
 
           <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => openDetailModal(item)}
+              className="p-2 rounded-xl text-[#7A6F45] hover:bg-[#7A6F45] hover:text-[#FFF4D8] transition-all active:scale-95"
+              title="View category detail"
+            >
+              <Eye size={16} />
+            </button>
             <button
               onClick={() => openEditModal(item)}
               className="p-2 rounded-xl
@@ -371,7 +396,9 @@ export default function AdminCategoriesPage() {
 
   return (
     <Layout mode="admin">
-      <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
+      <div
+        className={`relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth ${isDetailOpen ? "overflow-hidden" : "overflow-auto"}`}
+      >
         <div className="space-y-4">
           {/* Tools */}
           <section className="relative overflow-hidden">
@@ -508,6 +535,33 @@ export default function AdminCategoriesPage() {
             }}
           />
         </div>
+
+        <AdminCategoryDetailModal
+          isOpen={isDetailOpen}
+          data={categoryDetail}
+          loading={detailLoading}
+          onClose={() => {
+            setIsDetailOpen(false);
+            setCategoryDetail(null);
+          }}
+          onEdit={() => {
+            if (!categoryDetail) return;
+
+            setIsDetailOpen(false);
+            setEditingCategory({
+              id: categoryDetail.id,
+              name: categoryDetail.name,
+              icon: categoryDetail.icon,
+              color: categoryDetail.color,
+              description: categoryDetail.description,
+              keywords: categoryDetail.keywords,
+              userId: categoryDetail.userId,
+              transactionCount: categoryDetail.transactionCount,
+            });
+
+            setIsModalOpen(true);
+          }}
+        />
       </div>
     </Layout>
   );
