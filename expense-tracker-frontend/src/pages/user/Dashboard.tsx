@@ -72,7 +72,7 @@ export default function Dashboard() {
   const { currency } = useSettings();
 
   const [timeLineRange, setTimeLineRange] = useState<"week" | "month">("week");
-  const [categoryRange, setCategoryRange] = useState<"week" | "month">("month");
+  const [categoryRange, setCategoryRange] = useState<"week" | "month">("week");
 
   const [chartData, setChartData] = useState<any>(null);
   const [categoryChart, setCategoryChart] = useState<any>(null);
@@ -483,7 +483,7 @@ export default function Dashboard() {
               bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
               p-5 rounded-[2rem]
               border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
-              shadow-[0_18px_45px_rgba(38,59,43,0.08)]"
+              shadow-[0_18px_45px_rgba(38,59,43,0.08)] h-full flex flex-col"
             >
               <div className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-[#6F8F72]/12 blur-3xl" />
 
@@ -509,68 +509,70 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="relative z-10 h-[280px]">
+              <div className="relative z-10 flex-1 min-h-[280px]">
                 {cashflowLoading ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="h-8 w-8 rounded-full border-4 border-[#D6B56D]/40 border-t-[#C86B3C] animate-spin" />
                   </div>
                 ) : (
-                  <Line
-                    key={timeLineRange}
-                    data={dynamicLineData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                          enabled: true,
-                          backgroundColor: "#263B2B",
-                          titleColor: "#F4E7C5",
-                          bodyColor: "#FFF4D8",
-                          borderColor: "#D6B56D",
-                          borderWidth: 1,
-                          padding: 12,
-                          cornerRadius: 14,
-                          callbacks: {
-                            label: (context) =>
-                              `${context.dataset.label}: ${formatMoney(
-                                Number(context.parsed.y || 0),
-                                currency,
-                              )}`,
+                  <div className="h-full">
+                    <Line
+                      key={timeLineRange}
+                      data={dynamicLineData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: {
+                            enabled: true,
+                            backgroundColor: "#263B2B",
+                            titleColor: "#F4E7C5",
+                            bodyColor: "#FFF4D8",
+                            borderColor: "#D6B56D",
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 14,
+                            callbacks: {
+                              label: (context) =>
+                                `${context.dataset.label}: ${formatMoney(
+                                  Number(context.parsed.y || 0),
+                                  currency,
+                                )}`,
+                            },
                           },
                         },
-                      },
-                      interaction: {
-                        mode: "index",
-                        intersect: false,
-                      },
-                      scales: {
-                        x: {
-                          grid: { display: false },
-                          border: { display: false },
-                          ticks: {
-                            color: "#7A6F45",
-                            font: { size: 10, weight: "bold" },
+                        interaction: {
+                          mode: "index",
+                          intersect: false,
+                        },
+                        scales: {
+                          x: {
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: {
+                              color: "#7A6F45",
+                              font: { size: 10, weight: "bold" },
+                            },
+                          },
+                          y: {
+                            grid: { color: "rgba(111,143,114,0.12)" },
+                            border: { display: false },
+                            ticks: {
+                              color: "#7A6F45",
+                              font: { size: 10, weight: "bold" },
+                              callback: (value) =>
+                                Number(value) >= 1000000
+                                  ? `${Number(value) / 1000000}M`
+                                  : Number(value) >= 1000
+                                    ? `${Number(value) / 1000}K`
+                                    : value,
+                            },
                           },
                         },
-                        y: {
-                          grid: { color: "rgba(111,143,114,0.12)" },
-                          border: { display: false },
-                          ticks: {
-                            color: "#7A6F45",
-                            font: { size: 10, weight: "bold" },
-                            callback: (value) =>
-                              Number(value) >= 1000000
-                                ? `${Number(value) / 1000000}M`
-                                : Number(value) >= 1000
-                                  ? `${Number(value) / 1000}K`
-                                  : value,
-                          },
-                        },
-                      },
-                    }}
-                  />
+                      }}
+                    />
+                  </div>
                 )}
               </div>
             </section>
