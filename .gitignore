@@ -21,6 +21,7 @@ obj/
 *.log
 appsettings.Development.json
 appsettings.json
+
 # ======================
 # PYTHON (ML + OCR)
 # ======================
@@ -97,3 +98,5 @@ logs/
 
 .DS_Store
 Thumbs.db
+
+TestML/
