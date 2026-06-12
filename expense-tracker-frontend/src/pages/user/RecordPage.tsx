@@ -17,6 +17,13 @@ import API from "../../services/api";
 import { getCategories } from "../../services/categoriesService";
 import { getAccounts } from "../../services/accountsService";
 import { Sparkles } from "lucide-react";
+import {
+  TransactionType,
+  InterestUnit,
+  DurationUnit,
+  InterestCalculationType,
+  ReminderFrequency,
+} from "../../types/enum";
 
 export default function RecordPage() {
   const { t } = useTranslation();
@@ -237,33 +244,37 @@ export default function RecordPage() {
     try {
       const imageUrls = data.imageUrls ?? [];
 
-      console.log("Transaction submit data:", data);
-      console.log("Final imageUrls to save:", imageUrls);
-
-      if (data.type === "lend" || data.type === "borrow") {
+      if (
+        data.type === TransactionType.Lend ||
+        data.type === TransactionType.Borrow
+      ) {
         const loanPayload = {
           counterPartyName: data.loan?.counterPartyName ?? "",
           principalAmount: data.amount,
           currency: data.currency,
 
           interestRate: data.loan?.interestRate ?? 0,
-          interestUnit: (data.loan?.interestUnit ?? "percent_per_month") as
-            | "percent_per_month"
-            | "percent_per_year"
-            | "fixed_amount",
+          interestUnit: data.loan?.interestUnit ?? InterestUnit.PercentPerMonth,
 
           duration: Number(data.loan?.duration ?? 0),
-          durationUnit: data.loan?.durationUnit ?? "months",
+          durationUnit: data.loan?.durationUnit ?? DurationUnit.Month,
+
+          interestCalculationType:
+            data.loan?.interestCalculationType ??
+            InterestCalculationType.ReducingBalance,
 
           startDate: data.transactionFromDate,
           dueDate: data.transactionToDate ?? null,
 
-          isLending: data.type === "lend",
+          isLending: data.type === TransactionType.Lend,
           accountId: data.accountId,
           note: data.note,
-        };
 
-        console.log("CREATE LOAN PAYLOAD:", loanPayload);
+          isRecurringReminder: data.loan?.isRecurringReminder ?? false,
+          reminderBeforeDays: data.loan?.reminderBeforeDays ?? 0,
+          reminderFrequency:
+            data.loan?.reminderFrequency ?? ReminderFrequency.Monthly,
+        };
 
         await createLoan(loanPayload);
 

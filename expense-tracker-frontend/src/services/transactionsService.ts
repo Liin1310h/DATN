@@ -1,8 +1,9 @@
 import API from "./api";
 
+import { type TransactionType as TransactionTypeValue } from "../types/enum";
 export interface GetTransactionsParams {
   accountId?: number;
-  type?: string;
+  type?: TransactionTypeValue;
   categoryId?: number;
   fromDate?: string;
   toDate?: string;

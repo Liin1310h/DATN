@@ -1,8 +1,13 @@
 import { RotateCcw } from "lucide-react";
 
+import {
+  TransactionType,
+  TransactionType as TransactionTypeValue,
+} from "../types/enum";
+
 interface FilterBarProps {
-  type: string;
-  setType: (value: string) => void;
+  type: "all" | TransactionTypeValue;
+  setType: (type: "all" | TransactionTypeValue) => void;
 
   fromDate: string;
   setFromDate: (value: string) => void;
@@ -58,15 +63,23 @@ export default function FilterBar({
 
           <select
             value={type}
-            onChange={(e) => setType(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+
+              setType(
+                value === "all"
+                  ? "all"
+                  : (Number(value) as TransactionTypeValue),
+              );
+            }}
             className={inputClass}
           >
             <option value="all">Tất cả</option>
-            <option value="expense">Chi tiêu</option>
-            <option value="income">Thu nhập</option>
-            <option value="lend">Cho vay</option>
-            <option value="borrow">Đi vay</option>
-            <option value="transfer">Chuyển khoản</option>
+            <option value={TransactionType.Expense}>Chi tiêu</option>
+            <option value={TransactionType.Income}>Thu nhập</option>
+            <option value={TransactionType.Lend}>Cho vay</option>
+            <option value={TransactionType.Borrow}>Đi vay</option>
+            <option value={TransactionType.Transfer}>Chuyển khoản</option>
           </select>
         </div>
 

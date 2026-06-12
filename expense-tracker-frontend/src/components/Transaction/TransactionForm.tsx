@@ -30,23 +30,35 @@ import { useTranslation } from "../../hook/useTranslation";
 import { CURRENCIES } from "../../constants/currencies";
 import { uploadImages } from "../../services/mediaService";
 
-type TransactionType = "expense" | "income" | "lend" | "borrow";
+import {
+  TransactionType,
+  InterestUnit,
+  DurationUnit,
+  InterestCalculationType,
+  ReminderFrequency,
+  type TransactionType as TransactionTypeValue,
+  type InterestUnit as InterestUnitValue,
+  type DurationUnit as DurationUnitValue,
+  type InterestCalculationType as InterestCalculationTypeValue,
+  type ReminderFrequency as ReminderFrequencyValue,
+} from "../../types/enum";
 
 interface LoanFormPayload {
   counterPartyName: string;
   interestRate: number;
-  interestUnit: string;
+  interestUnit: InterestUnitValue;
   duration: number;
-  durationUnit?: "days" | "months" | "years";
+  durationUnit?: DurationUnitValue;
+  interestCalculationType?: InterestCalculationTypeValue;
   isRecurringReminder: boolean;
   reminderBeforeDays: number;
-  reminderFrequency: string;
+  reminderFrequency: ReminderFrequencyValue;
 }
 export interface TransactionFormSubmitData {
   accountId: number;
   amount: number;
   currency: string;
-  type: TransactionType;
+  type: TransactionTypeValue;
   note: string;
   transactionFromDate: string;
   transactionToDate: string | null;
@@ -79,7 +91,9 @@ export default function TransactionForm({
   const { currency } = useSettings();
 
   //! TRANSACTION DATA
-  const [type, setType] = useState("expense");
+  const [type, setType] = useState<TransactionTypeValue>(
+    TransactionType.Expense,
+  );
   const [amount, setAmount] = useState("");
   const [person, setPerson] = useState("");
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -92,15 +106,22 @@ export default function TransactionForm({
 
   // ! LOAN & INTEREST
   const [interestRate, setInterestRate] = useState("");
-  const [interestUnit, setInterestUnit] = useState("year");
+  const [interestUnit, setInterestUnit] = useState<InterestUnitValue>(
+    InterestUnit.PercentPerYear,
+  );
   const [loanDuration, setLoanDuration] = useState("");
-  const [durationUnit, setDurationUnit] = useState<"day" | "month" | "year">(
-    "month",
+  const [durationUnit, setDurationUnit] = useState<DurationUnitValue>(
+    DurationUnit.Month,
   );
   const [showSchedule, setShowSchedule] = useState(false);
   const [isRecurringReminder, setIsRecurringReminder] = useState(false);
   const [reminderBeforeDays, setReminderBeforeDays] = useState("");
-  const [reminderFrequency, setReminderFrequency] = useState("Monthly");
+  const [reminderFrequency, setReminderFrequency] =
+    useState<ReminderFrequencyValue>(ReminderFrequency.Monthly);
+  const [interestCalculationType, setInterestCalculationType] =
+    useState<InterestCalculationTypeValue>(
+      InterestCalculationType.ReducingBalance,
+    );
   // ! CATEGORY STATE
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
@@ -119,7 +140,8 @@ export default function TransactionForm({
   const [isAccDropdownOpen, setIsAccDropdownOpen] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
 
-  const isDebt = type === "lend" || type === "borrow";
+  const isDebt =
+    type === TransactionType.Lend || type === TransactionType.Borrow;
 
   // todo tìm đối tượng được chọn
   const selectedCategory = useMemo(
@@ -137,6 +159,7 @@ export default function TransactionForm({
     interestUnit,
     loanDuration !== "" ? Number(loanDuration) : 0,
     durationUnit,
+    interestCalculationType,
   );
 
   const getNowLocal = () => {
@@ -193,7 +216,7 @@ export default function TransactionForm({
       //Chờ đến khi load xong acc và cat
       setAmount(initialData.amount ? initialData.amount.toString() : "");
       setSelectedCurrency(initialData.currency || currency);
-      setType(initialData.type || "expense");
+      setType(initialData.type || TransactionType.Expense);
       setSelectedAccountId(
         initialData.fromAccountId || initialData.toAccountId || null,
       );
@@ -224,7 +247,13 @@ export default function TransactionForm({
       if (initialData.loan) {
         setPerson(initialData.loan.counterPartyName || "");
         setInterestRate(initialData.loan.interestRate?.toString() || "");
-        setInterestUnit(initialData.loan.interestUnit || "percent_per_month");
+        setInterestUnit(
+          initialData.loan.interestUnit || InterestUnit.PercentPerMonth,
+        );
+        setInterestCalculationType(
+          initialData.loan.interestCalculationType ??
+            InterestCalculationType.ReducingBalance,
+        );
 
         if (initialData.loan.startDate && initialData.loan.dueDate) {
           const start = new Date(initialData.loan.startDate);
@@ -236,14 +265,16 @@ export default function TransactionForm({
 
           if (totalMonths > 0) {
             setLoanDuration(totalMonths.toString());
-            setDurationUnit("month");
+            setDurationUnit(DurationUnit.Month);
           }
         }
         setIsRecurringReminder(initialData.loan.isRecurringReminder || false);
         setReminderBeforeDays(
           initialData.loan.reminderBeforeDays?.toString() || "",
         );
-        setReminderFrequency(initialData.loan.reminderFrequency || "Monthly");
+        setReminderFrequency(
+          initialData.loan.reminderFrequency || ReminderFrequency.Monthly,
+        );
       }
       setNote(initialData.note);
     }
@@ -256,10 +287,11 @@ export default function TransactionForm({
     setNote("");
     setInterestRate("");
     setLoanDuration("");
-    setDurationUnit("month");
+    setDurationUnit(DurationUnit.Month);
+    setInterestCalculationType(InterestCalculationType.ReducingBalance);
     setIsRecurringReminder(false);
     setReminderBeforeDays("");
-    setReminderFrequency("Monthly");
+    setReminderFrequency(ReminderFrequency.Monthly);
     setSelectedAccountId(null);
     setSelectedCategoryId(null);
     setTransactionFromDate(getNowLocal());
@@ -398,6 +430,7 @@ export default function TransactionForm({
               interestUnit,
               duration: Number(loanDuration),
               durationUnit: loanDuration !== "" ? durationUnit : undefined,
+              interestCalculationType,
               isRecurringReminder,
               reminderBeforeDays:
                 reminderBeforeDays !== "" ? Number(reminderBeforeDays) : 0,
@@ -417,53 +450,54 @@ export default function TransactionForm({
       console.log(t.transaction.errorSave, error);
     }
   };
+  useEffect(() => {
+    console.log(schedule);
+  }, [schedule]);
   return (
     <>
       <div className="max-w-4xl mx-auto my-4 rounded-2xl animate-in fade-in duration-500">
         {/* Transaction Type Tabs */}
         <div className="flex p-1.5 mb-4 rounded-[1.5rem] bg-[#F4E7C5]/70 dark:bg-[#F4E7C5]/10 border border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
-          {(["expense", "income", "lend", "borrow"] as TransactionType[]).map(
-            (id) => {
-              const isActive = type === id;
+          {Object.values(TransactionType).map((id) => {
+            const isActive = type === id;
 
-              const activeClass =
-                id === "expense"
-                  ? "bg-[#C86B3C] text-[#FFF4D8] shadow-[0_10px_24px_rgba(200,107,60,0.28)]"
-                  : id === "income"
-                    ? "bg-[#6F8F72] text-[#FFF4D8] shadow-[0_10px_24px_rgba(111,143,114,0.28)]"
-                    : "bg-[#263B2B] text-[#F4E7C5] shadow-[0_10px_24px_rgba(38,59,43,0.24)] dark:bg-[#F4E7C5] dark:text-[#263B2B]";
+            const activeClass =
+              id === TransactionType.Expense
+                ? "bg-[#C86B3C] text-[#FFF4D8] shadow-[0_10px_24px_rgba(200,107,60,0.28)]"
+                : id === TransactionType.Income
+                  ? "bg-[#6F8F72] text-[#FFF4D8] shadow-[0_10px_24px_rgba(111,143,114,0.28)]"
+                  : "bg-[#263B2B] text-[#F4E7C5] shadow-[0_10px_24px_rgba(38,59,43,0.24)] dark:bg-[#F4E7C5] dark:text-[#263B2B]";
 
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setType(id)}
-                  className={`flex-1 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 active:scale-95 ${
-                    isActive
-                      ? activeClass
-                      : "text-[#6F8F72] hover:bg-[#E7C87D]/35 hover:text-[#C86B3C] dark:text-[#F4E7C5]/70 dark:hover:bg-[#F4E7C5]/10"
-                  }`}
-                >
-                  {id === "expense"
-                    ? t.common.expense
-                    : id === "income"
-                      ? t.common.income
-                      : id === "lend"
-                        ? t.common.lend
-                        : t.common.borrow}
-                </button>
-              );
-            },
-          )}
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setType(id)}
+                className={`flex-1 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 active:scale-95 ${
+                  isActive
+                    ? activeClass
+                    : "text-[#6F8F72] hover:bg-[#E7C87D]/35 hover:text-[#C86B3C] dark:text-[#F4E7C5]/70 dark:hover:bg-[#F4E7C5]/10"
+                }`}
+              >
+                {id === TransactionType.Expense
+                  ? t.common.expense
+                  : id === TransactionType.Income
+                    ? t.common.income
+                    : id === TransactionType.Lend
+                      ? t.common.lend
+                      : t.common.borrow}
+              </button>
+            );
+          })}
         </div>
 
         {/* Amount Card */}
         <div className="group relative overflow-hidden rounded-[2rem] bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70 border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10 shadow-[0_18px_45px_rgba(38,59,43,0.08)] p-2 mb-5">
           <div
             className={`absolute top-0 left-0 w-1.5 h-full ${
-              type === "expense"
+              type === TransactionType.Expense
                 ? "bg-[#C86B3C]"
-                : type === "income"
+                : type === TransactionType.Income
                   ? "bg-[#6F8F72]"
                   : "bg-[#263B2B] dark:bg-[#D6B56D]"
             }`}
@@ -636,7 +670,7 @@ export default function TransactionForm({
               />
             </div>
 
-            {type !== "income" && (
+            {type !== TransactionType.Income && (
               <div className="space-y-2">
                 <label
                   className={`text-[10px] font-black uppercase flex items-center gap-2 ml-2 tracking-wider ${
@@ -647,7 +681,7 @@ export default function TransactionForm({
                 >
                   {isDebt ? <Landmark size={12} /> : <Tag size={12} />}
                   {isDebt
-                    ? type === "lend"
+                    ? type === TransactionType.Lend
                       ? t.common.lendWho
                       : t.common.borrowWho
                     : t.common.categories}
@@ -709,9 +743,7 @@ export default function TransactionForm({
                           />
                         </div>
 
-                        <span className="text-sm font-black">
-                          {cat.name}
-                        </span>
+                        <span className="text-sm font-black">{cat.name}</span>
 
                         {selected && (
                           <div className="ml-auto w-2 h-2 bg-[#C86B3C] rounded-full" />
@@ -850,6 +882,8 @@ export default function TransactionForm({
               setLoanDuration={setLoanDuration}
               durationUnit={durationUnit}
               setDurationUnit={setDurationUnit}
+              interestCalculationType={interestCalculationType}
+              setInterestCalculationType={setInterestCalculationType}
               isRecurringReminder={isRecurringReminder}
               setIsRecurringReminder={setIsRecurringReminder}
               reminderBeforeDays={reminderBeforeDays}
@@ -900,7 +934,7 @@ export default function TransactionForm({
           ${
             isDebt
               ? "bg-[#263B2B] hover:bg-[#1F2E24] dark:bg-[#F4E7C5] dark:text-[#263B2B]"
-              : type === "income"
+              : type === TransactionType.Income
                 ? "bg-[#6F8F72] hover:bg-[#55745A]"
                 : "bg-[#C86B3C] hover:bg-[#9F4D2E]"
           }`}
@@ -922,7 +956,7 @@ export default function TransactionForm({
       <RepaymentModal
         isOpen={showSchedule}
         onClose={() => setShowSchedule(false)}
-        schedule={schedule}
+        schedules={schedule}
         currency={selectedCurrency}
       />
 

@@ -38,7 +38,10 @@ import { useTranslation } from "../../hook/useTranslation";
 import LayoutSkeleton from "../LayoutSkeleton";
 import { formatMoney } from "../../utils/formatMoney";
 import { DynamicIcon } from "../../components/Base/DynamicIcon";
-
+import {
+  TransactionType,
+  type TransactionType as TransactionTypeValue,
+} from "../../types/enum";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -55,7 +58,7 @@ type RecentTransaction = {
   id: number;
   amount: number;
   currency?: string;
-  type: string;
+  type: TransactionTypeValue;
   note?: string | null;
   categoryName?: string | null;
   categoryIcon?: string | null;
@@ -252,37 +255,39 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [categoryChart]);
 
-  const getAmountPrefix = (type: string) => {
-    if (type === "income" || type === "borrow") return "+";
-    if (type === "transfer") return "";
+  const getAmountPrefix = (type: TransactionTypeValue) => {
+    if (type === TransactionType.Income || type === TransactionType.Borrow)
+      return "+";
+    if (type === TransactionType.Transfer) return "";
     return "-";
   };
 
-  const getAmountColor = (type: string) => {
-    if (type === "income" || type === "borrow") return "text-[#6F8F72]";
-    if (type === "transfer") return "text-[#5F8A8B]";
+  const getAmountColor = (type: TransactionTypeValue) => {
+    if (type === TransactionType.Income || type === TransactionType.Borrow)
+      return "text-[#6F8F72]";
+    if (type === TransactionType.Transfer) return "text-[#5F8A8B]";
     return "text-[#C86B3C]";
   };
 
   const getTransactionIcon = (item: RecentTransaction) => {
-    if (item.type === "transfer") return "ArrowLeftRight";
-    if (item.type === "borrow") return "HandCoins";
-    if (item.type === "lend") return "HandHeart";
-    if (item.type === "income") return "TrendingUp";
+    if (item.type === TransactionType.Transfer) return "ArrowLeftRight";
+    if (item.type === TransactionType.Borrow) return "HandCoins";
+    if (item.type === TransactionType.Lend) return "HandHeart";
+    if (item.type === TransactionType.Income) return "TrendingUp";
     return item.categoryIcon || "Tag";
   };
 
   const getTransactionIconBoxClass = (item: RecentTransaction) => {
     switch (item.type) {
-      case "income":
+      case TransactionType.Income:
         return "bg-[#6F8F72]/15 text-[#6F8F72] dark:bg-[#6F8F72]/25";
-      case "expense":
+      case TransactionType.Expense:
         return "bg-[#C86B3C]/14 text-[#C86B3C] dark:bg-[#C86B3C]/22";
-      case "transfer":
+      case TransactionType.Transfer:
         return "bg-[#5F8A8B]/14 text-[#5F8A8B] dark:bg-[#5F8A8B]/24";
-      case "borrow":
+      case TransactionType.Borrow:
         return "bg-[#D6B56D]/22 text-[#9F7A2F] dark:bg-[#D6B56D]/20 dark:text-[#D6B56D]";
-      case "lend":
+      case TransactionType.Lend:
         return "bg-[#C86B3C]/14 text-[#C86B3C] dark:bg-[#C86B3C]/22";
       default:
         return "bg-[#F4E7C5]/70 text-[#7A6F45] dark:bg-[#F4E7C5]/10";

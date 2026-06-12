@@ -2,21 +2,45 @@ import { X } from "lucide-react";
 import { useTranslation } from "../../hook/useTranslation";
 import { createPortal } from "react-dom";
 
+export interface RepaymentScheduleRow {
+  id?: number;
+  period: number;
+  dueDate?: string | null;
+
+  principalAmount: number;
+  interestAmount: number;
+  totalAmount: number;
+
+  paidTotalAmount?: number;
+  isPaid?: boolean;
+
+  remainingBalance?: number;
+}
+
+interface RepaymentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  schedules?: RepaymentScheduleRow[];
+  currency: string;
+}
+
 export const RepaymentModal = ({
   isOpen,
   onClose,
   schedules = [],
   currency,
-}: any) => {
+}: RepaymentModalProps) => {
   const { t } = useTranslation();
 
   const totalPayable = schedules.reduce(
-    (sum: number, row: any) => sum + Number(row.totalAmount || 0),
+    (sum: number, row: RepaymentScheduleRow) =>
+      sum + Number(row.totalAmount || 0),
     0,
   );
 
   const totalPaid = schedules.reduce(
-    (sum: number, row: any) => sum + Number(row.paidTotalAmount || 0),
+    (sum: number, row: RepaymentScheduleRow) =>
+      sum + Number(row.paidTotalAmount || 0),
     0,
   );
 
@@ -81,7 +105,7 @@ export const RepaymentModal = ({
             </div>
 
             {/* Rows */}
-            {schedules.map((row: any) => {
+            {schedules?.map((row: RepaymentScheduleRow) => {
               const paidTotal = Number(row.paidTotalAmount || 0);
 
               const status = row.isPaid

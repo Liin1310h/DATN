@@ -21,12 +21,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatMoney } from "../../utils/formatMoney";
 import SearchInput from "../../components/Base/SearchInput";
 import TransactionDetail from "../../components/Transaction/TransactionDetail";
+import {
+  TransactionType,
+  type TransactionType as TransactionTypeValue,
+} from "../../types/enum";
 
 type HistoryTransaction = {
   id: number;
   amount: number;
   currency: string;
-  type: string;
+  type: TransactionType;
   transactionDate: string;
   note?: string;
   categoryId?: number | null;
@@ -39,6 +43,7 @@ type HistoryTransaction = {
   loan?: any;
 };
 
+type TransactionTypeFilter = "all" | TransactionTypeValue;
 export default function History() {
   const { t, language } = useTranslation();
   const { currency } = useSettings();
@@ -58,7 +63,7 @@ export default function History() {
 
   const [showFilter, setShowFilter] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [type, setType] = useState("all");
+  const [type, setType] = useState<TransactionTypeFilter>("all");
   const [fromDate, setFromDate] = useState(dateParam || "");
   const [toDate, setToDate] = useState(dateParam || "");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
@@ -161,8 +166,8 @@ export default function History() {
   const isLoanTransaction = (transaction: HistoryTransaction) => {
     return (
       !!transaction.loan ||
-      transaction.type === "lend" ||
-      transaction.type === "borrow"
+      transaction.type === TransactionType.Lend ||
+      transaction.type === TransactionType.Borrow
     );
   };
 
@@ -171,18 +176,24 @@ export default function History() {
   };
 
   const getAmountPrefix = (transaction: HistoryTransaction) => {
-    if (transaction.type === "income" || transaction.type === "borrow")
+    if (
+      transaction.type === TransactionType.Income ||
+      transaction.type === TransactionType.Borrow
+    )
       return "+";
-    if (transaction.type === "transfer") return "";
+    if (transaction.type === TransactionType.Transfer) return "";
     return "-";
   };
 
   const getAmountColor = (transaction: HistoryTransaction) => {
-    if (transaction.type === "income" || transaction.type === "borrow") {
+    if (
+      transaction.type === TransactionType.Income ||
+      transaction.type === TransactionType.Borrow
+    ) {
       return "text-[#6F8F72]";
     }
 
-    if (transaction.type === "transfer") {
+    if (transaction.type === TransactionType.Transfer) {
       return "text-[#5F8A8B]";
     }
 
@@ -191,18 +202,18 @@ export default function History() {
 
   const getTypeLabel = (item: HistoryTransaction) => {
     switch (item.type) {
-      case "transfer":
+      case TransactionType.Transfer:
         return t.common.transfer;
-      case "borrow":
+      case TransactionType.Borrow:
         return t.common.borrow;
-      case "lend":
+      case TransactionType.Lend:
         return t.common.lend;
-      case "income":
+      case TransactionType.Income:
         return t.common.income;
-      case "expense":
+      case TransactionType.Expense:
         return t.common.expense;
       default:
-        return item.categoryName || item.type;
+        return item.categoryName || String(item.type);
     }
   };
 
@@ -213,15 +224,15 @@ export default function History() {
 
   const getTypeIconBoxClass = (item: HistoryTransaction) => {
     switch (item.type) {
-      case "transfer":
+      case TransactionType.Transfer:
         return "bg-[#5F8A8B]/14 text-[#5F8A8B] dark:bg-[#5F8A8B]/24";
-      case "borrow":
+      case TransactionType.Borrow:
         return "bg-[#C86B3C]/14 text-[#C86B3C] dark:bg-[#C86B3C]/22";
-      case "lend":
+      case TransactionType.Lend:
         return "bg-[#D6B56D]/22 text-[#9F7A2F] dark:bg-[#D6B56D]/20 dark:text-[#D6B56D]";
-      case "income":
+      case TransactionType.Income:
         return "bg-[#6F8F72]/15 text-[#6F8F72] dark:bg-[#6F8F72]/25";
-      case "expense":
+      case TransactionType.Expense:
         return "bg-[#C86B3C]/14 text-[#C86B3C] dark:bg-[#C86B3C]/22";
       default:
         return "bg-[#F4E7C5]/70 text-[#7A6F45] dark:bg-[#F4E7C5]/10";
@@ -229,10 +240,10 @@ export default function History() {
   };
 
   const getTypeIcon = (item: HistoryTransaction) => {
-    if (item.type === "transfer") return "ArrowLeftRight";
-    if (item.type === "borrow") return "HandCoins";
-    if (item.type === "lend") return "HandHeart";
-    if (item.type === "income") return "TrendingUp";
+    if (item.type === TransactionType.Transfer) return "ArrowLeftRight";
+    if (item.type === TransactionType.Borrow) return "HandCoins";
+    if (item.type === TransactionType.Lend) return "HandHeart";
+    if (item.type === TransactionType.Income) return "TrendingUp";
     return item.categoryIcon || "Tag";
   };
 
@@ -240,19 +251,19 @@ export default function History() {
     let typeLabel = t.history.allTransactions;
 
     switch (type) {
-      case "income":
+      case TransactionType.Income:
         typeLabel = t.history.allIncomes;
         break;
-      case "expense":
+      case TransactionType.Expense:
         typeLabel = t.history.allExpenses;
         break;
-      case "lend":
+      case TransactionType.Lend:
         typeLabel = t.history.allLends;
         break;
-      case "borrow":
+      case TransactionType.Borrow:
         typeLabel = t.history.allBorrows;
         break;
-      case "transfer":
+      case TransactionType.Transfer:
         typeLabel = t.history.allTransfers;
         break;
     }

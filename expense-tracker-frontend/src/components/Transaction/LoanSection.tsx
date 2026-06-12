@@ -7,27 +7,39 @@ import {
 } from "lucide-react";
 import { useTranslation } from "../../hook/useTranslation";
 
-type DurationUnit = "day" | "month" | "year";
+import {
+  InterestUnit,
+  DurationUnit,
+  InterestCalculationType,
+  ReminderFrequency,
+  type InterestUnit as InterestUnitValue,
+  type DurationUnit as DurationUnitValue,
+  type InterestCalculationType as InterestCalculationTypeValue,
+  type ReminderFrequency as ReminderFrequencyValue,
+} from "../../types/enum";
 
 interface LoanSectionProps {
   interestRate: string;
   setInterestRate: (val: string) => void;
-  interestUnit: string;
-  setInterestUnit: (val: string) => void;
+  interestUnit: InterestUnitValue;
+  setInterestUnit: (val: InterestUnitValue) => void;
 
   loanDuration: string;
   setLoanDuration: (val: string) => void;
-  durationUnit: string;
-  setDurationUnit: (val: DurationUnit) => void;
+  durationUnit: DurationUnitValue;
+  setDurationUnit: (val: DurationUnitValue) => void;
+
+  interestCalculationType: InterestCalculationTypeValue;
+  setInterestCalculationType: (val: InterestCalculationTypeValue) => void;
 
   isRecurringReminder: boolean;
   setIsRecurringReminder: (val: boolean) => void;
   reminderBeforeDays: string;
   setReminderBeforeDays: (val: string) => void;
-  reminderFrequency: string;
-  setReminderFrequency: (val: string) => void;
+  reminderFrequency: ReminderFrequencyValue;
+  setReminderFrequency: (val: ReminderFrequencyValue) => void;
 
-  schedule: any;
+  schedule: any[];
   currency: string;
   onOpenSchedule: () => void;
 }
@@ -41,6 +53,8 @@ export default function LoanSection({
   setLoanDuration,
   durationUnit,
   setDurationUnit,
+  interestCalculationType,
+  setInterestCalculationType,
   isRecurringReminder,
   setIsRecurringReminder,
   reminderBeforeDays,
@@ -52,6 +66,26 @@ export default function LoanSection({
   onOpenSchedule,
 }: LoanSectionProps) {
   const { t } = useTranslation();
+
+  const totalPrincipal = schedule.reduce(
+    (sum, row) => sum + Number(row.principalAmount || 0),
+    0,
+  );
+
+  const totalInterest = schedule.reduce(
+    (sum, row) => sum + Number(row.interestAmount || 0),
+    0,
+  );
+
+  const totalPayable = schedule.reduce(
+    (sum, row) => sum + Number(row.totalAmount || 0),
+    0,
+  );
+
+  const periodicPayment = schedule[0]?.totalAmount ?? 0;
+
+  const principalPercent =
+    totalPayable > 0 ? (totalPrincipal / totalPayable) * 100 : 0;
 
   const inputClass =
     "w-full bg-[#FFF9E8] dark:bg-[#263B2B]/80 text-[#263B2B] dark:text-[#F4E7C5] border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10 p-4 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#C86B3C]/35 shadow-sm transition-all placeholder:text-[#8B7A4B]/60";
@@ -87,18 +121,46 @@ export default function LoanSection({
 
             <select
               value={interestUnit}
-              onChange={(e) => setInterestUnit(e.target.value)}
+              onChange={(e) =>
+                setInterestUnit(Number(e.target.value) as InterestUnitValue)
+              }
               className="flex-1 bg-[#C86B3C] text-[#FFF4D8]
               px-4 rounded-2xl text-[10px] font-black uppercase outline-none
               shadow-[0_12px_28px_rgba(200,107,60,0.25)]
               hover:bg-[#9F4D2E] transition-all"
             >
-              <option value="year">{t.loan.perYear}</option>
-              <option value="month">{t.loan.perMonth}</option>
-              <option value="day">{t.loan.perDay}</option>
+              <option value={InterestUnit.PercentPerYear}>
+                {t.loan.perYear}
+              </option>
+              <option value={InterestUnit.PercentPerMonth}>
+                {t.loan.perMonth}
+              </option>
             </select>
           </div>
         </div>
+      </div>
+
+      <div className="relative z-10 space-y-2 mt-3">
+        <label className="text-[10px] font-black text-[#6F8F72] dark:text-[#D6B56D] uppercase flex items-center gap-2 ml-1 tracking-wider">
+          Phương pháp tính lãi
+        </label>
+
+        <select
+          value={interestCalculationType}
+          onChange={(e) =>
+            setInterestCalculationType(
+              Number(e.target.value) as InterestCalculationTypeValue,
+            )
+          }
+          className={`w-full ${selectClass} py-4`}
+        >
+          <option value={InterestCalculationType.FlatRate}>
+            Dư nợ ban đầu
+          </option>
+          <option value={InterestCalculationType.ReducingBalance}>
+            Dư nợ giảm dần
+          </option>
+        </select>
       </div>
 
       {/* Chi tiết khoản vay */}
@@ -124,19 +186,19 @@ export default function LoanSection({
               <select
                 value={durationUnit}
                 onChange={(e) =>
-                  setDurationUnit(e.target.value as DurationUnit)
+                  setDurationUnit(Number(e.target.value) as DurationUnit)
                 }
                 className={`flex-1 ${selectClass}`}
               >
-                <option value="year">{t.loan.year}</option>
-                <option value="month">{t.loan.month}</option>
-                <option value="day">{t.loan.day}</option>
+                <option value={DurationUnit.Year}>{t.loan.year}</option>
+                <option value={DurationUnit.Month}>{t.loan.month}</option>
+                <option value={DurationUnit.Day}>{t.loan.day}</option>
               </select>
             </div>
           </div>
 
           {/* Kết quả tính toán */}
-          {schedule && (
+          {schedule.length > 0 && (
             <div
               className="relative z-10 mt-4 overflow-hidden rounded-[2rem]
               bg-[#263B2B] text-[#F4E7C5]
@@ -155,7 +217,7 @@ export default function LoanSection({
                   </p>
 
                   <p className="text-2xl font-black text-[#FFF4D8]">
-                    {Math.round(schedule.monthlyPayment).toLocaleString()}{" "}
+                    {Math.round(periodicPayment).toLocaleString()}{" "}
                     <span className="text-[10px] text-[#D6B56D]">
                       {currency}
                     </span>
@@ -168,7 +230,7 @@ export default function LoanSection({
                   </p>
 
                   <p className="text-lg font-black text-[#C86B3C]">
-                    + {Math.round(schedule.totalInterest).toLocaleString()}
+                    + {Math.round(totalInterest).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -177,7 +239,7 @@ export default function LoanSection({
                 <div className="h-2.5 w-full bg-[#1F2E24] rounded-full flex overflow-hidden border border-[#F4E7C5]/10">
                   <div
                     className="bg-[#6F8F72] h-full transition-all duration-1000"
-                    style={{ width: `${schedule.principalPercent}%` }}
+                    style={{ width: `${principalPercent}%` }}
                   />
 
                   <div className="bg-[#C86B3C] h-full flex-1" />
@@ -264,12 +326,16 @@ export default function LoanSection({
 
               <select
                 value={reminderFrequency}
-                onChange={(e) => setReminderFrequency(e.target.value)}
+                onChange={(e) =>
+                  setReminderFrequency(
+                    Number(e.target.value) as ReminderFrequencyValue,
+                  )
+                }
                 className={`w-full ${selectClass} p-4 rounded-xl`}
               >
-                <option value="Daily">Hằng ngày</option>
-                <option value="Weekly">Hằng tuần</option>
-                <option value="Monthly">Hằng tháng</option>
+                <option value={ReminderFrequency.Daily}>Hằng ngày</option>
+                <option value={ReminderFrequency.Weekly}>Hằng tuần</option>
+                <option value={ReminderFrequency.Monthly}>Hằng tháng</option>
               </select>
             </div>
           </div>

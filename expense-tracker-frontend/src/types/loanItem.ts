@@ -7,12 +7,12 @@ export interface LoanItem {
   principalAmount: number;
   remainingAmount: number;
   interestRate: number;
-  interestUnit: string;
+  interestUnit: number;
   startDate: string;
   dueDate?: string | null;
   isRecurringReminder?: boolean;
   reminderBeforeDays?: number;
-  reminderFrequency?: string;
+  reminderFrequency?: number;
   note?: string;
   isCompleted: boolean;
   createdAt?: string;

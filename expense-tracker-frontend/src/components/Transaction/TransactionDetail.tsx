@@ -15,6 +15,7 @@ import {
 import { DynamicIcon } from "../Base/DynamicIcon";
 import { useTranslation } from "../../hook/useTranslation";
 import type { TransactionDetailType } from "../../types/transactionDetail";
+import { TransactionType } from "../../types/enum";
 
 interface Props {
   transaction: TransactionDetailType;
@@ -26,11 +27,11 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
 
   if (!transaction) return null;
 
-  const isExpense = transaction.type === "expense";
-  const isIncome = transaction.type === "income";
-  const isLend = transaction.type === "lend";
-  const isBorrow = transaction.type === "borrow";
-  const isTransfer = transaction.type === "transfer";
+  const isExpense = transaction.type === TransactionType.Expense;
+  const isIncome = transaction.type === TransactionType.Income;
+  const isLend = transaction.type === TransactionType.Lend;
+  const isBorrow = transaction.type === TransactionType.Borrow;
+  const isTransfer = transaction.type === TransactionType.Transfer;
   const isDebt = isLend || isBorrow;
 
   const formatMoney = (value: number, currency: string) => {
@@ -56,15 +57,15 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
 
   const getTypeLabel = () => {
     switch (transaction.type) {
-      case "expense":
+      case TransactionType.Expense:
         return t.common.expense;
-      case "income":
+      case TransactionType.Income:
         return t.common.income;
-      case "lend":
+      case TransactionType.Lend:
         return t.common.lend;
-      case "borrow":
+      case TransactionType.Borrow:
         return t.common.borrow;
-      case "transfer":
+      case TransactionType.Transfer:
         return t.common.transfer;
       default:
         return transaction.type;
@@ -73,15 +74,15 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
 
   const getTypeIcon = () => {
     switch (transaction.type) {
-      case "expense":
+      case TransactionType.Expense:
         return <ArrowDownRight size={18} className="text-[#C86B3C]" />;
-      case "income":
+      case TransactionType.Income:
         return <ArrowUpRight size={18} className="text-[#6F8F72]" />;
-      case "lend":
+      case TransactionType.Lend:
         return <HandCoins size={18} className="text-[#5F8A8B]" />;
-      case "borrow":
+      case TransactionType.Borrow:
         return <Handshake size={18} className="text-[#C86B3C]" />;
-      case "transfer":
+      case TransactionType.Transfer:
         return <ArrowLeftRight size={18} className="text-[#5F8A8B]" />;
       default:
         return <Wallet size={18} className="text-[#D6B56D]" />;
@@ -90,15 +91,15 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
 
   const getTypeBadgeClass = () => {
     switch (transaction.type) {
-      case "expense":
+      case TransactionType.Expense:
         return "bg-[#C86B3C] text-[#FFF4D8]";
-      case "income":
+      case TransactionType.Income:
         return "bg-[#6F8F72] text-[#FFF4D8]";
-      case "lend":
+      case TransactionType.Lend:
         return "bg-[#5F8A8B] text-[#FFF4D8]";
-      case "borrow":
+      case TransactionType.Borrow:
         return "bg-[#C86B3C] text-[#FFF4D8]";
-      case "transfer":
+      case TransactionType.Transfer:
         return "bg-[#5F8A8B] text-[#FFF4D8]";
       default:
         return "bg-[#263B2B] text-[#F4E7C5]";
@@ -121,7 +122,9 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
   };
 
   const showCategory =
-    !!transaction.categoryId && transaction.type !== "transfer" && !isDebt;
+    !!transaction.categoryId &&
+    transaction.type !== TransactionType.Transfer &&
+    !isDebt;
 
   return (
     <div

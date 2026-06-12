@@ -1,13 +1,24 @@
 import api from "./api";
 
+import {
+  type InterestUnit as InterestUnitValue,
+  type DurationUnit as DurationUnitValue,
+  type InterestCalculationType as InterestCalculationTypeValue,
+  type ReminderFrequency as ReminderFrequencyValue,
+} from "../types/enum";
+
 export interface CreateLoanPayload {
   counterPartyName: string;
   principalAmount: number;
   interestRate: number;
-  interestUnit: "percent_per_month" | "percent_per_year" | "fixed_amount";
+  interestUnit: InterestUnitValue;
 
   duration: number;
-  durationUnit: "months" | "years" | "days";
+  durationUnit: DurationUnitValue;
+  interestCalculationType: InterestCalculationTypeValue;
+  isRecurringReminder?: boolean;
+  reminderBeforeDays?: number;
+  reminderFrequency?: ReminderFrequencyValue;
 
   currency: string;
 
@@ -50,19 +61,19 @@ export const getLoanDetail = async (loanId: number) => {
   return res.data;
 };
 
-export async function updateLoan(
-  id: number,
-  payload: {
-    counterPartyName?: string;
-    interestRate?: number;
-    interestUnit?: string;
-    dueDate?: string | null;
-    isRecurringReminder?: boolean;
-    reminderBeforeDays?: number;
-    reminderFrequency?: string;
-    note?: string;
-  },
-) {
+export interface UpdateLoanPayload {
+  counterPartyName?: string;
+  interestRate?: number;
+  interestUnit?: InterestUnitValue;
+  interestCalculationType?: InterestCalculationTypeValue;
+  dueDate?: string | null;
+  isRecurringReminder?: boolean;
+  reminderBeforeDays?: number;
+  reminderFrequency?: ReminderFrequencyValue;
+  note?: string;
+}
+
+export async function updateLoan(id: number, payload: UpdateLoanPayload) {
   const res = await api.put(`/loans/${id}`, payload);
   return res.data;
 }
