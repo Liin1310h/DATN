@@ -1,5 +1,6 @@
 using ExpenseTrackerAPI.Application.DTOs.AI;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
+using ExpenseTrackerAPI.Domain.Enums;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,7 +36,7 @@ public class CategoryPredictionService : ICategoryPredictionService
     public async Task<PredictCategoryResponse> PredictAsync(int userId, PredictCategoryRequest request)
     {
         var note = Normalize(request.Note);
-        var type = Normalize(request.Type);
+        var type = request.Type;
 
         if (string.IsNullOrWhiteSpace(note))
         {
@@ -48,7 +49,7 @@ public class CategoryPredictionService : ICategoryPredictionService
             };
         }
 
-        if (type != "expense" && type != "income")
+        if (type != TransactionType.Expense && type != TransactionType.Income)
         {
             return new PredictCategoryResponse
             {
@@ -135,7 +136,7 @@ public class CategoryPredictionService : ICategoryPredictionService
     private async Task<PredictCategoryResponse> PredictByPersonalRuleAsync(
     int userId,
     string normalizedNote,
-    string type)
+    TransactionType type)
     {
         var keywords = ExtractKeywords(normalizedNote);
 

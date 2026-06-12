@@ -2,6 +2,7 @@
 using ExpenseTrackerAPI.Application.DTOs.Ocr;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
 using ExpenseTrackerAPI.Application.Interfaces.OCR;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Application.Services.OCR
 {
@@ -48,7 +49,7 @@ namespace ExpenseTrackerAPI.Application.Services.OCR
                     {
                         Note = item.Name,
                         Amount = item.Amount ?? 0,
-                        Type = "expense"
+                        Type = TransactionType.Expense
                     });
 
                     item.CategoryId = predict.CategoryId;

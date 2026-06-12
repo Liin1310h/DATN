@@ -1,3 +1,5 @@
+using ExpenseTrackerAPI.Domain.Enums;
+
 namespace ExpenseTrackerAPI.Application.DTOs;
 
 public class TransactionRequest
@@ -7,8 +9,8 @@ public class TransactionRequest
     public decimal Amount
     { get; set; }
     required
-    public string Type
-    { get; set; } = String.Empty; // "Expense" hoặc "Income"
+    public TransactionType Type
+    { get; set; } = TransactionType.Expense; // "Expense" hoặc "Income"
     public string? Note { get; set; } = String.Empty;
     required
     public int AccountId

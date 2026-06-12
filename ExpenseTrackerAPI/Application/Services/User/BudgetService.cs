@@ -3,6 +3,7 @@ using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using ExpenseTrackerAPI.Application.Interfaces.User;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Application.Services;
 
@@ -26,7 +27,7 @@ public class BudgetService : IBudgetService
         // group transactions
         var expenses = await _context.Transactions
             .Where(t => t.UserId == userId
-                && t.Type == "expense"
+                && t.Type == TransactionType.Expense
                 && t.TransactionDate >= start
                 && t.TransactionDate < end)
             .GroupBy(t => t.CategoryId)

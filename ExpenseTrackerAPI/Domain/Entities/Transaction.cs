@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Domain.Entities;
 
@@ -59,7 +60,7 @@ public class Transaction
     /// </summary>
     [Required]
     [MaxLength(20)]
-    public string Type { get; set; } = string.Empty;
+    public TransactionType Type { get; set; } = TransactionType.Expense;
 
     /// <summary>
     /// Khoá ngoại

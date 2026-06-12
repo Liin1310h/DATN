@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Application.Interfaces.User;
-
+using ExpenseTrackerAPI.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ExpenseTrackerAPI.API.Controllers.User;
@@ -49,7 +49,7 @@ public class TransactionsController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetHistory([FromQuery] int? accountId,
-    [FromQuery] string? type,
+    [FromQuery] TransactionType? type,
     [FromQuery] int? categoryId,
     [FromQuery] DateTime? fromDate,
     [FromQuery] DateTime? toDate,

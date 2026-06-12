@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
+using ExpenseTrackerAPI.Domain.Enums;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +20,7 @@ public class GlobalCategoryMlService : IGlobalCategoryMlService
         var data = await _context.Transactions
             .Where(t =>
                 t.CategoryId != null &&
-                (t.Type == "expense" || t.Type == "income") &&
+                (t.Type == TransactionType.Expense || t.Type == TransactionType.Income) &&
                 !string.IsNullOrWhiteSpace(t.Note))
             .Select(t => new MlTrainingItemDto
             {
@@ -47,7 +48,7 @@ public class GlobalCategoryMlService : IGlobalCategoryMlService
     public async Task<MlPredictResponseDto?> PredictAsync(
         string note,
         decimal amount,
-        string type)
+        TransactionType type)
     {
         var request = new MlPredictRequestDto
         {

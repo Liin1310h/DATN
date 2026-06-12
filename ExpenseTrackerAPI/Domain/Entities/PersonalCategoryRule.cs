@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Domain.Entities;
 
@@ -17,7 +18,7 @@ public class PersonalCategoryRule
 
     [Required]
     [MaxLength(20)]
-    public string Type { get; set; } = "expense";
+    public TransactionType Type { get; set; } = TransactionType.Expense;
 
     [Required]
     public int CategoryId { get; set; }

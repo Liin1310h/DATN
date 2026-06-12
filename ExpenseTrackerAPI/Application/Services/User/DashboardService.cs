@@ -3,6 +3,7 @@ using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using ExpenseTrackerAPI.Domain.Entities;
 using ExpenseTrackerAPI.Application.Interfaces.User;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Application.Services;
 
@@ -44,9 +45,9 @@ public class DashboardService : IDashboardService
                 amount = t.Amount / rates[t.Currency];
             }
 
-            if (t.Type == "income")
+            if (t.Type == TransactionType.Income)
                 totalIncome += amount;
-            else if (t.Type == "expense")
+            else if (t.Type == TransactionType.Expense)
                 totalExpense += amount;
         }
 

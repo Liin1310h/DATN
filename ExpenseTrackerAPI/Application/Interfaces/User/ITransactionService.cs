@@ -1,5 +1,6 @@
 using ExpenseTrackerAPI.Domain.Entities;
 using ExpenseTrackerAPI.Application.DTOs;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Application.Interfaces.User;
 
@@ -13,7 +14,7 @@ public interface ITransactionService
     Task<PagedResult<TransactionResponse>> GetHistoryAsync(
         int userId,
         int? accountId,
-        string? type,
+        TransactionType? type,
         int? categoryId,
         DateTime? fromDate,
         DateTime? toDate,

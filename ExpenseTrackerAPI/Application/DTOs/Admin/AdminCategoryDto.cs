@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Application.DTOs;
 
@@ -64,6 +65,6 @@ public class AdminCategoryDetailDto
 
 public class AdminCategoryTypeStatDto
 {
-    public string Type { get; set; } = string.Empty;
+    public TransactionType Type { get; set; } = TransactionType.Expense;
     public int Count { get; set; }
 }

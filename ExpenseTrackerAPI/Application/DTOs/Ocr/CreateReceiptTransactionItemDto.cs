@@ -1,12 +1,14 @@
 // Application/DTOs/Ocr/CreateReceiptTransactionItemDto.cs
 
+using ExpenseTrackerAPI.Domain.Enums;
+
 namespace ExpenseTrackerAPI.Application.DTOs.Ocr;
 
 public class CreateReceiptTransactionItemDto
 {
     public bool Selected { get; set; } = true;
 
-    public string Type { get; set; } = "expense";
+    public TransactionType Type { get; set; } = TransactionType.Expense;
 
     public decimal Amount { get; set; }
 

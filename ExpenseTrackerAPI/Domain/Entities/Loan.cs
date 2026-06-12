@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Domain.Entities;
 
@@ -28,7 +29,11 @@ public class Loan
     public decimal InterestRate { get; set; } = 0; // Lãi suất (%)
 
     [MaxLength(50)]
-    public string InterestUnit { get; set; } = "percent_per_month"; // Đơn vị lãi (tháng/năm)
+    public InterestUnit InterestUnit { get; set; } = InterestUnit.PercentPerMonth; // Đơn vị lãi (tháng/năm)
+
+    public int Duration { get; set; }
+
+    public DurationUnit DurationUnit { get; set; }
 
     [Required]
     public DateTime StartDate { get; set; } // Ngày bắt đầu vay
@@ -39,6 +44,11 @@ public class Loan
 
     public Boolean IsLending { get; set; } = false;
     public bool IsCompleted { get; set; } = false; // Đã trả hết nợ hay chưa
+
+    /// <summary>
+    /// Phương pháp tính lãi: FlatRate (dư nợ ban đầu) hoặc ReducingBalance (dư nợ giảm dần)
+    /// </summary>
+    public InterestCalculationType InterestCalculationType { get; set; } = InterestCalculationType.ReducingBalance;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     /// <summary>
@@ -52,7 +62,7 @@ public class Loan
     /// <summary>
     /// Tần suất nhắc lại
     /// </summary>
-    public string ReminderFrequency { get; set; } = "Monthly";
+    public ReminderFrequency ReminderFrequency { get; set; } = ReminderFrequency.Monthly;
     public DateTime? NextReminderDate { get; set; }
     [ForeignKey("UserId")]
     public virtual User? User { get; set; }

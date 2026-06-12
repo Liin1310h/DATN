@@ -3,6 +3,7 @@ using System;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ExpenseTrackerAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611035738_AddInterestCalculationTypeToLoan")]
+    partial class AddInterestCalculationTypeToLoan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -244,21 +247,16 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Duration")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("DurationUnit")
-                        .HasColumnType("integer");
-
                     b.Property<int>("InterestCalculationType")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("InterestRate")
                         .HasColumnType("decimal(5,2)");
 
-                    b.Property<int>("InterestUnit")
+                    b.Property<string>("InterestUnit")
+                        .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("integer");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("boolean");
@@ -287,8 +285,9 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Property<int>("ReminderBeforeDays")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ReminderFrequency")
-                        .HasColumnType("integer");
+                    b.Property<string>("ReminderFrequency")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
@@ -364,9 +363,10 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Property<DateTime>("LastUsedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Type")
+                    b.Property<string>("Type")
+                        .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("integer");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
@@ -551,9 +551,10 @@ namespace ExpenseTrackerAPI.Migrations
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Type")
+                    b.Property<string>("Type")
+                        .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("integer");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");

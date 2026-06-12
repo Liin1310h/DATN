@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
 using ExpenseTrackerAPI.Domain.Entities;
+using ExpenseTrackerAPI.Domain.Enums;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,14 +22,12 @@ public class PersonalCategoryRuleService : IPersonalCategoryRuleService
     /// <param name="type"></param>
     /// <param name="categoryId"></param>
     /// <returns></returns>
-    public async Task LearnAsync(int userId, string? note, string type, int? categoryId)
+    public async Task LearnAsync(int userId, string? note, TransactionType type, int? categoryId)
     {
         if (categoryId == null) return;
         if (string.IsNullOrWhiteSpace(note)) return;
 
-        type = type.Trim().ToLower();
-
-        if (type != "expense" && type != "income") return;
+        if (type != TransactionType.Expense && type != TransactionType.Income) return;
 
         var keywords = ExtractKeywords(note);
 
@@ -71,14 +70,12 @@ public class PersonalCategoryRuleService : IPersonalCategoryRuleService
     /// <param name="type"></param>
     /// <param name="categoryId"></param>
     /// <returns></returns>
-    public async Task UnlearnAsync(int userId, string? note, string type, int? categoryId)
+    public async Task UnlearnAsync(int userId, string? note, TransactionType type, int? categoryId)
     {
         if (categoryId == null) return;
         if (string.IsNullOrWhiteSpace(note)) return;
 
-        type = type.Trim().ToLower();
-
-        if (type != "expense" && type != "income") return;
+        if (type != TransactionType.Expense && type != TransactionType.Income) return;
 
         var keywords = ExtractKeywords(note);
 

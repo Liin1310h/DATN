@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using ExpenseTrackerAPI.Application.Interfaces.User;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
 using ClosedXML.Excel;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Application.Services;
 
@@ -21,20 +22,17 @@ public class TransactionService : ITransactionService
     }
 
     //Helper
-    private static bool IsExpenseLike(string type) => type is "expense";
-    private static bool IsIncomeLike(string type) => type is "income";
-
-    private static string NormalizeType(string type) => type?.Trim().ToLower() ?? string.Empty;
+    private static bool IsExpenseLike(TransactionType type) => type is TransactionType.Expense;
+    private static bool IsIncomeLike(TransactionType type) => type is TransactionType.Income;
 
     /// <summary>
     /// !Hàm check xem transaction có phải kiểu expense hoặc income không
     /// </summary>
     /// <param name="type"></param>
     /// <exception cref="Exception"></exception>
-    private static void EnsureNormalTransactionType(string type)
+    private static void EnsureNormalTransactionType(TransactionType type)
     {
-        var normalized = NormalizeType(type);
-        if (normalized is not ("income" or "expense"))
+        if (type is not (TransactionType.Income or TransactionType.Expense))
             throw new Exception("TransactionService chỉ hỗ trợ income hoặc expense");
 
     }
@@ -85,7 +83,7 @@ public class TransactionService : ITransactionService
         using var dbTrans = await _context.Database.BeginTransactionAsync();
         try
         {
-            var type = NormalizeType(request.Type);
+            var type = request.Type;
             var account = await GetOwnedAccountAsync(request.AccountId, userId);
 
             if (request.Amount <= 0)
@@ -163,7 +161,7 @@ public class TransactionService : ITransactionService
         using var dbTrans = await _context.Database.BeginTransactionAsync();
         try
         {
-            var type = NormalizeType(request.Type);
+            var type = request.Type;
 
             var transaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
             if (transaction == null) throw new Exception("Giao dịch không tồn tại.");
@@ -348,7 +346,7 @@ public class TransactionService : ITransactionService
             var trans = new Transaction
             {
                 UserId = userId,
-                Type = "transfer",
+                Type = TransactionType.Transfer,
                 Amount = request.Amount,
                 Currency = fromAcc.Currency,
                 ConvertedAmount = fromAcc.Currency == toAcc.Currency ? null : toAmount,
@@ -398,7 +396,7 @@ public class TransactionService : ITransactionService
     /// <param name="page"></param>
     /// <param name="pageSize"></param>
     /// <returns></returns>
-    public async Task<PagedResult<TransactionResponse>> GetHistoryAsync(int userId, int? accountId, string? type, int? categoryId, DateTime? fromDate, DateTime? toDate, string? searchQuery, bool? isIn, int page, int pageSize)
+    public async Task<PagedResult<TransactionResponse>> GetHistoryAsync(int userId, int? accountId, TransactionType? type, int? categoryId, DateTime? fromDate, DateTime? toDate, string? searchQuery, bool? isIn, int page, int pageSize)
     {
         var query = _context.Transactions
         .Include(t => t.Category)
@@ -427,20 +425,29 @@ public class TransactionService : ITransactionService
             query = query.Where(t => t.TransactionDate < toDate);
         }
 
-        if (!string.IsNullOrWhiteSpace(type) && type.ToLower() != "all")
+        if (type.HasValue)
         {
-            var normalizedType = NormalizeType(type);
-            query = query.Where(t => t.Type == normalizedType);
+            if (type != TransactionType.Borrow
+                && type != TransactionType.Lend
+                && type != TransactionType.Transfer
+                && type != TransactionType.Expense
+                && type != TransactionType.Income)
+            {
+                throw new Exception("Filter type không hợp lệ.");
+            }
+
+            query = query.Where(t => t.Type == type.Value);
         }
+
         if (!string.IsNullOrWhiteSpace(searchQuery))
             query = query.Where(t => t.Note.Contains(searchQuery));
 
         if (isIn.HasValue)
         {
             if (isIn.Value)
-                query = query.Where(t => t.Type == "income" || t.Type == "borrow");
+                query = query.Where(t => t.Type == TransactionType.Income || t.Type == TransactionType.Borrow);
             else
-                query = query.Where(t => t.Type == "expense" || t.Type == "lend" || t.Type == "transfer");
+                query = query.Where(t => t.Type == TransactionType.Expense || t.Type == TransactionType.Lend || t.Type == TransactionType.Transfer);
         }
 
         // Lấy tổng số lượng trước khi phân trang
@@ -470,7 +477,7 @@ public class TransactionService : ITransactionService
                 FromAccountId = t.FromAccountId,
                 ToAccountId = t.ToAccountId,
 
-                AccountName = t.Type == "transfer"
+                AccountName = t.Type == TransactionType.Transfer
                     ? $"{t.FromAccount!.Name} → {t.ToAccount!.Name}"
                     : t.FromAccount != null ? t.FromAccount.Name :
                      (t.ToAccount != null ? t.ToAccount.Name : "Không xác định"),
@@ -567,7 +574,7 @@ public class TransactionService : ITransactionService
                 FromAccountId = t.FromAccountId,
                 ToAccountId = t.ToAccountId,
 
-                AccountName = t.Type == "transfer"
+                AccountName = t.Type == TransactionType.Transfer
                     ? $"{t.FromAccount!.Name} → {t.ToAccount!.Name}"
                     : t.FromAccount != null ? t.FromAccount.Name :
                       (t.ToAccount != null ? t.ToAccount.Name : "Không xác định"),
@@ -625,11 +632,21 @@ public class TransactionService : ITransactionService
         {
             var row = i + 2;
 
-            worksheet.Cell(row, 1).Value = data[i].TransactionDate;
-            worksheet.Cell(row, 2).Value = data[i].Type;
+            worksheet.Cell(row, 1).Value = data[i].TransactionDate.ToLocalTime();
+            worksheet.Cell(row, 1).Style.DateFormat.Format = "dd/MM/yyyy HH:mm";
+            worksheet.Cell(row, 2).Value = data[i].Type switch
+            {
+                TransactionType.Income => "Thu nhập",
+                TransactionType.Expense => "Chi tiêu",
+                TransactionType.Transfer => "Chuyển khoản",
+                TransactionType.Borrow => "Đi vay",
+                TransactionType.Lend => "Cho vay",
+                _ => data[i].Type.ToString()
+            };
             worksheet.Cell(row, 3).Value = data[i].CategoryName;
             worksheet.Cell(row, 4).Value = data[i].AccountName;
-            worksheet.Cell(row, 5).Value = data[i].Amount;
+            worksheet.Cell(row, 5).Value = (double)data[i].Amount;
+            worksheet.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
             worksheet.Cell(row, 6).Value = data[i].Note;
         }
 

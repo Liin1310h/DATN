@@ -1,4 +1,6 @@
 
+using ExpenseTrackerAPI.Domain.Enums;
+
 namespace ExpenseTrackerAPI.Application.DTOs;
 
 public class TransactionResponse
@@ -6,7 +8,7 @@ public class TransactionResponse
     public int Id { get; set; }
     public decimal Amount { get; set; }
     public required string Currency { get; set; }
-    public required string Type { get; set; } // "income" hoặc "expense"
+    public required TransactionType Type { get; set; } // "income" hoặc "expense"
     public DateTime TransactionDate { get; set; }
     public string? Note { get; set; }
 

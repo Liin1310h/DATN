@@ -3,6 +3,7 @@ using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using ExpenseTrackerAPI.Domain.Entities;
 using ExpenseTrackerAPI.Application.Interfaces.User;
+using ExpenseTrackerAPI.Domain.Enums;
 
 namespace ExpenseTrackerAPI.Application.Services;
 
@@ -55,7 +56,7 @@ public class AnalyticsService : IAnalyticsService
 
             // Tính expense
             decimal dailyExpense = 0;
-            foreach (var item in g.Where(x => x.Type == "expense"))
+            foreach (var item in g.Where(x => x.Type == TransactionType.Expense))
             {
                 if (!rates.ContainsKey(item.Currency))
                 {
@@ -68,7 +69,7 @@ public class AnalyticsService : IAnalyticsService
 
             // Tính income
             decimal dailyIncome = 0;
-            foreach (var item in g.Where(x => x.Type == "income"))
+            foreach (var item in g.Where(x => x.Type == TransactionType.Income))
             {
                 if (!rates.ContainsKey(item.Currency))
                 {
@@ -101,7 +102,7 @@ public class AnalyticsService : IAnalyticsService
         var data = await _context.Transactions
             .Where(t => t.UserId == userId
                      && t.TransactionDate >= fromDate
-                     && t.Type == "expense")
+                     && t.Type == TransactionType.Expense)
             .Include(t => t.Category)
             .Select(t => new
             {
@@ -192,9 +193,9 @@ public class AnalyticsService : IAnalyticsService
                     ? item.Amount
                     : item.Amount / rates[item.Currency];
 
-                if (item.Type == "income")
+                if (item.Type == TransactionType.Income)
                     income += amount;
-                else if (item.Type == "expense")
+                else if (item.Type == TransactionType.Expense)
                     expense += amount;
             }
 
