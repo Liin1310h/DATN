@@ -1,4 +1,5 @@
 // hooks/useLoanCalculator.ts
+
 export const useLoanCalculator = (
   amount: number,
   rate: number,
@@ -10,9 +11,9 @@ export const useLoanCalculator = (
   const r = rate || 0;
   const t = duration || 0;
 
-  if (p <= 0 || r <= 0 || t <= 0) return null;
+  if (p <= 0 || r <= 0 || t <= 0) return [];
 
-  //Chuẩn hoá lãi suất về tháng
+  // Chuẩn hóa lãi suất về tháng
   const monthlyRate =
     iUnit === "year"
       ? r / 12 / 100
@@ -20,7 +21,7 @@ export const useLoanCalculator = (
         ? r / 100
         : (r * 30) / 100;
 
-  // Chuẩn hoá thời gian về tháng
+  // Chuẩn hóa thời gian về tháng
   const totalMonths =
     dUnit === "year" ? t * 12 : dUnit === "day" ? Math.ceil(t / 30) : t;
 
@@ -28,29 +29,41 @@ export const useLoanCalculator = (
     (p * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
     (Math.pow(1 + monthlyRate, totalMonths) - 1);
 
-  const rows = [];
   let remainingBalance = p;
-  let totalInterest = 0;
+
+  const schedules = [];
+
+  const now = new Date();
 
   for (let i = 1; i <= totalMonths; i++) {
-    const interest = remainingBalance * monthlyRate;
-    const principal = emi - interest;
-    remainingBalance -= principal;
-    totalInterest += interest;
-    rows.push({
+    const interestAmount = remainingBalance * monthlyRate;
+
+    const principalAmount = emi - interestAmount;
+
+    remainingBalance -= principalAmount;
+
+    const dueDate = new Date(now);
+    dueDate.setMonth(dueDate.getMonth() + i);
+
+    schedules.push({
+      id: i,
       period: i,
-      principal,
-      interest,
-      total: emi,
-      balance: Math.max(0, remainingBalance),
+
+      dueDate: dueDate.toISOString(),
+
+      principalAmount,
+
+      interestAmount,
+
+      totalAmount: principalAmount + interestAmount,
+
+      paidTotalAmount: 0,
+
+      isPaid: false,
+
+      remainingBalance: Math.max(0, remainingBalance),
     });
   }
 
-  return {
-    monthlyPayment: emi,
-    totalInterest,
-    totalPayable: p + totalInterest,
-    principalPercent: (p / (p + totalInterest)) * 100,
-    rows,
-  };
+  return schedules;
 };
