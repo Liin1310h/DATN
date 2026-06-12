@@ -28,6 +28,7 @@ import { useTranslation } from "../../hook/useTranslation";
 import { trainGlobalCategoryModel } from "../../services/admin/adminCategoryModelService";
 import AdminCategoryModal from "../../components/Admin/AdminCategoryModal";
 import AdminCategoryDetailModal from "../../components/Admin/AdminCategoryDetailModal";
+import ConfirmModal from "../../components/Base/Modal";
 
 type ViewMode = "grid" | "list";
 
@@ -49,6 +50,7 @@ export default function AdminCategoriesPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [categoryDetail, setCategoryDetail] =
     useState<AdminCategoryDetail | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminCategory | null>(null);
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -83,18 +85,30 @@ export default function AdminCategoriesPage() {
     setIsModalOpen(true);
   };
 
+  /**
+   * TODO Hàm xoá danh mục
+   * @param item
+   * @returns
+   */
   const handleDelete = async (item: AdminCategory) => {
     if (item.transactionCount > 0) {
       toast.error("Danh mục đang được sử dụng, không thể xóa.");
       return;
     }
 
-    const ok = window.confirm(`Bạn có chắc muốn xóa danh mục "${item.name}"?`);
-    if (!ok) return;
+    setDeleteTarget(item);
+  };
+
+  /**
+   * TODO Xác nhận xoá
+   */
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
 
     try {
-      await deleteAdminCategory(item.id);
+      await deleteAdminCategory(deleteTarget.id);
       toast.success("Xóa category thành công");
+      setDeleteTarget(null);
       fetchCategories();
     } catch (error) {
       console.error(error);
@@ -117,6 +131,10 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  /**
+   * TODO Mở xem chi tiết category
+   * @param item
+   */
   const openDetailModal = async (item: AdminCategory) => {
     try {
       setIsDetailOpen(true);
@@ -561,6 +579,20 @@ export default function AdminCategoriesPage() {
 
             setIsModalOpen(true);
           }}
+        />
+        <ConfirmModal
+          isOpen={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+          title="Xóa danh mục"
+          description={
+            deleteTarget
+              ? `Bạn có chắc muốn xóa danh mục "${deleteTarget.name}" không? Hành động này không thể hoàn tác.`
+              : ""
+          }
+          confirmText="Xóa"
+          cancelText="Hủy"
+          variant="danger"
         />
       </div>
     </Layout>
