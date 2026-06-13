@@ -23,6 +23,17 @@ public class AccountsController : ControllerBase
         return Ok(accounts);
     }
 
+    [HttpGet("{id}")]
+    public async Task<ActionResult> GetAccountDetail(int id)
+    {
+        var account = await _accountService.GetAccountByIdAsync(id, GetUserId());
+
+        if (account == null)
+            return NotFound("Không tìm thấy tài khoản hoặc bạn không có quyền.");
+
+        return Ok(account);
+    }
+
     [HttpPost]
     public async Task<ActionResult<Account>> PostAccount(Account account)
     {
