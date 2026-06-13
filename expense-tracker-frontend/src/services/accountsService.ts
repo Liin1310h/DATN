@@ -5,6 +5,11 @@ export const getAccounts = async () => {
   return response.data;
 };
 
+export const getAccountDetail = async (id: number) => {
+  const res = await API.get(`/accounts/${id}`);
+  return res.data;
+};
+
 export const createAccount = async (data: any) => {
   const response = await API.post("/accounts", data);
   return response.data;

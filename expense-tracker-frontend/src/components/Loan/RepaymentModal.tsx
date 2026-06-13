@@ -70,15 +70,9 @@ export const RepaymentModal = ({
           <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-[#C86B3C]/16 blur-3xl" />
           {/* Header */}
           <div className="relative z-10 px-6 py-2 flex justify-between items-center border-b border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
-            <div>
-              <h2 className="text-lg md:text-xl font-black text-[#263B2B] dark:text-[#F4E7C5] uppercase">
-                {t.loan.scheduleTitle}
-              </h2>
-
-              <p className="text-[10px] font-bold text-[#6F8F72] dark:text-[#D6B56D] mt-1 uppercase tracking-widest">
-                {t.loan.reducingBalance}
-              </p>
-            </div>
+            <h2 className="text-lg md:text-xl font-black text-[#263B2B] dark:text-[#F4E7C5] uppercase">
+              {t.loan.scheduleTitle}
+            </h2>
 
             <button
               onClick={onClose}

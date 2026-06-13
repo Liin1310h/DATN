@@ -8,8 +8,13 @@ import {
   LayoutGrid,
   List,
   RefreshCw,
+  Eye,
 } from "lucide-react";
-import { getAccounts, deleteAccount } from "../../services/accountsService";
+import {
+  getAccounts,
+  deleteAccount,
+  getAccountDetail,
+} from "../../services/accountsService";
 import { useSettings } from "../../context/SettingsContext";
 import AddAccountModal from "./AddAccountModal";
 import type { Account } from "../../types/account";
@@ -20,6 +25,7 @@ import { useTranslation } from "../../hook/useTranslation";
 import { replaceVar } from "../../locales";
 import { formatMoney } from "../../utils/formatMoney";
 import SearchInput from "../Base/SearchInput";
+import AccountDetailModal from "./AccountDetailModal";
 
 export default function AccountManager() {
   const { t } = useTranslation();
@@ -31,6 +37,9 @@ export default function AccountManager() {
   const [accountIdToDelete, setAccountIdToDelete] = useState<number | null>(
     null,
   );
+  const [detailAccount, setDetailAccount] = useState<any | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
   const [showTransferModal, setShowTransferModal] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -77,8 +86,23 @@ export default function AccountManager() {
     }
   };
 
+  const openDetailModal = async (accountId: number) => {
+    setDetailLoading(true);
+
+    try {
+      console.log(accountId);
+      const data = await getAccountDetail(accountId);
+      setDetailAccount(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Không thể tải chi tiết tài khoản");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   return (
-    <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
+    <div className="relative h-full w-full  min-h-[calc(100vh-80px) overflow-y-auto overflow-x-hidden pb-2 pr-1 scroll-smooth">
       <div className="w-full max-w-full space-y-6 animate-in fade-in duration-700">
         {/* HEADER */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-2">
@@ -316,6 +340,15 @@ export default function AccountManager() {
                     }`}
                   >
                     <button
+                      onClick={() => openDetailModal(acc.id)}
+                      className="p-2 bg-[#5F8A8B]/12 dark:bg-[#5F8A8B]/20
+                      text-[#5F8A8B] rounded-xl
+                      hover:bg-[#5F8A8B] hover:text-[#FFF4D8]
+                      transition-all active:scale-95"
+                    >
+                      <Eye size={12} />
+                    </button>
+                    <button
                       onClick={() => {
                         setSelectedAccount(acc);
                         setIsModalOpen(true);
@@ -373,6 +406,12 @@ export default function AccountManager() {
           onSuccess={loadAccounts}
         />
       </div>
+      <AccountDetailModal
+        isOpen={!!detailAccount || detailLoading}
+        account={detailAccount}
+        loading={detailLoading}
+        onClose={() => setDetailAccount(null)}
+      />
     </div>
   );
 }

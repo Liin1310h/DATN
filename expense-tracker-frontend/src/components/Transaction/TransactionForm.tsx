@@ -90,6 +90,13 @@ export default function TransactionForm({
   const { t } = useTranslation();
   const { currency } = useSettings();
 
+  const transactionTypes = [
+    TransactionType.Expense,
+    TransactionType.Income,
+    TransactionType.Lend,
+    TransactionType.Borrow,
+  ];
+
   //! TRANSACTION DATA
   const [type, setType] = useState<TransactionTypeValue>(
     TransactionType.Expense,
@@ -458,7 +465,7 @@ export default function TransactionForm({
       <div className="max-w-4xl mx-auto my-4 rounded-2xl animate-in fade-in duration-500">
         {/* Transaction Type Tabs */}
         <div className="flex p-1.5 mb-4 rounded-[1.5rem] bg-[#F4E7C5]/70 dark:bg-[#F4E7C5]/10 border border-[#D6B56D]/35 dark:border-[#F4E7C5]/10">
-          {Object.values(TransactionType).map((id) => {
+          {transactionTypes.map((id) => {
             const isActive = type === id;
 
             const activeClass =
