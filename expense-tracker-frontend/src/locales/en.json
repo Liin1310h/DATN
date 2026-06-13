@@ -176,6 +176,9 @@
     "loanTransactionCannotEditHere": "Loan transactions cannot be edited here."
   },
   "account": {
+    "viewDetails": "View details",
+    "editAccount": "Edit account",
+    "deleteAccount": "Delete account",
     "totalAssets": "Total Assets",
     "accountsCount": "accounts",
     "addAccount": "Add Wallet",

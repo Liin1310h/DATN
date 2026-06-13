@@ -176,6 +176,9 @@
     "loanTransactionCannotEditHere": "Giao dịch của khoản vay không sửa ở màn hình này."
   },
   "account": {
+    "viewDetails": "Xem chi tiết",
+    "editAccount": "Sửa tài khoản",
+    "deleteAccount": "Xoá tài khoản",
     "totalAssets": "Tổng tài sản",
     "accountsCount": "tài khoản",
     "addAccount": "Thêm ví",

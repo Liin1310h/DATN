@@ -302,11 +302,11 @@ export default function AccountManager() {
                       viewMode === "grid" ? "mt-4 text-center" : "text-right"
                     }`}
                   >
-                    <p className="text-sm font-black text-[#263B2B] dark:text-[#F4E7C5]">
+                    <p className="text-base font-black text-[#263B2B] dark:text-[#F4E7C5]">
                       {formatMoney(acc.balance, acc.currency)}
                     </p>
 
-                    <div
+                    {/* <div
                       className={`text-[10px] flex gap-2 ${
                         viewMode === "grid" ? "justify-center" : "justify-end"
                       }`}
@@ -328,7 +328,7 @@ export default function AccountManager() {
                           language,
                         )}
                       </span>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* ACTION */}
@@ -341,6 +341,7 @@ export default function AccountManager() {
                   >
                     <button
                       onClick={() => openDetailModal(acc.id)}
+                      title={t.account.viewDetails}
                       className="p-2 bg-[#5F8A8B]/12 dark:bg-[#5F8A8B]/20
                       text-[#5F8A8B] rounded-xl
                       hover:bg-[#5F8A8B] hover:text-[#FFF4D8]
@@ -353,6 +354,7 @@ export default function AccountManager() {
                         setSelectedAccount(acc);
                         setIsModalOpen(true);
                       }}
+                      title={t.account.editAccount}
                       className="p-2 bg-[#5F8A8B]/12 dark:bg-[#5F8A8B]/20
                       text-[#5F8A8B] rounded-xl
                       hover:bg-[#5F8A8B] hover:text-[#FFF4D8]
@@ -363,6 +365,7 @@ export default function AccountManager() {
 
                     <button
                       onClick={() => openDeleteModal(acc.id)}
+                      title={t.account.deleteAccount}
                       className="p-2 bg-[#C86B3C]/12 dark:bg-[#C86B3C]/20
                       text-[#C86B3C] rounded-xl
                       hover:bg-[#C86B3C] hover:text-[#FFF4D8]
