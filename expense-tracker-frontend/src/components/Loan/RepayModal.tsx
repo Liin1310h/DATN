@@ -1,5 +1,5 @@
 // Modal nhập số tiền trả nợ ....
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { X, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import { repayLoan } from "../../services/loanService";
@@ -10,6 +10,11 @@ import {
 } from "../../utils/currencyFormatter";
 import { useLoanCalculator } from "../../hook/useLoanCalculator";
 import { RepaymentModal } from "./RepaymentModal";
+import {
+  DurationUnit,
+  InterestCalculationType,
+  InterestUnit,
+} from "../../types/enum";
 
 export default function RepayModal({
   loan,
@@ -36,7 +41,7 @@ export default function RepayModal({
     (loan?.remainingAmount ?? 0) - (rawAmount || 0),
   );
 
-  const remainingMonths = useMemo(() => {
+  const remainingMonths = (() => {
     if (!loan?.dueDate) return 0;
 
     const now = new Date();
@@ -50,14 +55,15 @@ export default function RepayModal({
       (due.getMonth() - now.getMonth());
 
     return Math.max(1, diff || 1);
-  }, [loan?.dueDate]);
+  })();
 
   const projectedSchedule = useLoanCalculator(
     remainingAfterPayment,
     loan?.interestRate ?? 0,
-    loan?.interestUnit ?? "percent_per_month",
+    loan?.interestUnit ?? InterestUnit.PercentPerMonth,
     remainingMonths,
-    "month",
+    DurationUnit.Month,
+    loan?.interestCalculationType ?? InterestCalculationType.ReducingBalance,
   );
 
   const canPreview =
@@ -66,21 +72,9 @@ export default function RepayModal({
     rawAmount <= (loan?.remainingAmount ?? 0) &&
     remainingAfterPayment > 0 &&
     remainingMonths > 0 &&
-    !!projectedSchedule?.rows?.length;
+    projectedSchedule.length > 0;
 
-  const previewSchedules =
-    projectedSchedule?.rows?.map((row: any) => ({
-      id: row.period,
-      period: row.period,
-      dueDate: null,
-      principalAmount: row.principal,
-      interestAmount: row.interest,
-      totalAmount: row.total,
-      remainingBalance: row.balance,
-      paidTotalAmount: 0,
-      isPaid: false,
-      paidDate: null,
-    })) || [];
+  const previewSchedules = projectedSchedule;
 
   const handleSubmit = async () => {
     if (!rawAmount || rawAmount <= 0) {
@@ -129,6 +123,15 @@ export default function RepayModal({
 
     loadAccounts();
   }, []);
+
+  const remainingAmount = Number(loan?.remainingAmount ?? 0);
+
+  const amountError =
+    rawAmount > remainingAmount
+      ? `Số tiền trả không được vượt quá ${remainingAmount.toLocaleString()} ${
+          loan?.currency || "VND"
+        }`
+      : "";
 
   if (!loan) return null;
 
@@ -212,11 +215,29 @@ export default function RepayModal({
 
             <input
               value={amount}
-              onChange={(e) =>
-                setAmount(
-                  formatInputByCurrency(e.target.value, loan.currency || "VND"),
-                )
-              }
+              onChange={(e) => {
+                const formatted = formatInputByCurrency(
+                  e.target.value,
+                  loan.currency || "VND",
+                );
+
+                const nextRaw = parseInputToNumber(
+                  formatted,
+                  loan.currency || "VND",
+                );
+
+                if (nextRaw > remainingAmount) {
+                  setAmount(
+                    formatInputByCurrency(
+                      String(remainingAmount),
+                      loan.currency || "VND",
+                    ),
+                  );
+                  return;
+                }
+
+                setAmount(formatted);
+              }}
               placeholder="Nhập số tiền trả"
               className="w-full p-3 rounded-2xl
               bg-[#FFF9E8] dark:bg-[#263B2B]/80
@@ -226,6 +247,12 @@ export default function RepayModal({
               placeholder:text-[#8B7A4B]/60
               font-bold"
             />
+
+            {amountError && (
+              <p className="mt-2 text-xs font-bold text-[#C86B3C]">
+                {amountError}
+              </p>
+            )}
 
             {rawAmount > 0 && rawAmount <= (loan?.remainingAmount ?? 0) && (
               <div
@@ -269,7 +296,7 @@ export default function RepayModal({
 
               <button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || !!amountError || rawAmount <= 0}
                 className="py-3 rounded-2xl
                 bg-[#C86B3C] hover:bg-[#9F4D2E]
                 text-[#FFF4D8]
