@@ -323,13 +323,7 @@ public class LoanService : ILoanService
                 ? account.Currency
                 : request.Currency;
 
-            var accountAppliedAmount = await ConvertIdNeededAsync(request.Amount, repaymentCurrency, account.Currency);
-
-            var totalPaidInLoanCurrency = await ConvertIdNeededAsync(
-            request.Amount,
-            repaymentCurrency,
-            loanCurrency
-        );
+            var totalPaidInLoanCurrency = await ConvertIdNeededAsync(request.Amount, repaymentCurrency, loanCurrency);
 
             if (totalPaidInLoanCurrency <= 0)
                 throw new Exception("Số tiền thanh toán không hợp lệ.");
@@ -337,24 +331,7 @@ public class LoanService : ILoanService
             TransactionType repayTransType = initialTrans.Type == TransactionType.Lend ? TransactionType.Income : TransactionType.Expense;
             decimal balanceBefore = account.Balance;
 
-            // Cập nhật số dư tài khoản
-            if (repayTransType == TransactionType.Expense)
-            {
-                if (account.Balance < accountAppliedAmount)
-                    throw new Exception("Số dư không đủ để trả nợ.");
-                account.Balance -= accountAppliedAmount;
-            }
-            else
-            {
-                account.Balance += accountAppliedAmount;
-            }
-
-            var allocation = await ApplyPaymentToSchedulesAsync(
-            loan.Id,
-            request.Period,
-            totalPaidInLoanCurrency,
-            transactionDate
-        );
+            var allocation = await ApplyPaymentToSchedulesAsync(loan.Id, request.Period, totalPaidInLoanCurrency, transactionDate);
 
             if (allocation.TotalPaid <= 0)
                 throw new Exception("Không thể phân bổ số tiền thanh toán vào kỳ hạn.");
@@ -372,6 +349,19 @@ public class LoanService : ILoanService
                 loan.NextReminderDate = null;
             }
 
+            // Cập nhật account
+            var actualAccountAmount = await ConvertIdNeededAsync(allocation.TotalPaid, loanCurrency, account.Currency);
+            if (repayTransType == TransactionType.Expense)
+            {
+                if (account.Balance < actualAccountAmount)
+                    throw new Exception("Số dư không đủ để trả nợ.");
+
+                account.Balance -= actualAccountAmount;
+            }
+            else
+            {
+                account.Balance += actualAccountAmount;
+            }
             var note = request.Note
                 ?? $"[Trả nợ] Thanh toán cho: {loan.CounterPartyName}";
 
@@ -383,9 +373,9 @@ public class LoanService : ILoanService
             var repaymentTransaction = new Transaction
             {
                 UserId = userId,
-                Amount = request.Amount,
+                Amount = actualAccountAmount,
                 Currency = repaymentCurrency,
-                ConvertedAmount = repaymentCurrency == account.Currency ? null : accountAppliedAmount,
+                ConvertedAmount = repaymentCurrency == account.Currency ? null : actualAccountAmount,
 
                 Type = repayTransType,
                 FromAccountId = repayTransType == TransactionType.Expense ? request.AccountId : null,
