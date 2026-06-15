@@ -38,6 +38,7 @@ export interface RepayLoanPayload {
   loanId: number;
   amount: number;
   accountId: number;
+  currency: string;
   principalPaid?: number;
   transactionDate: string;
   note?: string;
