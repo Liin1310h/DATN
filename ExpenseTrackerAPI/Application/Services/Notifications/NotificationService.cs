@@ -45,6 +45,32 @@ public class NotificationService : INotificationService
         // Gửi thông báo real-time qua SignalR
         await _hubService.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notification);
 
+        // Gửi event riêng cho khóa tài khoản
+        if (type == "ACCOUNT_LOCKED")
+        {
+            await _hubService.Clients.User(userId.ToString())
+                .SendAsync("AccountLocked", new
+                {
+                    code = "ACCOUNT_LOCKED",
+                    title,
+                    message,
+                    redirectUrl
+                });
+        }
+
+        // Gửi event riêng cho mở khóa tài khoản
+        if (type == "ACCOUNT_UNLOCKED")
+        {
+            await _hubService.Clients.User(userId.ToString())
+                .SendAsync("AccountUnlocked", new
+                {
+                    code = "ACCOUNT_UNLOCKED",
+                    title,
+                    message,
+                    redirectUrl
+                });
+        }
+
         return notification;
     }
 
