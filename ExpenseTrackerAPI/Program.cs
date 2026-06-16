@@ -1,4 +1,5 @@
 using ExpenseTrackerAPI.API.Hubs;
+using ExpenseTrackerAPI.API.Middlewares;
 using ExpenseTrackerAPI.Application.Interfaces;
 using ExpenseTrackerAPI.Application.Interfaces.Admin;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
@@ -11,7 +12,6 @@ using ExpenseTrackerAPI.Application.Services.Admin;
 using ExpenseTrackerAPI.Application.Services.AI;
 using ExpenseTrackerAPI.Application.Services.Auth;
 using ExpenseTrackerAPI.Application.Services.OCR;
-using ExpenseTrackerAPI.Domain.Interfaces.Notifications;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using ExpenseTrackerAPI.Infrastructure.Services;
 using Hangfire;
@@ -198,6 +198,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowFrontend");
 // app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseMiddleware<ActiveUserMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("hubs/notifications");
