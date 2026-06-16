@@ -1,55 +1,62 @@
 import * as signalR from "@microsoft/signalr";
+import {
+  emitAccountLocked,
+  emitAccountUnlocked,
+} from "../../events/authEvents";
 
 let connection: signalR.HubConnection | null = null;
 
-export const startNotificationConnection = (
+export const startNotificationConnection = async (
   onReceiveNotification: (notification: any) => void,
-  onOcrCompleted?: (data: any) => void, //Xử lý cho OCR
+  onOcrCompleted?: (data: any) => void,
   onOcrFailed?: (data: any) => void,
 ) => {
   const token = localStorage.getItem("token");
 
   if (!token) return null;
 
-  if (!connection) {
+  if (
+    !connection ||
+    connection.state === signalR.HubConnectionState.Disconnected
+  ) {
     connection = new signalR.HubConnectionBuilder()
       .withUrl("http://localhost:5000/hubs/notifications", {
-        accessTokenFactory: () => token,
+        accessTokenFactory: () => localStorage.getItem("token") || "",
       })
       .withAutomaticReconnect()
       .build();
-
-    connection
-      .start()
-      .then(() => {
-        console.log("SignalR connected");
-      })
-      .catch((err) => {
-        console.error("SignalR connect error:", err);
-      });
   }
 
-  //TODO Lắng nghe thông báo chung (cho khoản vay, thông báo hệ thống)
+  // Gỡ listener cũ trước khi gắn listener mới
+  connection.off("ReceiveNotification");
+  connection.off("OCR_DONE");
+  connection.off("OCR_FAILED");
+  connection.off("AccountLocked");
+  connection.off("AccountUnlocked");
+
+  /**
+   * TODO Lắng nghe thông báo chung
+   */
   connection.on("ReceiveNotification", (notification) => {
-    console.log(" SignalR Notification:", notification);
+    console.log("SignalR Notification:", notification);
+
     onReceiveNotification(notification);
 
-    // Nếu Backend gửi kèm type trong object notification
     if (notification.type === "OCR_SUCCESS" && onOcrCompleted) {
       onOcrCompleted(notification.data);
     }
   });
 
-  connection.off("OCR_DONE");
-  connection.off("OCR_FAILED");
-
-  //TODO Lắng nghe sự kiện OCR riêng biệt
+  /**
+   * TODO Lắng nghe sự kiện OCR riêng biệt
+   */
   connection.on("OCR_DONE", (data) => {
     console.log("OCR Processed Data:", data);
+
     if (onOcrCompleted) {
       onOcrCompleted(data);
     }
-    // Bắn một Event toàn cục để các component khác có thể nghe thấy mà không cần callback
+
     window.dispatchEvent(
       new CustomEvent("OCR_COMPLETED_EVENT", { detail: data }),
     );
@@ -61,19 +68,58 @@ export const startNotificationConnection = (
     if (onOcrFailed) {
       onOcrFailed(data);
     }
+
     window.dispatchEvent(new CustomEvent("OCR_FAILED_EVENT", { detail: data }));
   });
-  connection.off("ReceiveNotification");
 
-  connection.on("ReceiveNotification", (notification) => {
-    console.log("SignalR Notification:", notification);
+  /**
+   * TODO Lắng nghe event tài khoản bị khoá
+   */
+  connection.on("AccountLocked", async (payload) => {
+    const message =
+      payload?.message ||
+      "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
 
-    onReceiveNotification(notification);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.setItem("account_locked_message", message);
 
-    if (notification.type === "OCR_SUCCESS" && onOcrCompleted) {
-      onOcrCompleted(notification.data);
+    emitAccountLocked(message);
+
+    if (connection) {
+      await connection.stop();
+      connection = null;
     }
   });
 
+  /**
+   * TODO Lắng nghe event tài khoản được mở khoá
+   */
+  connection.on("AccountUnlocked", (payload) => {
+    const message =
+      payload?.message ||
+      "Tài khoản của bạn đã được mở khóa. Bạn có thể đăng nhập lại.";
+
+    sessionStorage.setItem("account_unlocked_message", message);
+
+    emitAccountUnlocked(message);
+  });
+
+  if (connection.state === signalR.HubConnectionState.Disconnected) {
+    try {
+      await connection.start();
+      console.log("SignalR connected");
+    } catch (err) {
+      console.error("SignalR connect error:", err);
+    }
+  }
+
   return connection;
+};
+
+export const stopNotificationConnection = async () => {
+  if (connection) {
+    await connection.stop();
+    connection = null;
+  }
 };

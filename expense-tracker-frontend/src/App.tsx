@@ -25,6 +25,8 @@ import AdminUsersPage from "./pages/admin/AdminUserPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import { useEffect } from "react";
 import { NotificationProvider } from "./context/NotificationContext";
+import AccountLockedModal from "./components/Auth/AccountLockedModal";
+import AccountUnlockedModal from "./components/Auth/AccountUnlockedModal";
 
 function NotificationScope() {
   return (
@@ -61,6 +63,9 @@ function App() {
           },
         }}
       />
+
+      <AccountLockedModal />
+      <AccountUnlockedModal />
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
