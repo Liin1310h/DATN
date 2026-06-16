@@ -1,5 +1,5 @@
 using ExpenseTrackerAPI.Application.DTOs.Notification;
-using ExpenseTrackerAPI.Domain.Interfaces.Notifications;
+using ExpenseTrackerAPI.Application.Interfaces.Notifications;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

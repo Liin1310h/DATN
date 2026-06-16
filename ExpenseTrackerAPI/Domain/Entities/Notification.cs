@@ -13,6 +13,8 @@ public class Notification
     public string Type { get; set; } = string.Empty;
     // loan_reminder, system, budget_warning...
 
+    public string? ReferenceKey { get; set; }
+
     public bool IsRead { get; set; } = false;
 
     public string? RedirectUrl { get; set; }

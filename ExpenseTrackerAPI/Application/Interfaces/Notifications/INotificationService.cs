@@ -1,5 +1,5 @@
 using ExpenseTrackerAPI.Domain.Entities;
-namespace ExpenseTrackerAPI.Domain.Interfaces.Notifications;
+namespace ExpenseTrackerAPI.Application.Interfaces.Notifications;
 
 public interface INotificationService
 {
@@ -8,7 +8,8 @@ public interface INotificationService
         string title,
         string message,
         string type,
-        string? redirectUrl = null);
+        string? redirectUrl = null,
+        string? referenceKey = null);
 
     Task<List<Notification>> GetUserNotificationsAsync(
         int userId,

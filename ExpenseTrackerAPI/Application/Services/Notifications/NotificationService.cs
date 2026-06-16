@@ -1,6 +1,6 @@
 using ExpenseTrackerAPI.API.Hubs;
 using ExpenseTrackerAPI.Domain.Entities;
-using ExpenseTrackerAPI.Domain.Interfaces.Notifications;
+using ExpenseTrackerAPI.Application.Interfaces.Notifications;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +25,7 @@ public class NotificationService : INotificationService
     /// <param name="type"></param>phân loại thông báo
     /// <param name="redirectUrl"></param>url khi click vào notification
     /// <returns></returns>
-    public async Task<Notification> CreateAsync(int userId, string title, string message, string type, string? redirectUrl = null)
+    public async Task<Notification> CreateAsync(int userId, string title, string message, string type, string? redirectUrl = null, string? referenceKey = null)
     {
         var notification = new Notification
         {
@@ -34,6 +34,7 @@ public class NotificationService : INotificationService
             Message = message,
             Type = type,
             RedirectUrl = redirectUrl,
+            ReferenceKey = referenceKey,
             IsRead = false,
             CreatedAt = DateTime.UtcNow
         };

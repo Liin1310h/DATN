@@ -14,11 +14,15 @@ public class TransactionService : ITransactionService
     private readonly AppDbContext _context;
     private readonly ICurrencyService _currencyService;
     private readonly IPersonalCategoryRuleService _personalCategoryRuleService;
-    public TransactionService(AppDbContext context, ICurrencyService currencyService, IPersonalCategoryRuleService personalCategoryRuleService)
+    private readonly IBudgetService _budgetService;
+    private readonly ILogger<TransactionService> _logger;
+    public TransactionService(AppDbContext context, ICurrencyService currencyService, IPersonalCategoryRuleService personalCategoryRuleService, IBudgetService budgetService, ILogger<TransactionService> logger)
     {
         _context = context;
         _currencyService = currencyService;
         _personalCategoryRuleService = personalCategoryRuleService;
+        _budgetService = budgetService;
+        _logger = logger;
     }
 
     //Helper
@@ -35,6 +39,34 @@ public class TransactionService : ITransactionService
         if (type is not (TransactionType.Income or TransactionType.Expense))
             throw new Exception("TransactionService chỉ hỗ trợ income hoặc expense");
 
+    }
+
+    /// <summary>
+    /// !Chuẩn hoá ngày tháng
+    /// </summary>
+    /// <param name="date"></param>
+    /// <returns></returns>
+    private static DateTime NormalizeTransactionDate(DateTime? date)
+    {
+        if (!date.HasValue)
+            return DateTime.UtcNow;
+
+        if (date.Value.Kind == DateTimeKind.Utc)
+            return date.Value;
+
+        return DateTime.SpecifyKind(date.Value, DateTimeKind.Local).ToUniversalTime();
+    }
+
+    /// <summary>
+    /// ! Chuẩn hoá tiền tệ
+    /// </summary>
+    /// <param name="currency"></param>
+    /// <returns></returns>
+    private static string NormalizeCurrency(string? currency)
+    {
+        return string.IsNullOrWhiteSpace(currency)
+            ? "VND"
+            : currency.Trim().ToUpperInvariant();
     }
 
     /// <summary>
@@ -55,17 +87,57 @@ public class TransactionService : ITransactionService
     }
 
     /// <summary>
+    /// !Check xem category có hợp lệ không
+    /// </summary>
+    /// <param name="categoryId"></param>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    private async Task EnsureCategoryIsValidAsync(int? categoryId, int userId)
+    {
+        if (!categoryId.HasValue)
+            return;
+
+        var exists = await _context.Categories.AnyAsync(c =>
+            c.Id == categoryId.Value &&
+            (c.UserId == null || c.UserId == userId));
+
+        if (!exists)
+            throw new Exception("Danh mục không tồn tại hoặc không thuộc quyền sử dụng của bạn.");
+    }
+
+    /// <summary>
     /// !Hàm chuyển tiền tệ
     /// </summary>
     /// <param name="amount"></param>
     /// <param name="fromCurrency"></param>
     /// <param name="toCurrency"></param>
     /// <returns></returns>
-    private async Task<decimal> ConvertIdNeededAsync(decimal amount, string fromCurrency, string toCurrency)
+    private async Task<decimal> ConvertIfNeededAsync(decimal amount, string fromCurrency, string toCurrency)
     {
         if (string.Equals(fromCurrency, toCurrency, StringComparison.OrdinalIgnoreCase)) return amount;
 
         return await _currencyService.ConvertAsync(amount, fromCurrency, toCurrency);
+    }
+
+    /// <summary>
+    /// !Hàm tính số tiền thực tế áp dụng cho account sau khi đã chuyển đổi nếu cần thiết
+    /// </summary>
+    /// <param name="transaction"></param>
+    /// <param name="account"></param>
+    /// <returns></returns>
+    private async Task<decimal> GetAppliedAmountForAccountAsync(Transaction transaction, Account account)
+    {
+        if (transaction.ConvertedAmount.HasValue &&
+            string.Equals(transaction.ConvertedCurrency, account.Currency, StringComparison.OrdinalIgnoreCase))
+        {
+            return transaction.ConvertedAmount.Value;
+        }
+
+        if (string.Equals(transaction.Currency, account.Currency, StringComparison.OrdinalIgnoreCase))
+            return transaction.Amount;
+
+        return await ConvertIfNeededAsync(transaction.Amount, transaction.Currency, account.Currency);
     }
 
     /// <summary>
@@ -79,16 +151,21 @@ public class TransactionService : ITransactionService
         //Đảm bảo kiểu của trans hợp lệ
         EnsureNormalTransactionType(request.Type);
 
+        if (request.Amount <= 0) throw new Exception("Số tiền phải lớn hơn 0.");
+
+        await EnsureCategoryIsValidAsync(request.CategoryId, userId);
+
+        var transactionDate = NormalizeTransactionDate(request.TransactionDate);
+        var transactionCurrency = NormalizeCurrency(request.Currency);
+
         // Bắt đầu giao dịch
-        using var dbTrans = await _context.Database.BeginTransactionAsync();
+        await using var dbTrans = await _context.Database.BeginTransactionAsync();
+        Transaction transaction;
         try
         {
-            var type = request.Type;
             var account = await GetOwnedAccountAsync(request.AccountId, userId);
 
-            if (request.Amount <= 0)
-                throw new Exception("Số tiền phải lớn hơn 0.");
-            var appliedAmount = await ConvertIdNeededAsync(request.Amount, request.Currency, account.Currency);
+            var appliedAmount = await ConvertIfNeededAsync(request.Amount, transactionCurrency, account.Currency);
 
             decimal balanceBefore = account.Balance;
 
@@ -102,23 +179,25 @@ public class TransactionService : ITransactionService
                 account.Balance += appliedAmount;
             }
 
-            var transaction = new Transaction
+            var sameCurrency = string.Equals(transactionCurrency, account.Currency, StringComparison.OrdinalIgnoreCase);
+
+            transaction = new Transaction
             {
                 UserId = userId,
-                Type = type,
+                Type = request.Type,
                 Amount = request.Amount,
-                Currency = request.Currency,
-                ConvertedCurrency = request.Currency == account.Currency ? null : account.Currency,
-                ConvertedAmount = request.Currency == account.Currency ? null : appliedAmount,
+                Currency = transactionCurrency,
+                ConvertedCurrency = sameCurrency ? null : account.Currency,
+                ConvertedAmount = sameCurrency ? null : appliedAmount,
 
                 FromAccountId = IsExpenseLike(request.Type) ? account.Id : null,
                 ToAccountId = IsIncomeLike(request.Type) ? account.Id : null,
 
                 CategoryId = request.CategoryId,
-                LoanId = request.LoanId,
+                LoanId = null,
                 Note = request.Note ?? "",
 
-                TransactionDate = request.TransactionDate ?? DateTime.UtcNow,
+                TransactionDate = transactionDate,
                 BalanceBefore = balanceBefore,
                 BalanceAfter = account.Balance
             };
@@ -137,15 +216,28 @@ public class TransactionService : ITransactionService
                 }).ToList();
 
                 _context.TransactionImages.AddRange(images);
-                await _context.SaveChangesAsync();
             }
 
-            await _personalCategoryRuleService.LearnAsync(userId, transaction.Note, transaction.Type, transaction.CategoryId);
-            await dbTrans.CommitAsync();
+            if (transaction.Type == TransactionType.Expense)
+            {
+                await _budgetService.ApplyExpenseAsync(
+                    userId,
+                    transaction.CategoryId,
+                    transaction.TransactionDate,
+                    transaction.Amount,
+                    transaction.Currency);
+            }
 
-            return transaction;
+            await _context.SaveChangesAsync();
+            await dbTrans.CommitAsync();
         }
-        catch { await dbTrans.RollbackAsync(); throw; }
+        catch
+        {
+            await dbTrans.RollbackAsync(); throw;
+        }
+
+        await RunAfterTransactionCommittedAsync(transaction, null);
+        return transaction;
     }
 
     /// <summary>
@@ -158,16 +250,38 @@ public class TransactionService : ITransactionService
     public async Task<Transaction> UpdateTransactionAsync(int id, TransactionRequest request, int userId)
     {
         EnsureNormalTransactionType(request.Type);
-        using var dbTrans = await _context.Database.BeginTransactionAsync();
+
+        if (request.Amount <= 0) throw new Exception("Số tiền phải lớn hơn 0.");
+
+        await EnsureCategoryIsValidAsync(request.CategoryId, userId);
+
+        var newTransactionDate = NormalizeTransactionDate(request.TransactionDate);
+        var newCurrency = NormalizeCurrency(request.Currency);
+
+        await using var dbTrans = await _context.Database.BeginTransactionAsync();
+
+        Transaction transaction;
+        TransactionSnapshot oldSnapshot;
         try
         {
-            var type = request.Type;
-
-            var transaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
-            if (transaction == null) throw new Exception("Giao dịch không tồn tại.");
+            transaction = await _context.Transactions
+                .Include(t => t.TransactionImages)
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId)
+                ?? throw new Exception("Giao dịch không tồn tại.");
 
             if (transaction.LoanId != null)
                 throw new Exception("Không được cập nhật giao dịch thuộc khoản vay ở TransactionService");
+
+            EnsureNormalTransactionType(transaction.Type);
+            oldSnapshot = new TransactionSnapshot
+            {
+                Type = transaction.Type,
+                Amount = transaction.Amount,
+                Currency = transaction.Currency,
+                CategoryId = transaction.CategoryId,
+                TransactionDate = transaction.TransactionDate,
+                Note = transaction.Note
+            };
 
             var oldAccountId = transaction.FromAccountId ?? transaction.ToAccountId;
             if (oldAccountId == null)
@@ -175,50 +289,65 @@ public class TransactionService : ITransactionService
 
             var oldAccount = await GetOwnedAccountAsync(oldAccountId.Value, userId);
 
-            var oldNote = transaction.Note;
-            var oldType = transaction.Type;
-            var oldCategoryId = transaction.CategoryId;
-
             // 1. Rollback số dư cũ
-            decimal oldAppliedAmount = await ConvertIdNeededAsync(transaction.Amount, transaction.Currency, oldAccount.Currency);
+            decimal oldAppliedAmount = await GetAppliedAmountForAccountAsync(transaction, oldAccount);
 
-            if (IsExpenseLike(transaction.Type)) oldAccount.Balance += oldAppliedAmount;
-            else if (IsIncomeLike(transaction.Type)) oldAccount.Balance -= oldAppliedAmount;
-            else throw new Exception("Loại transaction cũ không hợp lệ");
-
+            if (IsExpenseLike(transaction.Type))
+            {
+                oldAccount.Balance += oldAppliedAmount;
+                await _budgetService.RollbackExpenseAsync(
+                    userId,
+                    transaction.CategoryId,
+                    transaction.TransactionDate,
+                    transaction.Amount,
+                    transaction.Currency);
+            }
+            else if (IsIncomeLike(transaction.Type))
+            {
+                if (oldAccount.Balance < oldAppliedAmount)
+                    throw new Exception("Không thể cập nhật vì số dư hiện tại không đủ để hoàn tác giao dịch");
+                oldAccount.Balance -= oldAppliedAmount;
+            }
 
             // 2. Áp dụng số dư mới
             var newAccount = (oldAccountId == request.AccountId) ? oldAccount : await GetOwnedAccountAsync(request.AccountId, userId);
-
-            if (request.Amount <= 0)
-                throw new Exception("Số tiền phải lớn hơn 0.");
-            decimal newAppliedAmount = await ConvertIdNeededAsync(request.Amount, request.Currency, newAccount.Currency);
+            decimal newAppliedAmount = await ConvertIfNeededAsync(request.Amount, newCurrency, newAccount.Currency);
             decimal balanceBefore = newAccount.Balance;
 
             if (IsExpenseLike(request.Type))
             {
                 if (newAccount.Balance < newAppliedAmount) throw new Exception("Số dư tài khoản mới không đủ.");
                 newAccount.Balance -= newAppliedAmount;
+
+                await _budgetService.ApplyExpenseAsync(
+                    userId,
+                    request.CategoryId,
+                    newTransactionDate,
+                    request.Amount,
+                    newCurrency);
             }
             else newAccount.Balance += newAppliedAmount;
 
+            var sameCurrency = string.Equals(newCurrency, newAccount.Currency, StringComparison.OrdinalIgnoreCase);
+
             // 3. Cập nhật Transaction object
-            transaction.Type = type;
+            transaction.Type = request.Type;
             transaction.Amount = request.Amount;
-            transaction.Currency = request.Currency;
-            transaction.ConvertedCurrency = request.Currency == newAccount.Currency ? null : newAccount.Currency;
-            transaction.ConvertedAmount =
-                request.Currency == newAccount.Currency ? null : newAppliedAmount;
+            transaction.Currency = newCurrency;
+
+            transaction.ConvertedCurrency = sameCurrency ? null : newAccount.Currency;
+            transaction.ConvertedAmount = sameCurrency ? null : newAppliedAmount;
 
             transaction.FromAccountId = IsExpenseLike(request.Type) ? request.AccountId : null;
             transaction.ToAccountId = IsIncomeLike(request.Type) ? request.AccountId : null;
 
             transaction.CategoryId = request.CategoryId;
             transaction.Note = request.Note ?? string.Empty;
-            transaction.TransactionDate = request.TransactionDate ?? DateTime.UtcNow;
+            transaction.TransactionDate = newTransactionDate;
 
             transaction.BalanceBefore = balanceBefore;
             transaction.BalanceAfter = newAccount.Balance;
+
             //!  Xoá ảnh cũ thêm ảnh mới
             var oldImages = await _context.TransactionImages
                 .Where(i => i.TransactionId == transaction.Id)
@@ -240,24 +369,12 @@ public class TransactionService : ITransactionService
                 _context.TransactionImages.AddRange(newImages);
             }
             await _context.SaveChangesAsync();
-
-            await _personalCategoryRuleService.UnlearnAsync(
-                userId,
-                oldNote,
-                oldType,
-                oldCategoryId
-            );
-            await _personalCategoryRuleService.LearnAsync(
-                userId,
-                transaction.Note,
-                transaction.Type,
-                transaction.CategoryId
-            );
-
             await dbTrans.CommitAsync();
-            return transaction;
         }
         catch { await dbTrans.RollbackAsync(); throw; }
+
+        await RunAfterTransactionCommittedAsync(transaction, oldSnapshot);
+        return transaction;
     }
 
     /// <summary>
@@ -268,50 +385,66 @@ public class TransactionService : ITransactionService
     /// <returns></returns>
     public async Task DeleteTransactionAsync(int id, int userId)
     {
-        using var dbTrans = await _context.Database.BeginTransactionAsync();
+        await using var dbTrans = await _context.Database.BeginTransactionAsync();
+        TransactionSnapshot oldSnapshot;
+
         try
         {
-            var transaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+            var transaction = await _context.Transactions
+                .Include(t => t.TransactionImages)
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
             if (transaction == null) throw new Exception("Không thấy giao dịch.");
 
             if (transaction.LoanId != null)
                 throw new Exception("Không được xoá transaction thuộc khoản vay ở TransactionService");
 
+            EnsureNormalTransactionType(transaction.Type);
+            oldSnapshot = new TransactionSnapshot
+            {
+                Type = transaction.Type,
+                Amount = transaction.Amount,
+                Currency = transaction.Currency,
+                CategoryId = transaction.CategoryId,
+                TransactionDate = transaction.TransactionDate,
+                Note = transaction.Note
+            };
+
             var accountId = transaction.FromAccountId ?? transaction.ToAccountId;
             if (accountId == null)
-                throw new Exception("Transaction không có account hợp lệ.");
+                throw new Exception("Giao dịch không có tài khoản hợp lệ.");
 
-            var account = await _context.Accounts.FirstAsync(a => a.Id == accountId);
-
-            decimal appliedAmount = await ConvertIdNeededAsync(transaction.Amount, transaction.Currency, account.Currency);
+            var account = await GetOwnedAccountAsync(accountId.Value, userId);
+            var appliedAmount = await GetAppliedAmountForAccountAsync(transaction, account);
 
             //Hoàn hoặc thu hồi tiền cho tài khoản
-            if (IsExpenseLike(transaction.Type)) account.Balance += appliedAmount;
+            if (IsExpenseLike(transaction.Type))
+            {
+                account.Balance += appliedAmount;
+                await _budgetService.RollbackExpenseAsync(
+                userId,
+                transaction.CategoryId,
+                transaction.TransactionDate,
+                transaction.Amount,
+                transaction.Currency);
+            }
             else if (IsIncomeLike(transaction.Type))
             {
                 if (account.Balance < appliedAmount)
                     throw new Exception("Không thể xoá giao dịch vì số dư hiện tại không đủ để rollback");
                 account.Balance -= appliedAmount;
             }
-            else throw new Exception("Loại transaction không hợp lệ.");
 
-            await _personalCategoryRuleService.UnlearnAsync(
-                userId,
-                transaction.Note,
-                transaction.Type,
-                transaction.CategoryId
-            );
-
-            var images = await _context.TransactionImages.Where(img => img.TransactionId == transaction.Id).ToListAsync();
-            if (images.Any())
+            if (transaction.TransactionImages.Any())
             {
-                _context.TransactionImages.RemoveRange(images);
+                _context.TransactionImages.RemoveRange(transaction.TransactionImages);
             }
             _context.Transactions.Remove(transaction);
             await _context.SaveChangesAsync();
             await dbTrans.CommitAsync();
         }
         catch { await dbTrans.RollbackAsync(); throw; }
+
+        await RunAfterDeleteCommittedAsync(userId, oldSnapshot);
     }
 
     /// <summary>
@@ -322,26 +455,28 @@ public class TransactionService : ITransactionService
     /// <returns></returns>
     public async Task<Transaction> TransferAsync(TransferRequest request, int userId)
     {
-        using var dbTrans = await _context.Database.BeginTransactionAsync();
+        if (request.Amount <= 0)
+            throw new Exception("Số tiền chuyển phải lớn hơn 0.");
+
+        if (request.FromAccountId == request.ToAccountId)
+            throw new Exception("Tài khoản chuyển và nhận không được trùng nhau");
+
+        await using var dbTrans = await _context.Database.BeginTransactionAsync();
         try
         {
-            if (request.FromAccountId == request.ToAccountId)
-                throw new Exception("Tài khoản chuyển và nhận không được trùng nhau.");
-
             var fromAcc = await GetOwnedAccountAsync(request.FromAccountId, userId);
             var toAcc = await GetOwnedAccountAsync(request.ToAccountId, userId);
-
-            if (request.Amount <= 0)
-                throw new Exception("Số tiền chuyển phải lớn hơn 0.");
 
             if (fromAcc.Balance < request.Amount)
                 throw new Exception("Số dư không đủ chuyển.");
 
             decimal balanceBefore = fromAcc.Balance;
-            decimal toAmount = await ConvertIdNeededAsync(request.Amount, fromAcc.Currency, toAcc.Currency);
+            decimal toAmount = await ConvertIfNeededAsync(request.Amount, fromAcc.Currency, toAcc.Currency);
 
             fromAcc.Balance -= request.Amount;
             toAcc.Balance += toAmount;
+
+            var sameCurrency = string.Equals(fromAcc.Currency, toAcc.Currency, StringComparison.OrdinalIgnoreCase);
 
             var trans = new Transaction
             {
@@ -349,7 +484,8 @@ public class TransactionService : ITransactionService
                 Type = TransactionType.Transfer,
                 Amount = request.Amount,
                 Currency = fromAcc.Currency,
-                ConvertedAmount = fromAcc.Currency == toAcc.Currency ? null : toAmount,
+                ConvertedCurrency = sameCurrency ? null : toAcc.Currency,
+                ConvertedAmount = sameCurrency ? null : toAmount,
 
                 FromAccountId = fromAcc.Id,
                 ToAccountId = toAcc.Id,
@@ -444,10 +580,28 @@ public class TransactionService : ITransactionService
 
         if (isIn.HasValue)
         {
-            if (isIn.Value)
-                query = query.Where(t => t.Type == TransactionType.Income || t.Type == TransactionType.Borrow);
+            if (accountId.HasValue)
+            {
+                query = isIn.Value
+                    ? query.Where(t => t.ToAccountId == accountId.Value)
+                    : query.Where(t => t.FromAccountId == accountId.Value);
+            }
             else
-                query = query.Where(t => t.Type == TransactionType.Expense || t.Type == TransactionType.Lend || t.Type == TransactionType.Transfer);
+            {
+                if (isIn.Value)
+                {
+                    query = query.Where(t =>
+                        t.Type == TransactionType.Income ||
+                        t.Type == TransactionType.Borrow);
+                }
+                else
+                {
+                    query = query.Where(t =>
+                        t.Type == TransactionType.Expense ||
+                        t.Type == TransactionType.Lend ||
+                        t.Type == TransactionType.Transfer);
+                }
+            }
         }
 
         // Lấy tổng số lượng trước khi phân trang
@@ -659,5 +813,73 @@ public class TransactionService : ITransactionService
     }
 
 
+    private async Task RunAfterTransactionCommittedAsync(
+       Transaction transaction,
+       TransactionSnapshot? oldSnapshot)
+    {
+        try
+        {
+            if (oldSnapshot != null)
+            {
+                await _personalCategoryRuleService.UnlearnAsync(
+                    transaction.UserId,
+                    oldSnapshot.Note,
+                    oldSnapshot.Type,
+                    oldSnapshot.CategoryId);
+            }
 
+            await _personalCategoryRuleService.LearnAsync(
+                transaction.UserId,
+                transaction.Note,
+                transaction.Type,
+                transaction.CategoryId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không thể cập nhật personal category rule cho transaction {TransactionId}", transaction.Id);
+        }
+
+        try
+        {
+            if (IsExpenseLike(transaction.Type))
+            {
+                await _budgetService.CheckBudgetAlertAsync(
+                    transaction.UserId,
+                    transaction.CategoryId,
+                    transaction.TransactionDate);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không thể kiểm tra cảnh báo budget cho transaction {TransactionId}", transaction.Id);
+        }
+    }
+
+    private async Task RunAfterDeleteCommittedAsync(
+        int userId,
+        TransactionSnapshot oldSnapshot)
+    {
+        try
+        {
+            await _personalCategoryRuleService.UnlearnAsync(
+                userId,
+                oldSnapshot.Note,
+                oldSnapshot.Type,
+                oldSnapshot.CategoryId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không thể xoá personal category rule sau khi xoá transaction.");
+        }
+    }
+
+    private sealed class TransactionSnapshot
+    {
+        public TransactionType Type { get; set; }
+        public decimal Amount { get; set; }
+        public string Currency { get; set; } = "VND";
+        public int? CategoryId { get; set; }
+        public DateTime TransactionDate { get; set; }
+        public string Note { get; set; } = string.Empty;
+    }
 }

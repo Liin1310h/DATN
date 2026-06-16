@@ -113,12 +113,25 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Budget>(entity =>
         {
             entity.HasIndex(b => new { b.UserId, b.CategoryId, b.Month }).IsUnique();
-            entity.Property(b => b.Amount).HasColumnType("numeric(15,2)");
+            entity.Property(b => b.Amount)
+                .HasPrecision(18, 2);
+
+            entity.Property(b => b.Spent)
+                  .HasPrecision(18, 2);
+
+            entity.Property(b => b.Month)
+                  .HasMaxLength(7)
+                  .IsRequired();
+
+            entity.Property(b => b.Currency)
+                  .HasMaxLength(5)
+                  .IsRequired();
         });
 
         modelBuilder.Entity<PersonalCategoryRule>()
             .HasIndex(x => new { x.UserId, x.Type, x.Keyword, x.CategoryId })
             .IsUnique();
+
         modelBuilder.Entity<ReceiptJobResult>(entity =>
         {
             entity.OwnsOne(e => e.Data, b =>
@@ -135,5 +148,35 @@ public class AppDbContext : DbContext
             new Category { Id = 4, Name = "Giải trí", Icon = "Gamepad2", Color = "#22c55e", UserId = null },
             new Category { Id = 5, Name = "Hoá đơn", Icon = "Receipt", Color = "#2563eb", UserId = null }
         );
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(n => n.Title)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(n => n.Message)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            entity.Property(n => n.Type)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(n => n.ReferenceKey)
+                .HasMaxLength(200);
+
+            entity.Property(n => n.RedirectUrl)
+                .HasMaxLength(500);
+
+            entity.HasIndex(n => new { n.UserId, n.Type, n.ReferenceKey })
+                .IsUnique()
+                .HasFilter("\"ReferenceKey\" IS NOT NULL");
+        });
     }
 }

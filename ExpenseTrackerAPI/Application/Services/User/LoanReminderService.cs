@@ -1,6 +1,5 @@
 using ExpenseTrackerAPI.Application.Interfaces;
 using ExpenseTrackerAPI.Application.Interfaces.Notifications;
-using ExpenseTrackerAPI.Domain.Interfaces.Notifications;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
