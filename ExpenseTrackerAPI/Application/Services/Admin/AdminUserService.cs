@@ -1,5 +1,6 @@
 using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Application.Interfaces.Admin;
+using ExpenseTrackerAPI.Application.Interfaces.Notifications;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,13 @@ namespace ExpenseTrackerAPI.Application.Services.Admin;
 public class AdminUserService : IAdminUserService
 {
     private readonly AppDbContext _context;
-
-    public AdminUserService(AppDbContext context)
+    private readonly INotificationService _notificationService;
+    private readonly IPushNotificationService _pushNotificationService;
+    public AdminUserService(AppDbContext context, INotificationService notificationService, IPushNotificationService pushNotificationService)
     {
         _context = context;
+        _notificationService = notificationService;
+        _pushNotificationService = pushNotificationService;
     }
 
     /// <summary>
@@ -157,8 +161,57 @@ public class AdminUserService : IAdminUserService
                 throw new Exception("Không thể khóa admin cuối cùng của hệ thống.");
         }
 
+        var oldStatus = user.IsActive;
+
+        // Nếu trạng thái không thay đổi thì không cần tạo thông báo
+        if (oldStatus == isActive)
+            return;
+
         user.IsActive = isActive;
         await _context.SaveChangesAsync();
+
+        if (!isActive)
+        {
+            var title = "Tài khoản đã bị khóa";
+            var message = "Tài khoản của bạn đã bị quản trị viên khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.";
+
+            await _notificationService.CreateAsync(
+                userId: user.Id,
+                title: title,
+                message: message,
+                type: "ACCOUNT_LOCKED",
+                redirectUrl: "/login",
+                referenceKey: $"account_locked_{user.Id}_{DateTime.UtcNow:yyyyMMddHHmmss}"
+            );
+
+            await _pushNotificationService.SendToUserAsync(
+                userId: user.Id,
+                title: title,
+                message: message,
+                url: "/login"
+            );
+        }
+        else
+        {
+            var title = "Tài khoản đã được mở khóa";
+            var message = "Tài khoản của bạn đã được quản trị viên mở khóa. Bạn có thể đăng nhập và tiếp tục sử dụng hệ thống.";
+
+            await _notificationService.CreateAsync(
+                userId: user.Id,
+                title: title,
+                message: message,
+                type: "ACCOUNT_UNLOCKED",
+                redirectUrl: "/login",
+                referenceKey: $"account_unlocked_{user.Id}_{DateTime.UtcNow:yyyyMMddHHmmss}"
+            );
+
+            await _pushNotificationService.SendToUserAsync(
+                userId: user.Id,
+                title: title,
+                message: message,
+                url: "/login"
+            );
+        }
     }
 
     /// <summary>
