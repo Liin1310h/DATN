@@ -133,12 +133,29 @@ public class AdminUserService : IAdminUserService
     /// <param name="isActive"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public async Task UpdateUserStatusAsync(int userId, bool isActive)
+    public async Task UpdateUserStatusAsync(int userId, bool isActive, int currentAdminId)
     {
         var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
 
         if (user == null)
             throw new Exception("User không tồn tại.");
+
+        // Không cho admin khoá chính mình
+        if (user.Id == currentAdminId && !isActive)
+            throw new Exception("Admin không tự khoá tài khoản của mình.");
+
+        // Không cho khóa admin cuối cùng
+        if (user.Role == "Admin" && !isActive)
+        {
+            var otherActiveAdminCount = await _context.Users.CountAsync(x =>
+                x.Role == "Admin" &&
+                x.IsActive &&
+                x.Id != userId
+            );
+
+            if (otherActiveAdminCount == 0)
+                throw new Exception("Không thể khóa admin cuối cùng của hệ thống.");
+        }
 
         user.IsActive = isActive;
         await _context.SaveChangesAsync();
@@ -162,23 +179,6 @@ public class AdminUserService : IAdminUserService
             throw new Exception("User không tồn tại.");
 
         user.Role = role;
-        await _context.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Xoá mềm (inactive=true)
-    /// </summary>
-    /// <param name="userId"></param>
-    /// <returns></returns>
-    /// <exception cref="Exception"></exception>
-    public async Task SoftDeleteUserAsync(int userId)
-    {
-        var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
-
-        if (user == null)
-            throw new Exception("User không tồn tại.");
-
-        user.IsActive = false;
         await _context.SaveChangesAsync();
     }
 

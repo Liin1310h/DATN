@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Application.Interfaces.Admin;
 using Microsoft.AspNetCore.Authorization;
@@ -53,8 +54,18 @@ public class AdminUsersController : ControllerBase
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] AdminUpdateUserStatusRequest request)
     {
-        await _adminUserService.UpdateUserStatusAsync(id, request.IsActive);
-        return NoContent();
+        var currentAdminIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(currentAdminIdValue, out var currentAdminId))
+            return Unauthorized();
+
+        await _adminUserService.UpdateUserStatusAsync(id, request.IsActive, currentAdminId);
+        return Ok(new
+        {
+            message = request.IsActive
+             ? "Đã mở khóa tài khoản người dùng."
+             : "Đã khóa tài khoản người dùng."
+        });
     }
 
     /// <summary>
@@ -67,18 +78,6 @@ public class AdminUsersController : ControllerBase
     public async Task<IActionResult> UpdateRole(int id, [FromBody] AdminUpdateUserRoleRequest request)
     {
         await _adminUserService.UpdateUserRoleAsync(id, request.Role);
-        return NoContent();
-    }
-
-    /// <summary>
-    /// Xoá mềm
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> SoftDeleteUser(int id)
-    {
-        await _adminUserService.SoftDeleteUserAsync(id);
         return NoContent();
     }
 }
