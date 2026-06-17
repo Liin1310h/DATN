@@ -91,7 +91,9 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.log(err);
-      setError("Email hoặc mật khẩu không chính xác");
+      setError(
+        err?.response?.data.message || "Email hoặc mật khẩu không chính xác",
+      );
     } finally {
       setLoading(false);
     }
