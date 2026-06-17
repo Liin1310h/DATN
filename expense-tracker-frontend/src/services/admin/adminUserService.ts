@@ -37,7 +37,3 @@ export async function updateAdminUserRole(
 ) {
   await api.put(`/admin/users/${id}/role`, payload);
 }
-
-export async function deleteAdminUser(id: number) {
-  await api.delete(`/admin/users/${id}`);
-}

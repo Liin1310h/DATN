@@ -17,7 +17,6 @@ import type {
   AdminUserQueryDto,
 } from "../../types/admin";
 import {
-  deleteAdminUser,
   getAdminUsers,
   updateAdminUserRole,
   updateAdminUserStatus,
@@ -124,22 +123,6 @@ export default function AdminUsersPage() {
     } catch (error) {
       console.error(error);
       toast.error("Không cập nhật được role");
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleDelete = async (user: AdminUserListItemDto) => {
-    try {
-      setActionLoadingId(user.id);
-
-      await deleteAdminUser(user.id);
-
-      toast.success("Đã khóa user");
-      fetchUsers(page);
-    } catch (error) {
-      console.error(error);
-      toast.error("Không thể khóa user");
     } finally {
       setActionLoadingId(null);
     }
@@ -329,6 +312,7 @@ export default function AdminUsersPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => setSelectedUserId(user.id)}
+                          title="Xem chi tiết"
                           className="p-2 rounded-xl text-[#6F8F72] hover:bg-[#6F8F72] hover:text-[#FFF4D8] transition-all active:scale-95"
                         >
                           <Eye size={16} />
@@ -356,14 +340,6 @@ export default function AdminUsersPage() {
                           ) : (
                             <UserCheck size={16} />
                           )}
-                        </button>
-
-                        <button
-                          onClick={() => handleDelete(user)}
-                          disabled={actionLoadingId === user.id}
-                          className="p-2 rounded-xl text-[#C86B3C] hover:bg-[#C86B3C] hover:text-[#FFF4D8] disabled:opacity-50 transition-all active:scale-95"
-                        >
-                          <UserX size={16} />
                         </button>
                       </div>
                     </div>
