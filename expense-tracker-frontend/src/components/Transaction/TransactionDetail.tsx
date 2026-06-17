@@ -75,17 +75,17 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
   const getTypeIcon = () => {
     switch (transaction.type) {
       case TransactionType.Expense:
-        return <ArrowDownRight size={18} className="text-[#C86B3C]" />;
+        return <ArrowDownRight size={18} />;
       case TransactionType.Income:
-        return <ArrowUpRight size={18} className="text-[#6F8F72]" />;
+        return <ArrowUpRight size={18} />;
       case TransactionType.Lend:
-        return <HandCoins size={18} className="text-[#5F8A8B]" />;
+        return <HandCoins size={18} />;
       case TransactionType.Borrow:
-        return <Handshake size={18} className="text-[#C86B3C]" />;
+        return <Handshake size={18} />;
       case TransactionType.Transfer:
-        return <ArrowLeftRight size={18} className="text-[#5F8A8B]" />;
+        return <ArrowLeftRight size={18} />;
       default:
-        return <Wallet size={18} className="text-[#D6B56D]" />;
+        return <Wallet size={18} />;
     }
   };
 
@@ -128,11 +128,8 @@ export default function TransactionDetail({ transaction, onClose }: Props) {
 
   return (
     <div
-      className="relative w-full max-w-xl max-h-[90vh] overflow-auto
-      rounded-[2rem]
-      bg-[#FFF9E8] dark:bg-[#263B2B]
-      border border-[#D6B56D]/50 dark:border-[#F4E7C5]/10
-      shadow-[0_30px_90px_rgba(0,0,0,0.32)]
+      className="relative w-full max-w-xl max-h-[90vh] overflow-x-hidden overflow-y-auto rounded-[2rem] bg-[#FFF9E8] dark:bg-[#263B2B]
+      border border-[#D6B56D]/50 dark:border-[#F4E7C5]/10 shadow-[0_30px_90px_rgba(0,0,0,0.32)]
       animate-in fade-in zoom-in duration-300 custom-scrollbar"
     >
       <div className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-[#D6B56D]/22 blur-3xl" />

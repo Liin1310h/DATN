@@ -99,8 +99,8 @@ export default function LoanPage() {
       toast.success(t.common.deleteSuccess);
       fetchLoans();
     } catch (error) {
-      console.log(error);
-      toast.error(t.common.error);
+      console.log(error?.response?.data.message);
+      toast.error(error?.response?.data.message || t.common.error);
     } finally {
       setDeleteLoanItem(null);
     }

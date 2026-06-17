@@ -775,7 +775,7 @@ export default function History() {
           />
 
           {isDetailOpen && selectedTransaction && (
-            <div className="fixed inset-0 z-[1000] bg-[#263B2B]/78 backdrop-blur-xl flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[1000] bg-[#FDE2D5]/50 backdrop-blur-xl flex items-center justify-center p-4">
               <TransactionDetail
                 transaction={selectedTransaction}
                 onClose={() => {

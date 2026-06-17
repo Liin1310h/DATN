@@ -206,7 +206,7 @@ export default function TransactionForm({
           selectedCurrency,
           selectedAcc.currency,
         );
-        setRate(res.rate);
+        setRate(res.result);
       } catch (error) {
         console.error(t.rate.error, error);
         setRate(1);
