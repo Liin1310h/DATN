@@ -13,7 +13,10 @@ import {
   markNotificationAsRead,
   type NotificationItem,
 } from "../services/notification/notificationService";
-import { startNotificationConnection } from "../services/notification/signalService";
+import {
+  startNotificationConnection,
+  stopNotificationConnection,
+} from "../services/notification/signalService";
 
 /**
  * ! Dữ liệu được export
@@ -159,13 +162,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadUnreadCount();
 
-    const conn = startNotificationConnection((notification) => {
+    startNotificationConnection((notification) => {
       setNotifications((prev) => [notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
     });
 
     return () => {
-      conn?.stop();
+      stopNotificationConnection();
     };
   }, []);
 

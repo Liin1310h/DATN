@@ -11,9 +11,7 @@ import LayoutSkeleton from "../LayoutSkeleton";
 import AIInputMenu from "../../components/AI/AIInputMenu";
 import CameraModal from "../../components/AI/CameraModal";
 import VoiceModal from "../../components/AI/VoiceModal";
-import { startNotificationConnection } from "../../services/notification/signalService";
 import ReceiptPreviewList from "../../components/AI/ReceiptReviewList";
-import API from "../../services/api";
 import { getCategories } from "../../services/categoriesService";
 import { getAccounts } from "../../services/accountsService";
 import { Sparkles } from "lucide-react";
@@ -24,6 +22,10 @@ import {
   InterestCalculationType,
   ReminderFrequency,
 } from "../../types/enum";
+import {
+  createReceiptTransactions,
+  previewReceiptTransactions,
+} from "../../services/receiptService";
 
 export default function RecordPage() {
   const { t } = useTranslation();
@@ -116,14 +118,6 @@ export default function RecordPage() {
   };
 
   useEffect(() => {
-    const connection = startNotificationConnection(
-      (notification) => {
-        console.log("Notification received in RecordPage:", notification);
-      },
-      handleOcrCompleted,
-      handleOcrFailed,
-    );
-
     const completedEventHandler = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log("OCR_COMPLETED_EVENT received:", customEvent.detail);
@@ -145,11 +139,6 @@ export default function RecordPage() {
       window.removeEventListener("OCR_COMPLETED_EVENT", completedEventHandler);
       window.removeEventListener("OCR_FAILED_EVENT", failedEventHandler);
 
-      if (connection) {
-        connection.off("OCR_DONE");
-        connection.off("OCR_FAILED");
-      }
-
       clearOcrTimeout();
     };
   }, []);
@@ -161,35 +150,17 @@ export default function RecordPage() {
       setUploadProgress(0);
       clearOcrTimeout();
 
-      const formData = new FormData();
-      formData.append("file", file);
+      const data = await previewReceiptTransactions(file, (percent) => {
+        setUploadProgress(percent);
+      });
 
-      const response = await API.post(
-        "/receipt-transactions/preview",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          onUploadProgress: (progressEvent) => {
-            if (!progressEvent.total) return;
+      console.log("OCR upload response:", data);
 
-            const percent = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total,
-            );
-
-            setUploadProgress(percent);
-          },
-        },
-      );
-
-      console.log("OCR upload response:", response.data);
-
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || "Upload OCR thất bại");
+      if (!data?.success) {
+        throw new Error(data?.message || "Upload OCR thất bại");
       }
 
-      console.log("OCR jobId:", response.data.jobId);
+      console.log("OCR jobId:", data.jobId);
 
       toast.loading("AI đang phân tích hóa đơn...", {
         id: "ocr-processing",
@@ -223,7 +194,7 @@ export default function RecordPage() {
     setLoading(true);
 
     try {
-      await API.post("/receipt-transactions/create", {
+      await createReceiptTransactions({
         jobId: finalData.jobId,
         transactions: finalData.transactions,
       });
@@ -301,16 +272,21 @@ export default function RecordPage() {
     }
   };
 
-  if (loading) return <LayoutSkeleton />;
+  if (loading || isMetaLoading) return <LayoutSkeleton />;
 
   return (
     <Layout>
       <div className="relative h-full w-full overflow-y-auto overflow-x-hidden pb-2 scroll-smooth">
         {/* Background decor */}
-        <div className="pointer-events-none absolute -top-10 -left-10 h-40 w-40 rounded-full bg-[#D6B56D]/20 blur-3xl" />
         <div className="pointer-events-none absolute top-40 -right-12 h-56 w-56 rounded-full bg-[#C86B3C]/12 blur-3xl" />
         <div className="pointer-events-none absolute bottom-10 left-1/3 h-48 w-48 rounded-full bg-[#6F8F72]/12 blur-3xl" />
-        <div className="relative z-10 mx-auto max-w-5xl space-y-5">
+        <div
+          className={`relative z-10 mx-auto space-y-5 ${
+            ocrResult && !isOcrProcessing && !showCamera
+              ? "max-w-7xl"
+              : "max-w-5xl"
+          }`}
+        >
           {/* OCR processing */}
           {isOcrProcessing && (
             <section
@@ -368,23 +344,13 @@ export default function RecordPage() {
           )}
 
           {/* OCR preview */}
-          {ocrResult && !isOcrProcessing && !showCamera && (
+          {ocrResult && !isOcrProcessing && !showCamera ? (
             <section
               className="relative overflow-hidden rounded-[2rem]
               bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
               border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
               p-4 sm:p-5"
             >
-              <div className="mb-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#6F8F72] dark:text-[#D6B56D]">
-                  OCR Preview
-                </p>
-
-                <h3 className="mt-1 text-xl font-black text-[#263B2B] dark:text-[#F4E7C5]">
-                  Kiểm tra giao dịch nhận diện từ hóa đơn
-                </h3>
-              </div>
-
               <ReceiptPreviewList
                 data={ocrResult}
                 accounts={accounts}
@@ -396,25 +362,24 @@ export default function RecordPage() {
                 }}
               />
             </section>
-          )}
-
-          {/* Manual form */}
-          <section
-            className="relative overflow-hidden rounded-[2rem]
+          ) : (
+            <section
+              className="relative overflow-hidden rounded-[2rem]
             bg-[#FFF9E8]/90 dark:bg-[#263B2B]/70
             border border-[#D6B56D]/40 dark:border-[#F4E7C5]/10
             backdrop-blur-sm"
-          >
-            <div className="relative z-10">
-              <TransactionForm
-                categories={categories}
-                accounts={accounts}
-                onMetaChange={loadMetaData}
-                onSubmit={handleCreate}
-                loading={loading}
-              />
-            </div>
-          </section>
+            >
+              <div className="relative z-10">
+                <TransactionForm
+                  categories={categories}
+                  accounts={accounts}
+                  onMetaChange={loadMetaData}
+                  onSubmit={handleCreate}
+                  loading={loading}
+                />
+              </div>
+            </section>
+          )}
         </div>
         {/* Giữ cụm icon OCR / Voice ở dưới như giao diện cũ */}
         <AIInputMenu

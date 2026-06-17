@@ -457,9 +457,6 @@ export default function TransactionForm({
       console.log(t.transaction.errorSave, error);
     }
   };
-  useEffect(() => {
-    console.log(schedule);
-  }, [schedule]);
   return (
     <>
       <div className="max-w-4xl mx-auto my-4 rounded-2xl animate-in fade-in duration-500">

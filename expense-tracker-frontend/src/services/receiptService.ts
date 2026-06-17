@@ -1,35 +1,48 @@
 import API from "./api";
 
-// Định nghĩa Interface dựa trên DTO của Backend
-export interface ReceiptUploadResponse {
-  jobId: string;
-  status: string;
+export interface ReceiptPreviewResponse {
+  success: boolean;
+  message?: string;
+  jobId?: string;
+  data?: any;
 }
 
-export interface CreateTransactionsRequest {
+export interface CreateReceiptTransactionsRequest {
   jobId: string;
-  items: any[];
+  transactions: any[];
 }
 
-export const previewReceipt = async (
+export const previewReceiptTransactions = async (
   file: File,
-): Promise<ReceiptUploadResponse> => {
+  onUploadProgress?: (percent: number) => void,
+): Promise<ReceiptPreviewResponse> => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await API.post<ReceiptUploadResponse>(
+  const response = await API.post<ReceiptPreviewResponse>(
     "/receipt-transactions/preview",
     formData,
     {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      onUploadProgress: (progressEvent) => {
+        if (!progressEvent.total) return;
+
+        const percent = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total,
+        );
+
+        onUploadProgress?.(percent);
+      },
     },
   );
-  return res.data;
+
+  return response.data;
 };
 
-export const confirmCreateTransactions = async (
-  data: CreateTransactionsRequest,
-) => {
-  const res = await API.post("/receipt-transactions/create", data);
-  return res.data;
+export const createReceiptTransactions = async (
+  data: CreateReceiptTransactionsRequest,
+): Promise<void> => {
+  await API.post("/receipt-transactions/create", data);
 };

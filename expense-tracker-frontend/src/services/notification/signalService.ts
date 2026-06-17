@@ -75,7 +75,7 @@ export const startNotificationConnection = async (
   /**
    * TODO Lắng nghe event tài khoản bị khoá
    */
-  connection.on("AccountLocked", async (payload) => {
+  connection.on("AccountLocked", (payload) => {
     const message =
       payload?.message ||
       "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
@@ -86,10 +86,7 @@ export const startNotificationConnection = async (
 
     emitAccountLocked(message);
 
-    if (connection) {
-      await connection.stop();
-      connection = null;
-    }
+    stopNotificationConnection();
   });
 
   /**
@@ -117,9 +114,19 @@ export const startNotificationConnection = async (
   return connection;
 };
 
-export const stopNotificationConnection = async () => {
-  if (connection) {
-    await connection.stop();
-    connection = null;
-  }
+export const stopNotificationConnection = () => {
+  if (!connection) return;
+
+  const currentConnection = connection;
+  connection = null;
+
+  currentConnection.off("ReceiveNotification");
+  currentConnection.off("OCR_DONE");
+  currentConnection.off("OCR_FAILED");
+  currentConnection.off("AccountLocked");
+  currentConnection.off("AccountUnlocked");
+
+  currentConnection.stop().catch((err) => {
+    console.error("SignalR stop error:", err);
+  });
 };
