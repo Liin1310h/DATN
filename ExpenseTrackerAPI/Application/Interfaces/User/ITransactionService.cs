@@ -1,6 +1,7 @@
 using ExpenseTrackerAPI.Domain.Entities;
 using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Domain.Enums;
+using ExpenseTrackerAPI.Application.DTOs.Ocr;
 
 namespace ExpenseTrackerAPI.Application.Interfaces.User;
 
@@ -24,4 +25,5 @@ public interface ITransactionService
         int pageSize
     );
     Task<byte[]> ExportTransactionsToExcelAsync(int userId, int? accountId, int? categoryId, DateTime? fromDate, DateTime? toDate);
+    Task<List<object>> CreateTransactionsFromReceiptAsync(CreateTransactionsFromReceiptRequest request, int userId);
 }

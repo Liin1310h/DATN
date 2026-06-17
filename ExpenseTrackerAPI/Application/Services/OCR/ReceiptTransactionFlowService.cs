@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using ExpenseTrackerAPI.API.Hubs;
 using Hangfire;
+using ExpenseTrackerAPI.Domain.Enums;
+using ExpenseTrackerAPI.Application.Interfaces.User;
 
 namespace ExpenseTrackerAPI.Application.Services.OCR;
 
@@ -17,15 +19,18 @@ public class ReceiptTransactionFlowService : IReceiptTransactionFlowService
     private readonly IReceiptProcessingService _receiptProcessingService;
     private readonly AppDbContext _context;
     private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly ITransactionService _transactionService;
     public ReceiptTransactionFlowService(
         IOcrService ocrService,
         IReceiptProcessingService receiptProcessingService,
-        AppDbContext context, IHubContext<NotificationHub> hubContext)
+        AppDbContext context, IHubContext<NotificationHub> hubContext,
+        ITransactionService transactionService)
     {
         _ocrService = ocrService;
         _receiptProcessingService = receiptProcessingService;
         _context = context;
         _hubContext = hubContext;
+        _transactionService = transactionService;
     }
 
     /// <summary>
@@ -118,7 +123,7 @@ public class ReceiptTransactionFlowService : IReceiptTransactionFlowService
             {
                 TempId = Guid.NewGuid().ToString(),
                 Selected = true,
-                Type = "expense",
+                Type = TransactionType.Expense,
                 Amount = item.Amount ?? 0,
                 Currency = parsed.Currency ?? "VND",
                 TransactionDate = parsed.TransactionDate ?? DateTime.UtcNow,
@@ -237,57 +242,9 @@ public class ReceiptTransactionFlowService : IReceiptTransactionFlowService
     /// <param name="request"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public async Task<List<object>> CreateTransactionsAsync(
-        int userId,
-        CreateTransactionsFromReceiptRequest request)
+    public async Task<List<object>> CreateTransactionsAsync(int userId, CreateTransactionsFromReceiptRequest request)
     {
-        var selected = request.Transactions
-            .Where(x => x.Selected)
-            .ToList();
-
-        if (!selected.Any())
-            throw new Exception("Bạn chưa chọn transaction nào");
-
-        var entities = selected.Select(item =>
-        {
-            var accountId = item.FromAccountId ?? request.DefaultAccountId;
-
-            if (accountId <= 0)
-                throw new Exception("Tài khoản không hợp lệ");
-
-            if (item.Amount <= 0)
-                throw new Exception("Số tiền không hợp lệ");
-
-            return new Transaction
-            {
-                UserId = userId,
-                Amount = item.Amount,
-                Currency = item.Currency,
-                Type = item.Type,
-                TransactionDate = DateTime.SpecifyKind(
-                    item.TransactionDate,
-                    DateTimeKind.Utc
-                ),
-                Note = item.Note,
-                CategoryId = item.CategoryId,
-                FromAccountId = accountId
-            };
-        }).ToList();
-
-        await _context.Transactions.AddRangeAsync(entities);
-        await _context.SaveChangesAsync();
-
-        return entities.Select(x => new
-        {
-            x.Id,
-            x.Amount,
-            x.Currency,
-            x.Type,
-            x.TransactionDate,
-            x.Note,
-            x.CategoryId,
-            x.FromAccountId
-        }).Cast<object>().ToList();
+        return await _transactionService.CreateTransactionsFromReceiptAsync(request, userId);
     }
 
 }

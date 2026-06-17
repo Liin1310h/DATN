@@ -6,6 +6,7 @@ using ExpenseTrackerAPI.Application.Interfaces.User;
 using ExpenseTrackerAPI.Application.Interfaces.AI;
 using ClosedXML.Excel;
 using ExpenseTrackerAPI.Domain.Enums;
+using ExpenseTrackerAPI.Application.DTOs.Ocr;
 
 namespace ExpenseTrackerAPI.Application.Services;
 
@@ -812,6 +813,140 @@ public class TransactionService : ITransactionService
         return stream.ToArray();
     }
 
+    public async Task<List<object>> CreateTransactionsFromReceiptAsync(CreateTransactionsFromReceiptRequest request, int userId)
+    {
+        if (request.Transactions == null || !request.Transactions.Any())
+            throw new Exception("Không có giao dịch nào để lưu.");
+
+        var selected = request.Transactions
+            .Where(x => x.Selected)
+            .ToList();
+
+        if (!selected.Any())
+            throw new Exception("Bạn chưa chọn giao dịch nào.");
+
+        var createdTransactions = new List<Transaction>();
+
+        await using var dbTrans = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            foreach (var item in selected)
+            {
+                // OCR hóa đơn luôn là khoản chi
+                var transactionType = TransactionType.Expense;
+
+                EnsureNormalTransactionType(transactionType);
+
+                if (item.Amount <= 0)
+                    throw new Exception("Số tiền phải lớn hơn 0.");
+
+                await EnsureCategoryIsValidAsync(item.CategoryId, userId);
+
+                var accountId = item.FromAccountId ?? request.DefaultAccountId;
+
+                if (accountId <= 0)
+                    throw new Exception("Tài khoản không hợp lệ.");
+
+                var transactionDate = NormalizeTransactionDate(item.TransactionDate);
+                var transactionCurrency = NormalizeCurrency(item.Currency);
+
+                var account = await GetOwnedAccountAsync(accountId, userId);
+
+                var appliedAmount = await ConvertIfNeededAsync(
+                    item.Amount,
+                    transactionCurrency,
+                    account.Currency
+                );
+
+                decimal balanceBefore = account.Balance;
+
+                if (account.Balance < appliedAmount)
+                    throw new Exception(
+                        $"Số dư tài khoản {account.Name} không đủ để lưu giao dịch {item.Note}."
+                    );
+
+                account.Balance -= appliedAmount;
+
+                var sameCurrency = string.Equals(
+                    transactionCurrency,
+                    account.Currency,
+                    StringComparison.OrdinalIgnoreCase
+                );
+
+                var transaction = new Transaction
+                {
+                    UserId = userId,
+
+                    Type = TransactionType.Expense,
+
+                    Amount = item.Amount,
+                    Currency = transactionCurrency,
+
+                    ConvertedCurrency = sameCurrency ? null : account.Currency,
+                    ConvertedAmount = sameCurrency ? null : appliedAmount,
+
+                    FromAccountId = account.Id,
+                    ToAccountId = null,
+
+                    CategoryId = item.CategoryId,
+                    LoanId = null,
+
+                    Note = item.Note ?? "",
+
+                    TransactionDate = transactionDate,
+
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = account.Balance
+                };
+
+                _context.Transactions.Add(transaction);
+
+                await _context.SaveChangesAsync();
+
+                await _budgetService.ApplyExpenseAsync(
+                    userId,
+                    transaction.CategoryId,
+                    transaction.TransactionDate,
+                    transaction.Amount,
+                    transaction.Currency
+                );
+
+                await _context.SaveChangesAsync();
+
+                createdTransactions.Add(transaction);
+            }
+
+            await dbTrans.CommitAsync();
+        }
+        catch
+        {
+            await dbTrans.RollbackAsync();
+            throw;
+        }
+
+        foreach (var transaction in createdTransactions)
+        {
+            await RunAfterTransactionCommittedAsync(transaction, null);
+        }
+
+        return createdTransactions.Select(x => new
+        {
+            x.Id,
+            x.Amount,
+            x.Currency,
+            x.ConvertedAmount,
+            x.ConvertedCurrency,
+            x.Type,
+            x.TransactionDate,
+            x.Note,
+            x.CategoryId,
+            x.FromAccountId,
+            x.ToAccountId,
+            x.BalanceBefore,
+            x.BalanceAfter
+        }).Cast<object>().ToList();
+    }
 
     private async Task RunAfterTransactionCommittedAsync(
        Transaction transaction,
