@@ -66,28 +66,52 @@ public class LoansController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetUserLoans([FromQuery] bool? isCompleted)
     {
-        var loans = await _loanService.GetUserLoansAsync(GetUserId(), isCompleted);
-        return Ok(loans);
+        try
+        {
+            var loans = await _loanService.GetUserLoansAsync(GetUserId(), isCompleted);
+            return Ok(loans);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
     }
 
     // TODO: Lấy chi tiết 1 khoản vay kèm lịch sử giao dịch của nó
     [HttpGet("{loanId}")]
     public async Task<IActionResult> GetLoanDetails(int loanId)
     {
-        var loan = await _loanService.GetLoanDetailsAsync(loanId, GetUserId());
-        if (loan == null)
+        try
         {
-            return NotFound(new { Message = "Khoản vay không tồn tại" });
+            var loan = await _loanService.GetLoanDetailsAsync(loanId, GetUserId());
+            if (loan == null)
+            {
+                return NotFound(new { Message = "Khoản vay không tồn tại" });
+            }
+            return Ok(loan);
         }
-        return Ok(loan);
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
     }
 
     //TODO: Xoá khoản vay
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteLoan(int id)
     {
-        var userId = GetUserId();
-        await _loanService.DeleteLoanAsync(id, userId);
-        return NoContent();
+        try
+        {
+            var userId = GetUserId();
+            await _loanService.DeleteLoanAsync(id, userId);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new
+            {
+                Message = ex.Message
+            });
+        }
     }
 }
