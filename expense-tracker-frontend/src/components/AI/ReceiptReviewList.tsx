@@ -43,6 +43,22 @@ export default function ReceiptPreviewList({
 }: ReceiptPreviewListProps) {
   const [items, setItems] = useState<ReceiptPreviewItem[]>([]);
 
+  const toDateTimeLocalInput = (value?: string | Date | null) => {
+    const date = value ? new Date(value) : new Date();
+
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60000);
+
+    return local.toISOString().slice(0, 16);
+  };
+
+  const toUtcIsoString = (value: string) => {
+    if (!value) return new Date().toISOString();
+
+    // value từ input datetime-local thường có dạng yyyy-MM-ddTHH:mm
+    return new Date(value).toISOString();
+  };
+
   useEffect(() => {
     setItems(
       (data?.transactions || []).map((item: any, index: number) => ({
@@ -56,7 +72,7 @@ export default function ReceiptPreviewList({
         transactionDate:
           item.transactionDate?.slice(0, 10) ||
           data?.transactionDate?.slice(0, 10) ||
-          new Date().toISOString().slice(0, 10),
+          new Date(),
       })),
     );
   }, [data?.jobId]);
@@ -123,7 +139,9 @@ export default function ReceiptPreviewList({
     onConfirm({
       jobId: data?.jobId,
       merchant: data?.merchant,
-      transactionDate: data?.transactionDate,
+      transactionDate: data?.transactionDate
+        ? new Date(data.transactionDate).toISOString()
+        : null,
       transactions: finalItems,
     });
   };
@@ -252,7 +270,7 @@ export default function ReceiptPreviewList({
                     </label>
 
                     <input
-                      type="date"
+                      type="datetime-local"
                       className="w-full rounded-2xl border border-[#D6B56D]/40
                       bg-white/70 px-4 py-3 text-sm font-semibold text-[#263B2B]
                       outline-none transition
