@@ -304,6 +304,23 @@ export default function Dashboard() {
     return t.dashboard.month || "Month";
   };
 
+  const getTypeLabel = (item: RecentTransaction) => {
+    switch (item.type) {
+      case TransactionType.Transfer:
+        return t.common.transfer;
+      case TransactionType.Borrow:
+        return t.common.borrow;
+      case TransactionType.Lend:
+        return t.common.lend;
+      case TransactionType.Income:
+        return t.common.income;
+      case TransactionType.Expense:
+        return t.common.expense;
+      default:
+        return item.categoryName || String(item.type);
+    }
+  };
+
   if (pageLoading) return <LayoutSkeleton />;
 
   return (
@@ -748,7 +765,7 @@ export default function Dashboard() {
                           </p>
 
                           <p className="text-xs font-semibold text-[#7A6F45] dark:text-[#F4E7C5]/60 truncate">
-                            {item.accountName || item.categoryName || item.type}
+                            {getTypeLabel(item)}
                             {item.transactionDate
                               ? ` • ${new Date(
                                   item.transactionDate,
