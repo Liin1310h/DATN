@@ -315,6 +315,10 @@ export default function TransactionForm({
       toast.error(t.transaction.errorSelectAccount);
       return false;
     }
+    if (!selectedCategoryId) {
+      toast.error(t.transaction.errorSelectCategory);
+      return false;
+    }
     if (isDebt && !person.trim()) {
       toast.error(t.transaction.errorPerson);
       return false;
