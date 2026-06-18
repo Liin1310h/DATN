@@ -51,9 +51,18 @@ export default function LoginPage() {
     }
   }, [location, navigate]);
 
+  const isValidEmail = (value: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       setError("Vui lòng nhập email và mật khẩu");
+      return;
+    }
+
+    if (!isValidEmail(email.trim())) {
+      setError("Email không đúng định dạng!");
       return;
     }
 
@@ -381,8 +390,12 @@ export default function LoginPage() {
                   <Mail size={18} className="text-[#6F8F72] shrink-0" />
 
                   <input
+                    type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (error) setError("");
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder="user@example.com"
                     className="w-full bg-transparent outline-none border-none text-sm font-bold text-[#263B2B] dark:text-[#F4E7C5] placeholder:text-[#8B7A4B]/55 dark:placeholder:text-[#F4E7C5]/35"
