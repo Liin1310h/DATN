@@ -266,7 +266,7 @@ export default function RecordPage() {
       }
     } catch (error) {
       console.error(error);
-      toast.error(t.common.error);
+      toast.error(error?.response?.data || t.common.error);
     } finally {
       setLoading(false);
     }
