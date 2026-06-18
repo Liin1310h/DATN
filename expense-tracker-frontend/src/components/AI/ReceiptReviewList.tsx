@@ -157,7 +157,7 @@ export default function ReceiptPreviewList({
             onClick={onCancel}
             title="Huỷ"
             className="inline-flex items-center justify-center rounded-2xl transition hover:bg-[#F4E7C5] active:scale-95
-                  dark:text-[#F4E7C5] dark:hover:bg-[#F4E7C5]/15"
+                  dark:text-[#Fp4E7C5] dark:hover:bg-[#F4E7C5]/15"
           >
             <X size={28} />
           </button>
