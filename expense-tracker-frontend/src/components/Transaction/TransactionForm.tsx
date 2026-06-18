@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Landmark,
   Tag,
@@ -106,6 +106,7 @@ export default function TransactionForm({
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const newPreviewsRef = useRef<string[]>([]);
   const [note, setNote] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState(currency);
   const [rate, setRate] = useState(1);
@@ -186,6 +187,61 @@ export default function TransactionForm({
     const local = new Date(date.getTime() - offset * 60000);
 
     return local.toISOString().slice(0, 16);
+  };
+
+  //TODO Kiểm soát file ảnh
+  const MAX_TRANSACTION_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_TRANSACTION_IMAGE_COUNT = 5;
+
+  const ALLOWED_TRANSACTION_IMAGE_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ];
+
+  const ALLOWED_TRANSACTION_IMAGE_EXTENSIONS = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+  ];
+
+  const validateTransactionImageFile = (file: File): string | null => {
+    const fileType = file.type.toLowerCase();
+    const fileName = file.name.toLowerCase();
+
+    const isValidExtension = ALLOWED_TRANSACTION_IMAGE_EXTENSIONS.some((ext) =>
+      fileName.endsWith(ext),
+    );
+
+    const isValidMimeType =
+      !fileType || ALLOWED_TRANSACTION_IMAGE_TYPES.includes(fileType);
+
+    if (!isValidExtension || !isValidMimeType) {
+      return `Ảnh "${file.name}" không đúng định dạng. Chỉ hỗ trợ JPG, JPEG, PNG hoặc WEBP.`;
+    }
+
+    if (file.size > MAX_TRANSACTION_IMAGE_SIZE) {
+      return `Ảnh "${file.name}" vượt quá dung lượng 5MB.`;
+    }
+
+    return null;
+  };
+
+  const validateTransactionImageFiles = (
+    files: File[],
+    existingImageCount = 0,
+  ): string | null => {
+    if (files.length + existingImageCount > MAX_TRANSACTION_IMAGE_COUNT) {
+      return `Chỉ được đính kèm tối đa ${MAX_TRANSACTION_IMAGE_COUNT} ảnh cho một giao dịch.`;
+    }
+
+    for (const file of files) {
+      const error = validateTransactionImageFile(file);
+      if (error) return error;
+    }
+
+    return null;
   };
 
   // TODO Lấy tỷ giá khi Currency hoặc Account thay đổi
@@ -315,7 +371,7 @@ export default function TransactionForm({
       toast.error(t.transaction.errorSelectAccount);
       return false;
     }
-    if (!selectedCategoryId) {
+    if (!isDebt && !selectedCategoryId) {
       toast.error(t.transaction.errorSelectCategory);
       return false;
     }
@@ -346,12 +402,26 @@ export default function TransactionForm({
   };
 
   // TODO Handle chọn file và preview
-  const handleSelectFiles = (e) => {
+  const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const validationError = validateTransactionImageFiles(
+      selectedFiles,
+      existingImages.length + files.length,
+    );
+
+    if (validationError) {
+      toast.error(validationError);
+      e.target.value = "";
+      return;
+    }
+
     const previews = selectedFiles.map((file) => URL.createObjectURL(file));
 
     setFiles((prev) => [...prev, ...selectedFiles]);
     setNewPreviews((prev) => [...prev, ...previews]);
+    e.target.value = "";
   };
 
   // TODO Xoá ảnh
@@ -360,15 +430,25 @@ export default function TransactionForm({
   };
 
   const handleRemoveNew = (index: number) => {
+    const previewUrl = newPreviews[index];
+
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setNewPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   useEffect(() => {
-    return () => {
-      newPreviews.forEach((url) => URL.revokeObjectURL(url));
-    };
+    newPreviewsRef.current = newPreviews;
   }, [newPreviews]);
+
+  useEffect(() => {
+    return () => {
+      newPreviewsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   //TODO Hàm thêm category thành công
   const handleAddCategorySuccess = async (newCategory?: Category) => {
@@ -397,6 +477,16 @@ export default function TransactionForm({
   const handleSave = async () => {
     const rawAmount = parseInputToNumber(amount, selectedCurrency);
     if (!validateForm(rawAmount)) return;
+
+    const imageValidationError = validateTransactionImageFiles(
+      files,
+      existingImages.length,
+    );
+
+    if (imageValidationError) {
+      toast.error(imageValidationError);
+      return;
+    }
 
     try {
       let uploadedUrls: string[] = [];
@@ -451,10 +541,12 @@ export default function TransactionForm({
       };
 
       await onSubmit(payload);
+
+      newPreviews.forEach((url) => URL.revokeObjectURL(url));
+      setFiles([]);
+      setNewPreviews([]);
       if (!isEdit) {
         resetForm();
-        setFiles([]);
-        setNewPreviews([]);
         setExistingImages([]);
       }
     } catch (error) {
@@ -788,7 +880,7 @@ export default function TransactionForm({
                 <input
                   type="file"
                   multiple
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                   onChange={handleSelectFiles}
                   className="hidden"
                 />
