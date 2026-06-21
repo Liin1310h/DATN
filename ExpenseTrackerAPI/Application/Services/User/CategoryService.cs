@@ -25,6 +25,19 @@ public class CategoryService : ICategoryService
 
     public async Task<Category> CreateCategoryAsync(Category category, int userId)
     {
+        if (string.IsNullOrWhiteSpace(category.Name))
+            throw new Exception("Tên danh mục không được để trống.");
+
+        category.Name = category.Name.Trim();
+
+        var isDuplicated = await IsCategoryNameDuplicatedAsync(
+            userId,
+            category.Name
+        );
+
+        if (isDuplicated)
+            throw new Exception("Tên danh mục đã tồn tại.");
+
         category.UserId = userId;
         category.User = null;
         _context.Categories.Add(category);
@@ -41,8 +54,24 @@ public class CategoryService : ICategoryService
         if (existing == null)
             throw new Exception("Không tìm thấy danh mục hoặc bạn không có quyền sửa danh mục mặc định.");
 
-        category.UserId = userId;
-        _context.Entry(category).State = EntityState.Modified;
+        if (string.IsNullOrWhiteSpace(category.Name))
+            throw new Exception("Tên danh mục không được để trống.");
+
+        category.Name = category.Name.Trim();
+
+        var isDuplicated = await IsCategoryNameDuplicatedAsync(
+            userId,
+            category.Name,
+            excludeCategoryId: id
+        );
+
+        if (isDuplicated)
+            throw new Exception("Tên danh mục đã tồn tại.");
+
+        existing.Name = category.Name;
+        existing.Icon = category.Icon;
+        existing.Color = category.Color;
+
         await _context.SaveChangesAsync();
     }
 
@@ -60,5 +89,16 @@ public class CategoryService : ICategoryService
 
         _context.Categories.Remove(category);
         await _context.SaveChangesAsync();
+    }
+
+    private async Task<bool> IsCategoryNameDuplicatedAsync(int userId, string name, int? excludeCategoryId = null)
+    {
+        var normalizedName = name.Trim().ToLower();
+
+        return await _context.Categories.AnyAsync(c =>
+            (c.UserId == null || c.UserId == userId) &&
+            c.Name.ToLower() == normalizedName &&
+            (!excludeCategoryId.HasValue || c.Id != excludeCategoryId.Value)
+        );
     }
 }

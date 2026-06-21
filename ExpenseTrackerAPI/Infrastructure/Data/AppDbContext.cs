@@ -88,6 +88,7 @@ public class AppDbContext : DbContext
         // --- Account ---
         modelBuilder.Entity<Account>(entity =>
         {
+            entity.HasIndex(a => new { a.UserId, a.Name }).IsUnique();
             entity.Property(a => a.Balance).HasPrecision(18, 2);
 
             entity.HasOne(a => a.User)

@@ -20,8 +20,15 @@ public class DashboardController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetDashboard(string currency)
     {
-        var result = await _dashboardService.GetDashboardAsync(GetUserId(), currency);
-        return Ok(result);
+        try
+        {
+            var result = await _dashboardService.GetDashboardAsync(GetUserId(), currency);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
 

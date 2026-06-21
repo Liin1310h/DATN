@@ -21,31 +21,52 @@ public class AnalyticsController : ControllerBase
     [HttpGet("chart")]
     public async Task<IActionResult> GetChart(string currency, [FromQuery] string range = "week")
     {
-        var userId = GetUserId();
+        try
+        {
+            var userId = GetUserId();
 
-        var result = await _analyticsService.GetChartAsync(userId, range, currency);
+            var result = await _analyticsService.GetChartAsync(userId, range, currency);
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("chart/category")]
     public async Task<IActionResult> GetCategoryChart(string currency, [FromQuery] string range = "week")
     {
-        var userId = GetUserId();
-        var result = await _analyticsService.GetCategoryChartAsync(userId, range, currency);
-        return Ok(result);
+        try
+        {
+            var userId = GetUserId();
+            var result = await _analyticsService.GetCategoryChartAsync(userId, range, currency);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("daily-summary")]
     public async Task<IActionResult> GetDailySummary(string currency, [FromQuery] DateTime fromDate, [FromQuery] DateTime toDate)
     {
-        var result = await _analyticsService.GetDailySummaryAsync(
-            GetUserId(),
-            fromDate,
-            toDate,
-            currency
-        );
+        try
+        {
+            var result = await _analyticsService.GetDailySummaryAsync(
+                GetUserId(),
+                fromDate,
+                toDate,
+                currency
+            );
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

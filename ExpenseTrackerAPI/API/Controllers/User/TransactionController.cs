@@ -19,8 +19,14 @@ public class TransactionsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] TransactionRequest request)
     {
-        try { return Ok(await _transService.CreateTransactionAsync(request, GetUserId())); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        try
+        {
+            return Ok(await _transService.CreateTransactionAsync(request, GetUserId()));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
@@ -30,21 +36,36 @@ public class TransactionsController : ControllerBase
         {
             return Ok(await _transService.UpdateTransactionAsync(id, request, GetUserId()));
         }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        try { await _transService.DeleteTransactionAsync(id, GetUserId()); return Ok("Deleted"); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        try
+        {
+            await _transService.DeleteTransactionAsync(id, GetUserId()); return Ok("Deleted");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost("transfer")]
     public async Task<IActionResult> Transfer(TransferRequest request)
     {
-        try { return Ok(await _transService.TransferAsync(request, GetUserId())); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        try
+        {
+            return Ok(await _transService.TransferAsync(request, GetUserId()));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet]
@@ -58,29 +79,50 @@ public class TransactionsController : ControllerBase
     [FromQuery] int pageSize = 20
     )
     {
-        return Ok(await _transService.GetHistoryAsync(GetUserId(), accountId, type, categoryId, fromDate, toDate, searchQuery, null, page, pageSize));
+        try
+        {
+            return Ok(await _transService.GetHistoryAsync(GetUserId(), accountId, type, categoryId, fromDate, toDate, searchQuery, null, page, pageSize));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTransactionById([FromQuery] int id)
     {
-        return Ok(await _transService.GetTransactionByIdAsync(id, GetUserId()));
+        try
+        {
+            return Ok(await _transService.GetTransactionByIdAsync(id, GetUserId()));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("export")]
     public async Task<IActionResult> Export(int? accountId, int? categoryId, DateTime? fromDate, DateTime? toDate
 )
     {
-        var userId = GetUserId();
+        try
+        {
+            var userId = GetUserId();
 
-        var file = await _transService.ExportTransactionsToExcelAsync(
-            userId, accountId, categoryId, fromDate, toDate);
+            var file = await _transService.ExportTransactionsToExcelAsync(
+                userId, accountId, categoryId, fromDate, toDate);
 
-        return File(
-            file,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "transactions.xlsx"
-        );
+            return File(
+                file,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "transactions.xlsx"
+            );
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
 }

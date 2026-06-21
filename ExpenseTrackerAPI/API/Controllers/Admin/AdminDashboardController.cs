@@ -19,7 +19,14 @@ public class AdminDashboardController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetDashboard()
     {
-        var result = await _adminDashboardService.GetDashboardAsync();
-        return Ok(result);
+        try
+        {
+            var result = await _adminDashboardService.GetDashboardAsync();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

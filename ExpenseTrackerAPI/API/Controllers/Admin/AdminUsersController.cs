@@ -26,8 +26,15 @@ public class AdminUsersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetUsers([FromQuery] AdminUserQueryDto query)
     {
-        var result = await _adminUserService.GetUsersAsync(query);
-        return Ok(result);
+        try
+        {
+            var result = await _adminUserService.GetUsersAsync(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     /// <summary>
@@ -38,11 +45,18 @@ public class AdminUsersController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(int id)
     {
-        var result = await _adminUserService.GetUserByIdAsync(id);
-        if (result == null)
-            return NotFound(new { message = "User không tồn tại." });
+        try
+        {
+            var result = await _adminUserService.GetUserByIdAsync(id);
+            if (result == null)
+                return NotFound(new { message = "User không tồn tại." });
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     /// <summary>
@@ -54,18 +68,25 @@ public class AdminUsersController : ControllerBase
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] AdminUpdateUserStatusRequest request)
     {
-        var currentAdminIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!int.TryParse(currentAdminIdValue, out var currentAdminId))
-            return Unauthorized();
-
-        await _adminUserService.UpdateUserStatusAsync(id, request.IsActive, currentAdminId);
-        return Ok(new
+        try
         {
-            message = request.IsActive
-             ? "Đã mở khóa tài khoản người dùng."
-             : "Đã khóa tài khoản người dùng."
-        });
+            var currentAdminIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(currentAdminIdValue, out var currentAdminId))
+                return Unauthorized();
+
+            await _adminUserService.UpdateUserStatusAsync(id, request.IsActive, currentAdminId);
+            return Ok(new
+            {
+                message = request.IsActive
+                 ? "Đã mở khóa tài khoản người dùng."
+                 : "Đã khóa tài khoản người dùng."
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     /// <summary>
@@ -77,7 +98,14 @@ public class AdminUsersController : ControllerBase
     [HttpPut("{id}/role")]
     public async Task<IActionResult> UpdateRole(int id, [FromBody] AdminUpdateUserRoleRequest request)
     {
-        await _adminUserService.UpdateUserRoleAsync(id, request.Role);
-        return NoContent();
+        try
+        {
+            await _adminUserService.UpdateUserRoleAsync(id, request.Role);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

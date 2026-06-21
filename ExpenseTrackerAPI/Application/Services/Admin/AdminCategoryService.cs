@@ -69,15 +69,12 @@ public class AdminCategoryService : IAdminCategoryService
     /// <exception cref="Exception"></exception>
     public async Task<AdminCategoryDto> CreateSystemCategoryAsync(AdminCategoryRequest request)
     {
-        var name = request.Name.Trim();
-
-        if (string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(request.Name))
             throw new Exception("Tên danh mục không được để trống.");
 
-        var exists = await _context.Categories.AnyAsync(x =>
-            x.UserId == null &&
-            x.Name.ToLower() == name.ToLower()
-        );
+        var name = NormalizeCategoryName(request.Name);
+
+        var exists = await IsSystemCategoryNameDuplicatedAsync(name);
 
         if (exists)
             throw new Exception("Danh mục hệ thống đã tồn tại.");
@@ -85,6 +82,7 @@ public class AdminCategoryService : IAdminCategoryService
         var category = new Category
         {
             Name = name,
+
             Icon = string.IsNullOrWhiteSpace(request.Icon)
                 ? "tag"
                 : request.Icon.Trim(),
@@ -125,16 +123,12 @@ public class AdminCategoryService : IAdminCategoryService
         if (category == null)
             throw new Exception("Danh mục hệ thống không tồn tại.");
 
-        var name = request.Name.Trim();
+        var name = NormalizeCategoryName(request.Name);
 
         if (string.IsNullOrWhiteSpace(name))
             throw new Exception("Tên danh mục không được để trống.");
 
-        var duplicate = await _context.Categories.AnyAsync(x =>
-            x.Id != id &&
-            x.UserId == null &&
-            x.Name.ToLower() == name.ToLower()
-        );
+        var duplicate = await IsSystemCategoryNameDuplicatedAsync(name, excludeCategoryId: id);
 
         if (duplicate)
             throw new Exception("Tên danh mục hệ thống đã tồn tại.");
@@ -242,6 +236,36 @@ public class AdminCategoryService : IAdminCategoryService
             CanDelete = transactionCount == 0,
             TypeStats = typeStats
         };
+    }
+
+    /// <summary>
+    /// Chuẩn hoá tên danh mục
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    private static string NormalizeCategoryName(string name)
+    {
+        return string.Join(" ", name.Trim().Split(
+            ' ',
+            StringSplitOptions.RemoveEmptyEntries
+        ));
+    }
+
+    /// <summary>
+    /// Check trùng lặp tên danh mục hệ thống
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="excludeCategoryId"></param>
+    /// <returns></returns>
+    private async Task<bool> IsSystemCategoryNameDuplicatedAsync(string name, int? excludeCategoryId = null)
+    {
+        var normalizedName = NormalizeCategoryName(name).ToLower();
+
+        return await _context.Categories.AnyAsync(c =>
+            c.UserId == null &&
+            c.Name.ToLower() == normalizedName &&
+            (!excludeCategoryId.HasValue || c.Id != excludeCategoryId.Value)
+        );
     }
     /// <summary>
     /// Chuyển dữ liệu Category sang AdminCategoryDto => return cho frontend

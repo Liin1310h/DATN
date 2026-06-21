@@ -19,26 +19,47 @@ public class AccountsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> GetAccounts()
     {
-        var accounts = await _accountService.GetAccountsByUserIdAsync(GetUserId());
-        return Ok(accounts);
+        try
+        {
+            var accounts = await _accountService.GetAccountsByUserIdAsync(GetUserId());
+            return Ok(accounts);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult> GetAccountDetail(int id)
     {
-        var account = await _accountService.GetAccountByIdAsync(id, GetUserId());
+        try
+        {
+            var account = await _accountService.GetAccountByIdAsync(id, GetUserId());
 
-        if (account == null)
-            return NotFound("Không tìm thấy tài khoản hoặc bạn không có quyền.");
+            if (account == null)
+                return NotFound("Không tìm thấy tài khoản hoặc bạn không có quyền.");
 
-        return Ok(account);
+            return Ok(account);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost]
     public async Task<ActionResult<Account>> PostAccount(Account account)
     {
-        var result = await _accountService.CreateAccountAsync(account, GetUserId());
-        return Ok(result);
+        try
+        {
+            var result = await _accountService.CreateAccountAsync(account, GetUserId());
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]

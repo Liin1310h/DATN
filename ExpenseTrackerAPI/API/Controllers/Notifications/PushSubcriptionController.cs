@@ -38,50 +38,63 @@ public class PushSubscriptionsController : ControllerBase
     [AllowAnonymous]
     public IActionResult GetPublicKey()
     {
-        return Ok(new
+        try
         {
-            publicKey = _configuration["Vapid:PublicKey"]
-        });
+            return Ok(new
+            {
+                publicKey = _configuration["Vapid:PublicKey"]
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveSubscription(
-        [FromBody] PushSubscriptionRequest request)
+    public async Task<IActionResult> SaveSubscription([FromBody] PushSubscriptionRequest request)
     {
-        var userId = GetUserId();
-
-        if (string.IsNullOrWhiteSpace(request.Endpoint))
-            return BadRequest(new { message = "Endpoint không hợp lệ." });
-
-        if (string.IsNullOrWhiteSpace(request.Keys.P256dh) ||
-            string.IsNullOrWhiteSpace(request.Keys.Auth))
-            return BadRequest(new { message = "Push keys không hợp lệ." });
-
-        var existed = await _context.PushSubscriptions
-            .FirstOrDefaultAsync(x =>
-                x.UserId == userId &&
-                x.Endpoint == request.Endpoint);
-
-        if (existed == null)
+        try
         {
-            var entity = new PushSubscriptionEntity
+            var userId = GetUserId();
+
+            if (string.IsNullOrWhiteSpace(request.Endpoint))
+                return BadRequest(new { message = "Endpoint không hợp lệ." });
+
+            if (string.IsNullOrWhiteSpace(request.Keys.P256dh) ||
+                string.IsNullOrWhiteSpace(request.Keys.Auth))
+                return BadRequest(new { message = "Push keys không hợp lệ." });
+
+            var existed = await _context.PushSubscriptions
+                .FirstOrDefaultAsync(x =>
+                    x.UserId == userId &&
+                    x.Endpoint == request.Endpoint);
+
+            if (existed == null)
             {
-                UserId = userId,
-                Endpoint = request.Endpoint,
-                P256dh = request.Keys.P256dh,
-                Auth = request.Keys.Auth
-            };
+                var entity = new PushSubscriptionEntity
+                {
+                    UserId = userId,
+                    Endpoint = request.Endpoint,
+                    P256dh = request.Keys.P256dh,
+                    Auth = request.Keys.Auth
+                };
 
-            _context.PushSubscriptions.Add(entity);
+                _context.PushSubscriptions.Add(entity);
+            }
+            else
+            {
+                existed.P256dh = request.Keys.P256dh;
+                existed.Auth = request.Keys.Auth;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đã lưu thiết bị nhận thông báo." });
         }
-        else
+        catch (Exception ex)
         {
-            existed.P256dh = request.Keys.P256dh;
-            existed.Auth = request.Keys.Auth;
+            return BadRequest(ex.Message);
         }
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Đã lưu thiết bị nhận thông báo." });
     }
 }

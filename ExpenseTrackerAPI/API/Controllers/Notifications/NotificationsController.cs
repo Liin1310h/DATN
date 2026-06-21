@@ -31,80 +31,122 @@ public class NotificationsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetNotifications([FromQuery] bool? isRead)
     {
-        var userId = GetUserId();
+        try
+        {
+            var userId = GetUserId();
 
-        var notifications = await _notificationService
-            .GetUserNotificationsAsync(userId, isRead);
+            var notifications = await _notificationService
+                .GetUserNotificationsAsync(userId, isRead);
 
-        return Ok(notifications);
+            return Ok(notifications);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("unread-count")]
     public async Task<IActionResult> GetUnreadCount()
     {
-        var userId = GetUserId();
-
-        var count = await _notificationService.GetUnreadCountAsync(userId);
-
-        return Ok(new
+        try
         {
-            unreadCount = count
-        });
+            var userId = GetUserId();
+
+            var count = await _notificationService.GetUnreadCountAsync(userId);
+
+            return Ok(new
+            {
+                unreadCount = count
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{notificationId:int}/read")]
     public async Task<IActionResult> MarkAsRead(int notificationId)
     {
-        var userId = GetUserId();
-
-        await _notificationService.MarkAsReadAsync(notificationId, userId);
-
-        return Ok(new
+        try
         {
-            message = "Đã đánh dấu thông báo là đã đọc."
-        });
+            var userId = GetUserId();
+
+            await _notificationService.MarkAsReadAsync(notificationId, userId);
+
+            return Ok(new
+            {
+                message = "Đã đánh dấu thông báo là đã đọc."
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllAsRead()
     {
-        var userId = GetUserId();
-
-        await _notificationService.MarkAllAsReadAsync(userId);
-
-        return Ok(new
+        try
         {
-            message = "Đã đánh dấu tất cả thông báo là đã đọc."
-        });
+            var userId = GetUserId();
+
+            await _notificationService.MarkAllAsReadAsync(userId);
+
+            return Ok(new
+            {
+                message = "Đã đánh dấu tất cả thông báo là đã đọc."
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{notificationId:int}")]
     public async Task<IActionResult> DeleteNotification(int notificationId)
     {
-        var userId = GetUserId();
-
-        await _notificationService.DeleteAsync(notificationId, userId);
-
-        return Ok(new
+        try
         {
-            message = "Đã xóa thông báo."
-        });
+            var userId = GetUserId();
+
+            await _notificationService.DeleteAsync(notificationId, userId);
+
+            return Ok(new
+            {
+                message = "Đã xóa thông báo."
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost("test")]
     public async Task<IActionResult> CreateTestNotification(
     [FromBody] CreateNotificationRequest request)
     {
-        var userId = GetUserId();
+        try
+        {
+            var userId = GetUserId();
 
-        var result = await _notificationService.CreateAsync(
-            userId,
-            request.Title,
-            request.Message,
-            request.Type,
-            request.RedirectUrl
-        );
+            var result = await _notificationService.CreateAsync(
+                userId,
+                request.Title,
+                request.Message,
+                request.Type,
+                request.RedirectUrl
+            );
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

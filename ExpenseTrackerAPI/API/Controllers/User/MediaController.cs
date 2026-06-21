@@ -16,23 +16,27 @@ public class MediaController : ControllerBase
     [HttpGet("signature")]
     public IActionResult GetSignature()
     {
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-        var apiSecret = _config["CloudinarySettings:ApiSecret"];
-
-        // params phải giống frontend gửi lên
-        var paramString = $"folder=expense-tracker&timestamp={timestamp}{apiSecret}";
-
-        using var sha1 = System.Security.Cryptography.SHA1.Create();
-        var hashBytes = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(paramString));
-        var signature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-
-        return Ok(new
+        try
         {
-            timestamp,
-            signature,
-            apiKey = _config["CloudinarySettings:ApiKey"],
-            cloudName = _config["CloudinarySettings:CloudName"]
-        });
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            var apiSecret = _config["CloudinarySettings:ApiSecret"];
+
+            // params phải giống frontend gửi lên
+            var paramString = $"folder=expense-tracker&timestamp={timestamp}{apiSecret}";
+
+            using var sha1 = System.Security.Cryptography.SHA1.Create();
+            var hashBytes = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(paramString));
+            var signature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+            return Ok(new
+            {
+                timestamp,
+                signature,
+                apiKey = _config["CloudinarySettings:ApiKey"],
+                cloudName = _config["CloudinarySettings:CloudName"]
+            });
+        }
+        catch (Exception ex) { return BadRequest(ex.Message); }
     }
 }

@@ -20,8 +20,15 @@ public class SettingsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetSettings()
     {
-        var settings = await _settingsService.GetOrCreateSettingsAsync(GetUserId());
-        return Ok(settings);
+        try
+        {
+            var settings = await _settingsService.GetOrCreateSettingsAsync(GetUserId());
+            return Ok(settings);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut]

@@ -29,11 +29,18 @@ public class ReceiptTransactionsController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Preview([FromForm] ReceiptUploadRequest request)
     {
-        var userId = GetUserId();
+        try
+        {
+            var userId = GetUserId();
 
-        var result = await _flowService.PreviewAsync(userId, request.File);
+            var result = await _flowService.PreviewAsync(userId, request.File);
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     /// <summary>
@@ -41,19 +48,25 @@ public class ReceiptTransactionsController : ControllerBase
     /// Backend tạo transaction thật.
     /// </summary>
     [HttpPost("create")]
-    public async Task<IActionResult> CreateTransactions(
-        [FromBody] CreateTransactionsFromReceiptRequest request)
+    public async Task<IActionResult> CreateTransactions([FromBody] CreateTransactionsFromReceiptRequest request)
     {
-        var userId = GetUserId();
-
-        var result = await _flowService.CreateTransactionsAsync(userId, request);
-
-        return Ok(new
+        try
         {
-            success = true,
-            message = "Tạo transaction từ hóa đơn thành công",
-            transactions = result
-        });
+            var userId = GetUserId();
+
+            var result = await _flowService.CreateTransactionsAsync(userId, request);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Tạo transaction từ hóa đơn thành công",
+                transactions = result
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     private int GetUserId()

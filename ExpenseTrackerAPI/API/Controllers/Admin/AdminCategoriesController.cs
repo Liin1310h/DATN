@@ -20,41 +20,76 @@ public class AdminCategoriesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetCategories([FromQuery] string? search)
     {
-        var result = await _adminCategoryService.GetSystemCategoriesAsync(search);
-        return Ok(result);
+        try
+        {
+            var result = await _adminCategoryService.GetSystemCategoriesAsync(search);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> CreateCategory([FromBody] AdminCategoryRequest request)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        var result = await _adminCategoryService.CreateSystemCategoryAsync(request);
-        return Ok(result);
+            var result = await _adminCategoryService.CreateSystemCategoryAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCategory(int id, [FromBody] AdminCategoryRequest request)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        var result = await _adminCategoryService.UpdateSystemCategoryAsync(id, request);
-        return Ok(result);
+            var result = await _adminCategoryService.UpdateSystemCategoryAsync(id, request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCategory(int id)
     {
-        await _adminCategoryService.DeleteSystemCategoryAsync(id);
-        return NoContent();
+        try
+        {
+            await _adminCategoryService.DeleteSystemCategoryAsync(id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var result = await _adminCategoryService.GetSystemCategoryByIdAsync(id);
-        return Ok(result);
+        try
+        {
+            var result = await _adminCategoryService.GetSystemCategoryByIdAsync(id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

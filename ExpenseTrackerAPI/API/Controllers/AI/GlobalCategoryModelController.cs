@@ -23,7 +23,14 @@ public class GlobalCategoryModelController : ControllerBase
     [HttpPost("train")]
     public async Task<IActionResult> Train()
     {
-        await _mlService.TrainAsync();
-        return Ok(new { message = "Train Python ML global thành công." });
+        try
+        {
+            await _mlService.TrainAsync();
+            return Ok(new { message = "Train Python ML global thành công." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

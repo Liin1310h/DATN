@@ -71,6 +71,19 @@ public class AccountService : IAccountService
 
     public async Task<Account> CreateAccountAsync(Account account, int userId)
     {
+        if (string.IsNullOrWhiteSpace(account.Name))
+            throw new Exception("Tên tài khoản không được để trống.");
+
+        account.Name = account.Name.Trim();
+
+        var isDuplicated = await IsAccountNameDuplicatedAsync(
+            userId,
+            account.Name
+        );
+
+        if (isDuplicated)
+            throw new Exception("Tên tài khoản đã tồn tại.");
+
         account.UserId = userId;
         _context.Accounts.Add(account);
         await _context.SaveChangesAsync();
@@ -85,8 +98,27 @@ public class AccountService : IAccountService
 
         if (existing == null) throw new Exception("Không tìm thấy tài khoản hoặc bạn không có quyền.");
 
-        account.UserId = userId;
-        _context.Entry(account).State = EntityState.Modified;
+        if (string.IsNullOrWhiteSpace(account.Name))
+            throw new Exception("Tên tài khoản không được để trống.");
+
+        account.Name = account.Name.Trim();
+
+        var isDuplicated = await IsAccountNameDuplicatedAsync(
+            userId,
+            account.Name,
+            excludeAccountId: id
+        );
+
+        if (isDuplicated)
+            throw new Exception("Tên tài khoản đã tồn tại.");
+
+        existing.Name = account.Name;
+        existing.Type = account.Type;
+        existing.Currency = account.Currency;
+        existing.Balance = account.Balance;
+        existing.Logo = account.Logo;
+        existing.Color = account.Color;
+
         await _context.SaveChangesAsync();
     }
 
@@ -97,5 +129,23 @@ public class AccountService : IAccountService
 
         _context.Accounts.Remove(account);
         await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// !Check trùng tên account
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="name"></param>
+    /// <param name="excludeAccountId"></param>
+    /// <returns></returns>
+    private async Task<bool> IsAccountNameDuplicatedAsync(int userId, string name, int? excludeAccountId = null)
+    {
+        var normalizedName = name.Trim().ToLower();
+
+        return await _context.Accounts.AnyAsync(a =>
+            a.UserId == userId &&
+            a.Name.ToLower() == normalizedName &&
+            (!excludeAccountId.HasValue || a.Id != excludeAccountId.Value)
+        );
     }
 }

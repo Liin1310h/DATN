@@ -20,15 +20,29 @@ public class CategoriesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetCategories()
     {
-        var categories = await _categoryService.GetCategoriesByUserIdAsync(GetUserId());
-        return Ok(categories);
+        try
+        {
+            var categories = await _categoryService.GetCategoriesByUserIdAsync(GetUserId());
+            return Ok(categories);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> PostCategory(Category category)
     {
-        var result = await _categoryService.CreateCategoryAsync(category, GetUserId());
-        return CreatedAtAction(nameof(GetCategories), new { id = result.Id }, result);
+        try
+        {
+            var result = await _categoryService.CreateCategoryAsync(category, GetUserId());
+            return CreatedAtAction(nameof(GetCategories), new { id = result.Id }, result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]

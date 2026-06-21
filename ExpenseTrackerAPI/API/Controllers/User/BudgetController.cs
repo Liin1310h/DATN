@@ -21,24 +21,45 @@ public class BudgetController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get(string month)
     {
-        int userId = GetUserId(); // từ token
-        var result = await _service.GetBudgets(month, userId);
-        return Ok(result);
+        try
+        {
+            int userId = GetUserId(); // từ token
+            var result = await _service.GetBudgets(month, userId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> Upsert(CreateBudgetDto dto)
     {
-        int userId = GetUserId();
-        await _service.UpsertBudget(dto, userId);
-        return Ok();
+        try
+        {
+            int userId = GetUserId();
+            await _service.UpsertBudget(dto, userId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        int userId = GetUserId();
-        await _service.DeleteBudget(id, userId);
-        return Ok();
+        try
+        {
+            int userId = GetUserId();
+            await _service.DeleteBudget(id, userId);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }
