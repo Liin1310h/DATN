@@ -71,6 +71,16 @@ export default function RecordPage() {
     loadMetaData();
   }, []);
 
+  const refreshAccounts = async () => {
+    try {
+      const accountData = await getAccounts();
+      setAccounts(accountData);
+    } catch (error) {
+      console.error("Refresh accounts error:", error);
+      toast.error("Không thể cập nhật số dư tài khoản");
+    }
+  };
+
   const clearOcrTimeout = () => {
     if (ocrTimeoutRef.current) {
       window.clearTimeout(ocrTimeoutRef.current);
@@ -199,6 +209,7 @@ export default function RecordPage() {
         transactions: finalData.transactions,
       });
 
+      await refreshAccounts();
       toast.success("Đã lưu các giao dịch từ hóa đơn!");
       setOcrResult(null);
     } catch (error) {
@@ -249,6 +260,7 @@ export default function RecordPage() {
 
         await createLoan(loanPayload);
 
+        await refreshAccounts();
         toast.success(t.record.addLoanSuccess);
       } else {
         await createTransaction({
@@ -262,6 +274,7 @@ export default function RecordPage() {
           imageUrls,
         });
 
+        await refreshAccounts();
         toast.success(t.record.addSuccess);
       }
     } catch (error) {
