@@ -399,7 +399,6 @@ public class TransactionService : ITransactionService
             if (transaction.LoanId != null)
                 throw new Exception("Không được xoá transaction thuộc khoản vay ở TransactionService");
 
-            EnsureNormalTransactionType(transaction.Type);
             oldSnapshot = new TransactionSnapshot
             {
                 Type = transaction.Type,
@@ -410,31 +409,47 @@ public class TransactionService : ITransactionService
                 Note = transaction.Note
             };
 
-            var accountId = transaction.FromAccountId ?? transaction.ToAccountId;
-            if (accountId == null)
-                throw new Exception("Giao dịch không có tài khoản hợp lệ.");
-
-            var account = await GetOwnedAccountAsync(accountId.Value, userId);
-            var appliedAmount = await GetAppliedAmountForAccountAsync(transaction, account);
-
-            //Hoàn hoặc thu hồi tiền cho tài khoản
-            if (IsExpenseLike(transaction.Type))
+            if (transaction.Type == TransactionType.Transfer)
             {
-                account.Balance += appliedAmount;
-                await _budgetService.RollbackExpenseAsync(
-                userId,
-                transaction.CategoryId,
-                transaction.TransactionDate,
-                transaction.Amount,
-                transaction.Currency);
-            }
-            else if (IsIncomeLike(transaction.Type))
-            {
-                if (account.Balance < appliedAmount)
-                    throw new Exception("Không thể xoá giao dịch vì số dư hiện tại không đủ để rollback");
-                account.Balance -= appliedAmount;
-            }
+                if (!transaction.FromAccountId.HasValue || !transaction.ToAccountId.HasValue)
+                    throw new Exception("Giao dịch chuyển tiền không có đủ tài khoản nguồn và tài khoản đích.");
 
+                var fromAccount = await GetOwnedAccountAsync(transaction.FromAccountId.Value, userId);
+                var toAccount = await GetOwnedAccountAsync(transaction.ToAccountId.Value, userId);
+
+                var fromAppliedAmount = await GetAppliedAmountForAccountAsync(transaction, fromAccount);
+                var toAppliedAmount = await GetAppliedAmountForAccountAsync(transaction, toAccount);
+
+                if (toAccount.Balance < toAppliedAmount)
+                    throw new Exception("Không thể xoá giao dịch chuyển tiền vì số dư tài khoản nhận không đủ để hoàn tác.");
+
+                fromAccount.Balance += fromAppliedAmount;
+                toAccount.Balance -= toAppliedAmount;
+            }
+            else
+            {
+                EnsureNormalTransactionType(transaction.Type);
+
+                var accountId = transaction.FromAccountId ?? transaction.ToAccountId;
+                if (accountId == null)
+                    throw new Exception("Giao dịch không có tài khoản hợp lệ.");
+
+                var account = await GetOwnedAccountAsync(accountId.Value, userId);
+                var appliedAmount = await GetAppliedAmountForAccountAsync(transaction, account);
+
+                //Hoàn hoặc thu hồi tiền cho tài khoản
+                if (IsExpenseLike(transaction.Type))
+                {
+                    account.Balance += appliedAmount;
+                    await _budgetService.RollbackExpenseAsync(userId, transaction.CategoryId, transaction.TransactionDate, transaction.Amount, transaction.Currency);
+                }
+                else if (IsIncomeLike(transaction.Type))
+                {
+                    if (account.Balance < appliedAmount)
+                        throw new Exception("Không thể xoá giao dịch vì số dư hiện tại không đủ để rollback");
+                    account.Balance -= appliedAmount;
+                }
+            }
             if (transaction.TransactionImages.Any())
             {
                 _context.TransactionImages.RemoveRange(transaction.TransactionImages);
