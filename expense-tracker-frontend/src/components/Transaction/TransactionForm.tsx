@@ -371,7 +371,7 @@ export default function TransactionForm({
       toast.error(t.transaction.errorSelectAccount);
       return false;
     }
-    if (!isDebt && !selectedCategoryId) {
+    if (type == TransactionType.Expense && !selectedCategoryId) {
       toast.error(t.transaction.errorSelectCategory);
       return false;
     }
