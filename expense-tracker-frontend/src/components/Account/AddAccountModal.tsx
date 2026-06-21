@@ -175,8 +175,11 @@ export default function AddAccountModal({
       return;
     }
 
-    if (!balance.trim()) {
-      toast.error("Vui lòng nhập số dư");
+    const rawBalance = balance.trim()
+      ? parseInputToNumber(balance, currency)
+      : 0;
+    if (Number.isNaN(rawBalance) || rawBalance < 0) {
+      toast.error("Số dư tài khoản không hợp lệ.");
       return;
     }
 
@@ -185,7 +188,7 @@ export default function AddAccountModal({
     try {
       const payload = {
         name: name.trim(),
-        balance: parseInputToNumber(balance, currency),
+        balance: rawBalance,
         type,
         color,
         currency,
