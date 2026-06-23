@@ -182,7 +182,7 @@ export default function CameraModal({
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center
-      bg-[#263B2B]/78 backdrop-blur-xl p-4"
+      bg-[#263B2B]/80 backdrop-blur-xl p-4"
     >
       <div
         className="relative flex w-full max-w-lg max-h-[92vh] flex-col overflow-hidden
