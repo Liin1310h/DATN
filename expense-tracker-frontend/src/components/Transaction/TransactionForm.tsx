@@ -223,9 +223,6 @@ export default function TransactionForm({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
 
-  const [categoryOptions, setCategoryOptions] =
-    useState<Category[]>(categories);
-  const [accountOptions, setAccountOptions] = useState<Account[]>(accounts);
   // ! ACCOUNT STATE
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
     null,
@@ -240,12 +237,12 @@ export default function TransactionForm({
 
   // todo tìm đối tượng được chọn
   const selectedCategory = useMemo(
-    () => categoryOptions.find((c) => c.id === selectedCategoryId),
-    [categoryOptions, selectedCategoryId],
+    () => categories.find((c) => c.id === selectedCategoryId),
+    [categories, selectedCategoryId],
   );
   const selectedAccount = useMemo(
-    () => accountOptions.find((a) => a.id === selectedAccountId),
-    [accountOptions, selectedAccountId],
+    () => accounts.find((a) => a.id === selectedAccountId),
+    [accounts, selectedAccountId],
   );
 
   const getNowLocal = () => {
@@ -265,14 +262,6 @@ export default function TransactionForm({
 
     return local.toISOString().slice(0, 16);
   };
-
-  useEffect(() => {
-    setCategoryOptions(categories);
-  }, [categories]);
-
-  useEffect(() => {
-    setAccountOptions(accounts);
-  }, [accounts]);
 
   const schedule = useLoanCalculator(
     parseInputToNumber(amount, selectedCurrency),
@@ -347,7 +336,7 @@ export default function TransactionForm({
   // TODO Lấy tỷ giá khi Currency hoặc Account thay đổi
   useEffect(() => {
     if (!selectedAccountId) return;
-    const selectedAcc = accountOptions.find((a) => a.id === selectedAccountId);
+    const selectedAcc = accounts.find((a) => a.id === selectedAccountId);
     if (!selectedAcc) return;
 
     let cancelled = false;
@@ -387,11 +376,11 @@ export default function TransactionForm({
     return () => {
       cancelled = true;
     };
-  }, [selectedCurrency, selectedAccountId, accountOptions, t.rate.error]);
+  }, [selectedCurrency, selectedAccountId, accounts, t.rate.error]);
 
   // TODO Xử lý khi sửa tran
   useEffect(() => {
-    if (!initialData || accountOptions.length === 0) return;
+    if (!initialData || accounts.length === 0) return;
 
     let cancelled = false;
 
@@ -500,7 +489,7 @@ export default function TransactionForm({
     return () => {
       cancelled = true;
     };
-  }, [initialData, accountOptions.length, currency]);
+  }, [initialData, accounts.length, currency]);
 
   //TODO Hàm resetForm
   const resetForm = () => {
@@ -683,16 +672,6 @@ export default function TransactionForm({
     };
   }, []);
 
-  function upsertById<T extends { id: number | string }>(items: T[], item: T) {
-    const exists = items.some((x) => x.id === item.id);
-
-    if (exists) {
-      return items.map((x) => (x.id === item.id ? item : x));
-    }
-
-    return [item, ...items];
-  }
-
   /**
    * TODO Hàm thay đổi loại giao dịch
    * @param nextType
@@ -714,29 +693,26 @@ export default function TransactionForm({
 
   //TODO Hàm thêm category thành công
   const handleAddCategorySuccess = async (newCategory?: Category) => {
-    if (newCategory?.id) {
-      setCategoryOptions((prev) => upsertById(prev, newCategory));
+    await onMetaChange?.();
 
+    if (newCategory?.id) {
       setSelectedCategoryId(newCategory.id);
       setSearchTerm(newCategory.name);
     }
 
     setShowAddCategory(false);
-    await onMetaChange?.();
   };
 
   // TODO Hàm thêm account thành công
   const handleAddAccountSuccess = async (newAccount?: Account) => {
-    if (newAccount?.id) {
-      setAccountOptions((prev) => upsertById(prev, newAccount));
+    await onMetaChange?.();
 
+    if (newAccount?.id) {
       setSelectedAccountId(newAccount.id);
-      setSelectedCurrency(newAccount.currency);
       setSearchAccTerm(newAccount.name);
     }
 
     setShowAddAccount(false);
-    await onMetaChange?.();
   };
   // TODO Hàm lưu
   const handleSave = async () => {
@@ -979,14 +955,13 @@ export default function TransactionForm({
               </label>
 
               <SearchableSelect
-                items={accountOptions}
+                items={accounts}
                 value={selectedAccount || null}
                 placeholder={t.common.select}
                 onChange={(acc) => {
                   setSelectedAccountId(acc.id);
                   setSelectedCurrency(acc.currency);
                   setAmount("");
-                  setSearchAccTerm(acc.name);
                 }}
                 getLabel={(acc) => acc.name}
                 getKey={(acc) => acc.id}
@@ -996,11 +971,7 @@ export default function TransactionForm({
                 setIsFocused={setIsAccFocused}
                 isOpen={isAccDropdownOpen}
                 setIsOpen={setIsAccDropdownOpen}
-                onAdd={(searchText) => {
-                  setSearchAccTerm(searchText);
-                  setShowAddAccount(true);
-                  return null;
-                }}
+                onAdd={() => setShowAddAccount(true)}
                 renderIcon={(acc) =>
                   acc?.type === "Bank" ? (
                     acc.logo ? (
@@ -1073,12 +1044,11 @@ export default function TransactionForm({
                   <></>
                 ) : (
                   <SearchableSelect
-                    items={categoryOptions}
+                    items={categories}
                     value={selectedCategory || null}
                     placeholder={t.common.select}
                     onChange={(cat) => {
                       setSelectedCategoryId(cat.id);
-                      setSearchTerm(cat.name);
                     }}
                     getLabel={(cat) => cat.name}
                     getKey={(cat) => cat.id}
@@ -1088,11 +1058,7 @@ export default function TransactionForm({
                     setIsFocused={setIsFocused}
                     isOpen={isDropdownOpen}
                     setIsOpen={setIsDropdownOpen}
-                    onAdd={(searchText) => {
-                      setSearchTerm(searchText);
-                      setShowAddCategory(true);
-                      return null;
-                    }}
+                    onAdd={() => setShowAddCategory(true)}
                     renderIcon={(cat) =>
                       cat ? (
                         <DynamicIcon

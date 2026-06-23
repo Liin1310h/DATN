@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useMemo } from "react";
 import { useTranslation } from "../../hook/useTranslation";
 import { Plus } from "lucide-react";
 
@@ -20,8 +13,8 @@ interface SearchableSelectProps<T> {
 
   placeholder?: string;
 
-  renderItem?: (item: T, isSelected: boolean) => ReactNode;
-  renderIcon?: (item: T | null) => ReactNode;
+  renderItem?: (item: T, isSelected: boolean) => React.ReactNode;
+  renderIcon?: (item: T | null) => React.ReactNode;
 
   searchValue: string;
   setSearchValue: (val: string) => void;
@@ -32,13 +25,7 @@ interface SearchableSelectProps<T> {
   isOpen: boolean;
   setIsOpen: (val: boolean) => void;
 
-  /**
-   * Trả về item mới tạo để SearchableSelect tự chọn luôn.
-   * searchText là text người dùng đang nhập.
-   */
-  onAdd?: (
-    searchText: string,
-  ) => T | null | undefined | Promise<T | null | undefined>;
+  onAdd?: () => void;
 }
 
 export default function SearchableSelect<T>({
@@ -63,106 +50,11 @@ export default function SearchableSelect<T>({
 }: SearchableSelectProps<T>) {
   const { t } = useTranslation();
 
-  const [isAdding, setIsAdding] = useState(false);
-
-  /**
-   * Fallback nội bộ để item mới tạo render ngay,
-   * kể cả khi parent chưa kịp cập nhật value/items.
-   */
-  const [fallbackSelectedItem, setFallbackSelectedItem] = useState<T | null>(
-    null,
-  );
-
-  const [displayLabel, setDisplayLabel] = useState("");
-
-  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const selectedItem = value ?? fallbackSelectedItem;
-
   const filteredItems = useMemo(() => {
-    const keyword = searchValue.trim().toLowerCase();
-
-    if (!keyword) return items;
-
     return items.filter((item) =>
-      getLabel(item).toLowerCase().includes(keyword),
+      getLabel(item).toLowerCase().includes(searchValue.toLowerCase()),
     );
   }, [items, searchValue, getLabel]);
-
-  useEffect(() => {
-    if (value) {
-      setDisplayLabel(getLabel(value));
-      setFallbackSelectedItem(null);
-      return;
-    }
-
-    if (!isFocused && !searchValue) {
-      setDisplayLabel("");
-      setFallbackSelectedItem(null);
-    }
-  }, [value, getLabel, isFocused, searchValue]);
-
-  useEffect(() => {
-    return () => {
-      if (blurTimerRef.current) {
-        clearTimeout(blurTimerRef.current);
-      }
-    };
-  }, []);
-
-  const closeDropdown = useCallback(() => {
-    setIsOpen(false);
-    setIsFocused(false);
-  }, [setIsOpen, setIsFocused]);
-
-  const selectItem = useCallback(
-    (item: T) => {
-      const label = getLabel(item);
-
-      setFallbackSelectedItem(item);
-      setDisplayLabel(label);
-      setSearchValue(label);
-
-      onChange(item);
-
-      closeDropdown();
-    },
-    [onChange, getLabel, setSearchValue, closeDropdown],
-  );
-
-  const handleAdd = useCallback(async () => {
-    if (!onAdd || isAdding) return;
-
-    try {
-      setIsAdding(true);
-
-      const newItem = await onAdd(searchValue.trim());
-
-      if (!newItem) return;
-
-      selectItem(newItem);
-    } catch (error) {
-      console.error("SearchableSelect add error:", error);
-    } finally {
-      setIsAdding(false);
-    }
-  }, [onAdd, isAdding, searchValue, selectItem]);
-
-  const handleBlur = () => {
-    blurTimerRef.current = setTimeout(() => {
-      closeDropdown();
-
-      const label = selectedItem ? getLabel(selectedItem) : displayLabel;
-
-      setSearchValue(label);
-    }, 200);
-  };
-
-  const inputValue = isFocused
-    ? searchValue
-    : selectedItem
-      ? getLabel(selectedItem)
-      : displayLabel;
 
   return (
     <div className="relative w-full min-w-0">
@@ -187,27 +79,28 @@ export default function SearchableSelect<T>({
           flex items-center justify-center
           text-[#C86B3C]"
         >
-          {renderIcon ? renderIcon(selectedItem) : null}
+          {renderIcon ? renderIcon(value) : null}
         </div>
 
         {/* Input */}
         <input
           type="text"
-          value={inputValue}
-          onChange={(event) => {
-            setSearchValue(event.target.value);
+          value={isFocused ? searchValue : value ? getLabel(value) : ""}
+          onChange={(e) => {
+            setSearchValue(e.target.value);
             setIsOpen(true);
           }}
           onFocus={() => {
-            if (blurTimerRef.current) {
-              clearTimeout(blurTimerRef.current);
-              blurTimerRef.current = null;
-            }
-
             setIsFocused(true);
             setIsOpen(true);
           }}
-          onBlur={handleBlur}
+          onBlur={() => {
+            setTimeout(() => {
+              setIsFocused(false);
+              setIsOpen(false);
+              setSearchValue(value ? getLabel(value) : "");
+            }, 200);
+          }}
           placeholder={placeholder}
           className="flex-1 min-w-0 bg-transparent outline-none
           text-sm font-black p-2
@@ -219,10 +112,9 @@ export default function SearchableSelect<T>({
         {onAdd && (
           <button
             type="button"
-            disabled={isAdding}
-            onMouseDown={(event) => {
-              event.preventDefault();
-              void handleAdd();
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onAdd();
             }}
             className="shrink-0 w-9 h-9 rounded-xl
             bg-[#C86B3C]/12 text-[#C86B3C]
@@ -230,7 +122,6 @@ export default function SearchableSelect<T>({
             dark:bg-[#F4E7C5]/10 dark:text-[#D6B56D]
             dark:hover:bg-[#C86B3C] dark:hover:text-[#FFF4D8]
             transition-all active:scale-95
-            disabled:opacity-50 disabled:cursor-not-allowed
             flex items-center justify-center"
           >
             <Plus size={18} strokeWidth={3} />
@@ -252,16 +143,18 @@ export default function SearchableSelect<T>({
           <div className="max-h-64 overflow-y-auto p-2 custom-scrollbar">
             {filteredItems.length > 0 ? (
               filteredItems.map((item) => {
-                const isSelected =
-                  !!selectedItem && getKey(selectedItem) === getKey(item);
+                const isSelected = !!value && getKey(value) === getKey(item);
 
                 return (
                   <button
                     key={getKey(item)}
                     type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      selectItem(item);
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      onChange(item);
+                      setIsOpen(false);
+                      setIsFocused(false);
+                      setSearchValue(getLabel(item));
                     }}
                     className={`w-full max-w-full px-3 py-3 text-left overflow-hidden
                     rounded-xl transition-all duration-200
@@ -290,20 +183,18 @@ export default function SearchableSelect<T>({
                 {onAdd && (
                   <button
                     type="button"
-                    disabled={isAdding}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      void handleAdd();
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      onAdd();
                     }}
                     className="mt-4 inline-flex items-center justify-center gap-2
                     rounded-2xl bg-[#C86B3C] px-4 py-2.5
                     text-[10px] font-black uppercase tracking-widest
                     text-[#FFF4D8]
-                    hover:bg-[#9F4D2E] active:scale-95 transition-all
-                    disabled:opacity-50 disabled:cursor-not-allowed"
+                    hover:bg-[#9F4D2E] active:scale-95 transition-all"
                   >
                     <Plus size={14} strokeWidth={3} />
-                    {isAdding ? "Đang thêm..." : "Thêm mới"}
+                    Thêm mới
                   </button>
                 )}
               </div>
