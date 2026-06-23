@@ -25,7 +25,7 @@ public class RepaymentRequest
     /// <summary>
     /// Đơn vị tiền tệ
     /// </summary>
-    public string Currency { get; set; } = "VND";
+    public string? Currency { get; set; }
 
     /// <summary>
     /// Note

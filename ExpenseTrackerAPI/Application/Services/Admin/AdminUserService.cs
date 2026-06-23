@@ -1,6 +1,7 @@
 using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Application.Interfaces.Admin;
 using ExpenseTrackerAPI.Application.Interfaces.Notifications;
+using ExpenseTrackerAPI.Domain.Enums;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -120,7 +121,7 @@ public class AdminUserService : IAdminUserService
                 .FirstOrDefault(),
 
                 ActiveLoanCount = _context.Loans
-                .Count(l => l.UserId == x.Id && !l.IsCompleted)
+                .Count(l => l.UserId == x.Id && l.Status == LoanStatus.Active)
             })
             .FirstOrDefaultAsync();
 

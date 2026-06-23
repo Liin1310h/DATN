@@ -215,7 +215,7 @@ export default function AddAccountModal({
       handleClose();
     } catch (error) {
       console.error("Save account error:", error);
-      toast.error("Không thể lưu tài khoản");
+      toast.error(error?.response.data || "Không thể lưu tài khoản");
     } finally {
       setIsSubmitting(false);
     }

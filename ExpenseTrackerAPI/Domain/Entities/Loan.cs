@@ -12,44 +12,104 @@ public class Loan
     [Required]
     public int UserId { get; set; }
     [Required]
+    [MaxLength(10)]
     public string Currency { get; set; } = "VND";
+    /// <summary>
+    /// Loại đối tượng vay
+    /// </summary>
+    public LoanCounterPartyType CounterPartyType { get; set; } = LoanCounterPartyType.Personal;
+    /// <summary>
+    /// Đối tượng vay/ cho vay
+    /// </summary>
     [Required]
     [MaxLength(255)]
-    public string CounterPartyName { get; set; } = string.Empty; // Tên người vay/cho vay
+    public string CounterPartyName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Số tiền gốc ban đầu
+    /// </summary>
     [Required]
     [Column(TypeName = "decimal(18,2)")]
-    public decimal PrincipalAmount { get; set; } // Số tiền gốc ban đầu
+    public decimal PrincipalAmount { get; set; }
 
+    /// <summary>
+    /// Dư nợ gốc còn lại, không bao gồm lãi, phí và phạt.
+    /// </summary>
     [Required]
     [Column(TypeName = "decimal(18,2)")]
-    public decimal RemainingAmount { get; set; } // Số tiền nợ còn lại
+    public decimal RemainingPrincipalAmount { get; set; }
 
-    [Column(TypeName = "decimal(5,2)")]
-    public decimal InterestRate { get; set; } = 0; // Lãi suất (%)
+    /// <summary>
+    /// Lãi suất (%)
+    /// </summary>
+    [Column(TypeName = "decimal(9,4)")]
+    public decimal InterestRate { get; set; } = 0;
 
-    [MaxLength(50)]
-    public InterestUnit InterestUnit { get; set; } = InterestUnit.PercentPerMonth; // Đơn vị lãi (tháng/năm)
+    /// <summary>
+    /// Đơn vị lãi 
+    /// </summary>
+    public InterestUnit InterestUnit { get; set; } = InterestUnit.PercentPerMonth;
 
+    /// <summary>
+    /// Số kỳ
+    /// </summary>
     public int Duration { get; set; }
 
-    public DurationUnit DurationUnit { get; set; }
+    /// <summary>
+    /// Đơn vị kỳ
+    /// </summary>
+    public DurationUnit DurationUnit { get; set; } = DurationUnit.Month;
 
+    /// <summary>
+    /// Ngày bắt đầu vay
+    /// </summary>
     [Required]
-    public DateTime StartDate { get; set; } // Ngày bắt đầu vay
+    public DateTime StartDate { get; set; }
 
-    public DateTime? DueDate { get; set; } // Ngày hạn chót phải trả
+    /// <summary>
+    /// Ngày đáo hạn khoản vay
+    /// </summary>
+    [Required]
+    public DateTime DueDate { get; set; }
 
     public string Note { get; set; } = string.Empty;
 
-    public Boolean IsLending { get; set; } = false;
-    public bool IsCompleted { get; set; } = false; // Đã trả hết nợ hay chưa
+    public bool IsLending { get; set; } = false;
+    /// <summary>
+    /// Trạng thái khoản vay
+    /// </summary>
+    public LoanStatus Status { get; set; } = LoanStatus.Active;
 
     /// <summary>
-    /// Phương pháp tính lãi: FlatRate (dư nợ ban đầu) hoặc ReducingBalance (dư nợ giảm dần)
+    /// Phương thức trả nợ
     /// </summary>
-    public InterestCalculationType InterestCalculationType { get; set; } = InterestCalculationType.ReducingBalance;
-
+    public RepaymentMethod RepaymentMethod { get; set; } = RepaymentMethod.NoInterest;
+    /// <summary>
+    /// Chính sách trả nợ
+    /// </summary>
+    public PrepaymentPolicy PrepaymentPolicy { get; set; } = PrepaymentPolicy.NotAllowed;
+    /// <summary>
+    /// Thứ tự ưu tiên trả nợ
+    /// </summary>
+    public PaymentAllocationStrategy AllocationStrategy { get; set; } = PaymentAllocationStrategy.InterestPrincipal;
+    /// <summary>
+    /// Phí trả chậm
+    /// </summary>
+    [Column(TypeName = "decimal(9,4)")]
+    public decimal? LateFeeRate { get; set; }
+    /// <summary>
+    /// Phí trả trước
+    /// </summary>
+    [Column(TypeName = "decimal(9,4)")]
+    public decimal? PrepaymentFeeRate { get; set; }
+    /// <summary>
+    /// Trả ngày bao nhiêu của tháng
+    /// </summary>
+    public int? PaymentDayOfMonth { get; set; }
+    /// <summary>
+    /// Nếu true, lãi được tính theo số ngày thực tế giữa các kỳ thay vì quy đổi cố định theo tháng
+    /// </summary>
+    public bool IsInterestAccruedDaily { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     /// <summary>
     /// Nhắc hạn khoản vay?

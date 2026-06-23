@@ -176,11 +176,7 @@ export default function AdminCategoryModal({
       handleClose();
     } catch (error: any) {
       console.error(error);
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Có lỗi xảy ra. Vui lòng thử lại!",
-      );
+      toast.error(error?.response?.data || "Có lỗi xảy ra. Vui lòng thử lại!");
     } finally {
       setIsSubmitting(false);
     }

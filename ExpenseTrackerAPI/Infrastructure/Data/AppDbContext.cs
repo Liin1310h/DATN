@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using ExpenseTrackerAPI.Domain.Entities;
-using ExpenseTrackerAPI.Migrations;
 
 namespace ExpenseTrackerAPI.Infrastructure.Data;
 
@@ -67,24 +66,66 @@ public class AppDbContext : DbContext
         // --- Cấu hình Loan ---
         modelBuilder.Entity<Loan>(entity =>
         {
-            entity.Property(l => l.PrincipalAmount).HasPrecision(18, 2);
-            entity.Property(l => l.RemainingAmount).HasPrecision(18, 2);
+            entity.Property(l => l.Currency)
+                .HasMaxLength(10)
+                .IsRequired();
 
-            // Một Loan có nhiều kỳ trả nợ
+            entity.Property(l => l.PrincipalAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(l => l.RemainingPrincipalAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(l => l.InterestRate)
+                .HasPrecision(9, 4);
+
+            entity.Property(l => l.LateFeeRate)
+                .HasPrecision(9, 4);
+
+            entity.Property(l => l.PrepaymentFeeRate)
+                .HasPrecision(9, 4);
+
+            entity.Property(l => l.CounterPartyName)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.HasOne(l => l.User)
+                .WithMany(u => u.Loans)
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasMany(l => l.Schedules)
-                  .WithOne(r => r.Loan)
-                  .HasForeignKey(r => r.LoanId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                .WithOne(r => r.Loan)
+                .HasForeignKey(r => r.LoanId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(l => l.Transactions)
+                .WithOne(t => t.Loan)
+                .HasForeignKey(t => t.LoanId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<RepaymentSchedule>(entity =>
         {
+            entity.Property(r => r.OpeningPrincipalBalance).HasPrecision(18, 2);
             entity.Property(r => r.PrincipalAmount).HasPrecision(18, 2);
             entity.Property(r => r.InterestAmount).HasPrecision(18, 2);
+            entity.Property(r => r.FeeAmount).HasPrecision(18, 2);
+            entity.Property(r => r.PenaltyAmount).HasPrecision(18, 2);
             entity.Property(r => r.TotalAmount).HasPrecision(18, 2);
-            entity.Property(r => r.RemainingBalance).HasPrecision(18, 2);
-        });
+            entity.Property(r => r.ClosingPrincipalBalance).HasPrecision(18, 2);
 
+            entity.Property(r => r.PaidPrincipalAmount).HasPrecision(18, 2);
+            entity.Property(r => r.PaidInterestAmount).HasPrecision(18, 2);
+            entity.Property(r => r.PaidFeeAmount).HasPrecision(18, 2);
+            entity.Property(r => r.PaidPenaltyAmount).HasPrecision(18, 2);
+            entity.Property(r => r.PaidTotalAmount).HasPrecision(18, 2);
+
+            entity.HasOne(r => r.Loan)
+                .WithMany(l => l.Schedules)
+                .HasForeignKey(r => r.LoanId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
         // --- Account ---
         modelBuilder.Entity<Account>(entity =>
         {

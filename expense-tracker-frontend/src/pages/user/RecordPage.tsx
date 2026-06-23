@@ -4,7 +4,7 @@ import TransactionForm, {
 } from "../../components/Transaction/TransactionForm";
 import { createTransaction } from "../../services/transactionsService";
 import toast from "react-hot-toast";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "../../hook/useTranslation";
 import { createLoan } from "../../services/loanService";
 import LayoutSkeleton from "../LayoutSkeleton";
@@ -19,13 +19,60 @@ import {
   TransactionType,
   InterestUnit,
   DurationUnit,
-  InterestCalculationType,
   ReminderFrequency,
+  LoanCounterPartyType,
+  RepaymentMethod,
+  PrepaymentPolicy,
 } from "../../types/enum";
 import {
   createReceiptTransactions,
   previewReceiptTransactions,
 } from "../../services/receiptService";
+
+type CategoriesData = Awaited<ReturnType<typeof getCategories>>;
+type AccountsData = Awaited<ReturnType<typeof getAccounts>>;
+
+interface OcrErrorData {
+  message?: string;
+  error?: string;
+}
+
+interface ReceiptPreviewData {
+  jobId: string;
+  transactions: Record<string, unknown>[];
+  [key: string]: unknown;
+}
+
+interface ReceiptPreviewResponse {
+  success?: boolean;
+  message?: string;
+  jobId: string;
+  data?: Partial<ReceiptPreviewData>;
+  transactions?: Record<string, unknown>[];
+  [key: string]: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (!isRecord(error)) return fallback;
+
+  const response = error.response;
+
+  if (!isRecord(response)) return fallback;
+
+  const data = response.data;
+
+  if (typeof data === "string") return data;
+
+  if (isRecord(data) && typeof data.message === "string") {
+    return data.message;
+  }
+
+  return fallback;
+}
 
 export default function RecordPage() {
   const { t } = useTranslation();
@@ -40,15 +87,15 @@ export default function RecordPage() {
 
   // OCR state
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
-  const [ocrResult, setOcrResult] = useState<any>(null);
+  const [ocrResult, setOcrResult] = useState<ReceiptPreviewData | null>(null);
   const ocrTimeoutRef = useRef<number | null>(null);
 
   // Metadata cho form và OCR preview
-  const [categories, setCategories] = useState<any[]>([]);
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<CategoriesData>([]);
+  const [accounts, setAccounts] = useState<AccountsData>([]);
   const [isMetaLoading, setIsMetaLoading] = useState(false);
 
-  const loadMetaData = async () => {
+  const loadMetaData = useCallback(async () => {
     try {
       setIsMetaLoading(true);
 
@@ -65,13 +112,19 @@ export default function RecordPage() {
     } finally {
       setIsMetaLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadMetaData();
   }, []);
 
-  const refreshAccounts = async () => {
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      void loadMetaData();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [loadMetaData]);
+
+  const refreshAccounts = useCallback(async () => {
     try {
       const accountData = await getAccounts();
       setAccounts(accountData);
@@ -79,53 +132,60 @@ export default function RecordPage() {
       console.error("Refresh accounts error:", error);
       toast.error("Không thể cập nhật số dư tài khoản");
     }
-  };
+  }, []);
 
-  const clearOcrTimeout = () => {
+  const clearOcrTimeout = useCallback(() => {
     if (ocrTimeoutRef.current) {
       window.clearTimeout(ocrTimeoutRef.current);
       ocrTimeoutRef.current = null;
     }
-  };
+  }, []);
 
-  const handleOcrFailed = (errorData: any) => {
-    console.log("OCR failed in RecordPage:", errorData);
+  const handleOcrFailed = useCallback(
+    (errorData: OcrErrorData) => {
+      console.log("OCR failed in RecordPage:", errorData);
 
-    setIsOcrProcessing(false);
-    setOcrResult(null);
-    setShowCamera(false);
-    setUploadProgress(0);
+      setIsOcrProcessing(false);
+      setOcrResult(null);
+      setShowCamera(false);
+      setUploadProgress(0);
 
-    toast.error(
-      errorData?.message || errorData?.error || "AI xử lý hóa đơn thất bại",
-      {
+      toast.error(
+        errorData?.message || errorData?.error || "AI xử lý hóa đơn thất bại",
+        {
+          id: "ocr-processing",
+        },
+      );
+
+      clearOcrTimeout();
+    },
+    [clearOcrTimeout],
+  );
+
+  const handleOcrCompleted = useCallback(
+    (ocrData: ReceiptPreviewResponse) => {
+      console.log("OCR Data received in RecordPage:", ocrData);
+
+      setIsOcrProcessing(false);
+      setShowCamera(false);
+      setUploadProgress(0);
+
+      const previewData = ocrData?.data ? ocrData.data : ocrData;
+
+      setOcrResult({
+        jobId: ocrData?.jobId ?? previewData?.jobId,
+        transactions: previewData.transactions ?? [],
+        ...previewData,
+      });
+
+      toast.success("AI đã đọc xong hóa đơn!", {
         id: "ocr-processing",
-      },
-    );
+      });
 
-    clearOcrTimeout();
-  };
-
-  const handleOcrCompleted = (ocrData: any) => {
-    console.log("OCR Data received in RecordPage:", ocrData);
-
-    setIsOcrProcessing(false);
-    setShowCamera(false);
-    setUploadProgress(0);
-
-    const previewData = ocrData?.data ? ocrData.data : ocrData;
-
-    setOcrResult({
-      jobId: ocrData?.jobId ?? previewData?.jobId,
-      ...previewData,
-    });
-
-    toast.success("AI đã đọc xong hóa đơn!", {
-      id: "ocr-processing",
-    });
-
-    clearOcrTimeout();
-  };
+      clearOcrTimeout();
+    },
+    [clearOcrTimeout],
+  );
 
   useEffect(() => {
     const completedEventHandler = (event: Event) => {
@@ -151,7 +211,7 @@ export default function RecordPage() {
 
       clearOcrTimeout();
     };
-  }, []);
+  }, [handleOcrCompleted, handleOcrFailed, clearOcrTimeout]);
 
   const handleOcrUpload = async (file: File) => {
     try {
@@ -200,7 +260,7 @@ export default function RecordPage() {
     }
   };
 
-  const handleConfirmOcr = async (finalData: any) => {
+  const handleConfirmOcr = async (finalData: ReceiptPreviewData) => {
     setLoading(true);
 
     try {
@@ -231,6 +291,8 @@ export default function RecordPage() {
         data.type === TransactionType.Borrow
       ) {
         const loanPayload = {
+          counterPartyType:
+            data.loan?.counterPartyType ?? LoanCounterPartyType.Personal,
           counterPartyName: data.loan?.counterPartyName ?? "",
           principalAmount: data.amount,
           currency: data.currency,
@@ -241,16 +303,22 @@ export default function RecordPage() {
           duration: Number(data.loan?.duration ?? 0),
           durationUnit: data.loan?.durationUnit ?? DurationUnit.Month,
 
-          interestCalculationType:
-            data.loan?.interestCalculationType ??
-            InterestCalculationType.ReducingBalance,
-
           startDate: data.transactionFromDate,
-          dueDate: data.transactionToDate ?? null,
 
           isLending: data.type === TransactionType.Lend,
           accountId: data.accountId,
           note: data.note,
+
+          repaymentMethod:
+            data.loan?.repaymentMethod ?? RepaymentMethod.NoInterest,
+          prepaymentPolicy:
+            data.loan?.prepaymentPolicy ?? PrepaymentPolicy.NotAllowed,
+          allocationStrategy: data.loan?.allocationStrategy ?? null,
+
+          lateFreeRate: data.loan?.lateFeeRate ?? null,
+          paymentDayOfMonth: data.loan?.paymentDayOfMonth ?? null,
+
+          isInterestAccruedDaily: data.loan?.isInterestAccruedDaily ?? false,
 
           isRecurringReminder: data.loan?.isRecurringReminder ?? false,
           reminderBeforeDays: data.loan?.reminderBeforeDays ?? 0,
@@ -279,7 +347,7 @@ export default function RecordPage() {
       }
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data || t.common.error);
+      toast.error(getErrorMessage(error, t.common.error));
     } finally {
       setLoading(false);
     }

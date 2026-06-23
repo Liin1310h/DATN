@@ -1,5 +1,6 @@
 using ExpenseTrackerAPI.Application.DTOs;
 using ExpenseTrackerAPI.Application.Interfaces.Admin;
+using ExpenseTrackerAPI.Domain.Enums;
 using ExpenseTrackerAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,7 +46,7 @@ public class AdminDashboardService : IAdminDashboardService
 
             TotalTransactions = await _context.Transactions.CountAsync(),
             TotalBudgets = await _context.Budgets.CountAsync(),
-            ActiveLoans = await _context.Loans.CountAsync(x => !x.IsCompleted),
+            ActiveLoans = await _context.Loans.CountAsync(x => x.Status == LoanStatus.Active),
 
             SystemCategories = await _context.Categories.CountAsync(x => x.UserId == null),
             UserCategories = await _context.Categories.CountAsync(x => x.UserId != null),

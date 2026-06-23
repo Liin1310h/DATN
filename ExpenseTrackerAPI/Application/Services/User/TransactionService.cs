@@ -656,11 +656,14 @@ public class TransactionService : ITransactionService
                     Id = t.Loan.Id,
                     CounterPartyName = t.Loan.CounterPartyName,
                     PrincipalAmount = t.Loan.PrincipalAmount,
-                    RemainingAmount = t.Loan.RemainingAmount,
+                    RemainingPrincipalAmount = t.Loan.RemainingPrincipalAmount,
                     InterestRate = t.Loan.InterestRate,
                     StartDate = t.Loan.StartDate,
                     DueDate = t.Loan.DueDate,
-                    IsCompleted = t.Loan.IsCompleted
+                    IsLending = t.Loan.IsLending,
+                    Status = t.Loan.Status,
+                    RepaymentMethod = t.Loan.RepaymentMethod,
+                    CounterPartyType = t.Loan.CounterPartyType
                 } : null
             }).ToListAsync();
 
@@ -754,11 +757,14 @@ public class TransactionService : ITransactionService
                     Id = t.Loan.Id,
                     CounterPartyName = t.Loan.CounterPartyName,
                     PrincipalAmount = t.Loan.PrincipalAmount,
-                    RemainingAmount = t.Loan.RemainingAmount,
+                    RemainingPrincipalAmount = t.Loan.RemainingPrincipalAmount,
                     InterestRate = t.Loan.InterestRate,
                     StartDate = t.Loan.StartDate,
                     DueDate = t.Loan.DueDate,
-                    IsCompleted = t.Loan.IsCompleted
+                    IsLending = t.Loan.IsLending,
+                    Status = t.Loan.Status,
+                    RepaymentMethod = t.Loan.RepaymentMethod,
+                    CounterPartyType = t.Loan.CounterPartyType
                 } : null
             })
             .ToListAsync();
@@ -783,8 +789,12 @@ public class TransactionService : ITransactionService
     DateTime? toDate
 )
     {
-        var data = await GetTransactionsForExportAsync(
-            userId, accountId, categoryId, fromDate, toDate);
+        var data = await GetTransactionsForExportAsync(userId, accountId, categoryId, fromDate, toDate);
+
+        if (data == null || data.Count == 0)
+        {
+            throw new Exception("Không có giao dịch nào phù hợp với bộ lọc để xuất file.");
+        }
 
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add("Transactions");
