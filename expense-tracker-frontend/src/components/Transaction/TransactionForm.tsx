@@ -34,22 +34,90 @@ import {
   TransactionType,
   InterestUnit,
   DurationUnit,
-  InterestCalculationType,
   ReminderFrequency,
+  LoanCounterPartyType,
+  RepaymentMethod,
+  PrepaymentPolicy,
   type TransactionType as TransactionTypeValue,
   type InterestUnit as InterestUnitValue,
   type DurationUnit as DurationUnitValue,
-  type InterestCalculationType as InterestCalculationTypeValue,
   type ReminderFrequency as ReminderFrequencyValue,
+  type LoanCounterPartyType as LoanCounterPartyTypeValue,
+  type RepaymentMethod as RepaymentMethodValue,
+  type PrepaymentPolicy as PrepaymentPolicyValue,
+  type PaymentAllocationStrategy as PaymentAllocationStrategyValue,
 } from "../../types/enum";
 
+interface TransactionImageInitialData {
+  imageUrl: string;
+}
+
+interface LoanInitialData {
+  id?: number;
+
+  counterPartyType?: LoanCounterPartyTypeValue;
+  counterPartyName?: string;
+
+  interestRate?: number;
+  interestUnit?: InterestUnitValue;
+
+  duration?: number;
+  durationUnit?: DurationUnitValue;
+
+  repaymentMethod?: RepaymentMethodValue;
+  prepaymentPolicy?: PrepaymentPolicyValue;
+
+  allocationStrategy?: PaymentAllocationStrategyValue | null;
+
+  lateFeeRate?: number | null;
+  prepaymentFeeRate?: number | null;
+  paymentDayOfMonth?: number | null;
+
+  isInterestAccruedDaily?: boolean;
+
+  isRecurringReminder?: boolean;
+  reminderBeforeDays?: number;
+  reminderFrequency?: ReminderFrequencyValue;
+}
+
+interface TransactionFormInitialData {
+  id?: number;
+
+  amount?: number;
+  currency?: string;
+
+  type?: TransactionTypeValue;
+
+  fromAccountId?: number | null;
+  toAccountId?: number | null;
+
+  categoryId?: number | null;
+
+  transactionDate?: string;
+  transactionFromDate?: string;
+
+  note?: string | null;
+
+  imageUrls?: string[];
+  transactionImages?: TransactionImageInitialData[];
+
+  loan?: LoanInitialData | null;
+}
+
 interface LoanFormPayload {
+  counterPartyType: LoanCounterPartyTypeValue;
   counterPartyName: string;
   interestRate: number;
   interestUnit: InterestUnitValue;
   duration: number;
-  durationUnit?: DurationUnitValue;
-  interestCalculationType?: InterestCalculationTypeValue;
+  durationUnit: DurationUnitValue;
+  repaymentMethod: RepaymentMethodValue;
+  prepaymentPolicy: PrepaymentPolicyValue;
+  allocationStrategy?: PaymentAllocationStrategyValue | null;
+  lateFeeRate?: number | null;
+  prepaymentFeeRate?: number | null;
+  paymentDayOfMonth?: number | null;
+  isInterestAccruedDaily: boolean;
   isRecurringReminder: boolean;
   reminderBeforeDays: number;
   reminderFrequency: ReminderFrequencyValue;
@@ -74,7 +142,7 @@ interface TransactionFormProps {
   onMetaChange?: () => Promise<void>;
   onSubmit: (data: TransactionFormSubmitData) => Promise<void>;
   loading: boolean;
-  initialData?: any;
+  initialData?: TransactionFormInitialData;
   isEdit?: boolean;
 }
 
@@ -126,10 +194,26 @@ export default function TransactionForm({
   const [reminderBeforeDays, setReminderBeforeDays] = useState("");
   const [reminderFrequency, setReminderFrequency] =
     useState<ReminderFrequencyValue>(ReminderFrequency.Monthly);
-  const [interestCalculationType, setInterestCalculationType] =
-    useState<InterestCalculationTypeValue>(
-      InterestCalculationType.ReducingBalance,
-    );
+  const [counterPartyType, setCounterPartyType] =
+    useState<LoanCounterPartyTypeValue>(LoanCounterPartyType.Personal);
+
+  const [repaymentMethod, setRepaymentMethod] = useState<RepaymentMethodValue>(
+    RepaymentMethod.NoInterest,
+  );
+
+  const [prepaymentPolicy, setPrepaymentPolicy] =
+    useState<PrepaymentPolicyValue>(PrepaymentPolicy.NotAllowed);
+
+  const [allocationStrategy, setAllocationStrategy] =
+    useState<PaymentAllocationStrategyValue | null>(null);
+
+  const [lateFeeRate, setLateFeeRate] = useState("");
+
+  const [prepaymentFeeRate, setPrepaymentFeeRate] = useState("");
+
+  const [paymentDayOfMonth, setPaymentDayOfMonth] = useState("");
+
+  const [isInterestAccruedDaily, setIsInterestAccruedDaily] = useState(false);
   // ! CATEGORY STATE
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
@@ -139,6 +223,9 @@ export default function TransactionForm({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
 
+  const [categoryOptions, setCategoryOptions] =
+    useState<Category[]>(categories);
+  const [accountOptions, setAccountOptions] = useState<Account[]>(accounts);
   // ! ACCOUNT STATE
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
     null,
@@ -153,21 +240,12 @@ export default function TransactionForm({
 
   // todo tìm đối tượng được chọn
   const selectedCategory = useMemo(
-    () => categories.find((c) => c.id === selectedCategoryId),
-    [categories, selectedCategoryId],
+    () => categoryOptions.find((c) => c.id === selectedCategoryId),
+    [categoryOptions, selectedCategoryId],
   );
   const selectedAccount = useMemo(
-    () => accounts.find((a) => a.id === selectedAccountId),
-    [accounts, selectedAccountId],
-  );
-
-  const schedule = useLoanCalculator(
-    parseInputToNumber(amount, selectedCurrency),
-    interestRate !== "" ? Number(interestRate) : 0,
-    interestUnit,
-    loanDuration !== "" ? Number(loanDuration) : 0,
-    durationUnit,
-    interestCalculationType,
+    () => accountOptions.find((a) => a.id === selectedAccountId),
+    [accountOptions, selectedAccountId],
   );
 
   const getNowLocal = () => {
@@ -177,7 +255,6 @@ export default function TransactionForm({
   };
 
   const [transactionFromDate, setTransactionFromDate] = useState(getNowLocal());
-  const [transactionToDate, setTransactionToDate] = useState("");
 
   //TODO tính time lệch
   const toLocalInput = (utcString: string) => {
@@ -188,6 +265,29 @@ export default function TransactionForm({
 
     return local.toISOString().slice(0, 16);
   };
+
+  useEffect(() => {
+    setCategoryOptions(categories);
+  }, [categories]);
+
+  useEffect(() => {
+    setAccountOptions(accounts);
+  }, [accounts]);
+
+  const schedule = useLoanCalculator(
+    parseInputToNumber(amount, selectedCurrency),
+    interestRate !== "" ? Number(interestRate) : 0,
+    interestUnit,
+    loanDuration !== "" ? Number(loanDuration) : 0,
+    durationUnit,
+    repaymentMethod,
+    {
+      startDate: transactionFromDate,
+      paymentDayOfMonth:
+        paymentDayOfMonth !== "" ? Number(paymentDayOfMonth) : null,
+      isInterestAccruedDaily,
+    },
+  );
 
   //TODO Kiểm soát file ảnh
   const MAX_TRANSACTION_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -247,43 +347,69 @@ export default function TransactionForm({
   // TODO Lấy tỷ giá khi Currency hoặc Account thay đổi
   useEffect(() => {
     if (!selectedAccountId) return;
-    const selectedAcc = accounts.find((a) => a.id === selectedAccountId);
+    const selectedAcc = accountOptions.find((a) => a.id === selectedAccountId);
     if (!selectedAcc) return;
 
-    // Nếu cùng loại tiền
-    if (selectedCurrency === selectedAcc.currency) {
-      setRate(1);
-      return;
-    }
+    let cancelled = false;
     const fetchRate = async () => {
+      // Nếu cùng loại tiền
+      if (selectedCurrency === selectedAcc.currency) {
+        if (!cancelled) {
+          setRate(1);
+          setRateLoading(false);
+        }
+
+        return;
+      }
       setRateLoading(true);
+
       try {
         const res = await getExchangeRate(
           selectedCurrency,
           selectedAcc.currency,
         );
-        setRate(res.result);
+        if (!cancelled) {
+          setRate(res.result);
+        }
       } catch (error) {
         console.error(t.rate.error, error);
-        setRate(1);
+        if (!cancelled) {
+          setRate(1);
+        }
       } finally {
-        setRateLoading(false);
+        if (!cancelled) {
+          setRateLoading(false);
+        }
       }
     };
-    fetchRate();
-  }, [selectedCurrency, selectedAccountId, accounts, t.rate.error]);
+    void fetchRate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCurrency, selectedAccountId, accountOptions, t.rate.error]);
 
   // TODO Xử lý khi sửa tran
   useEffect(() => {
-    if (initialData && accounts.length && categories.length) {
-      //Chờ đến khi load xong acc và cat
+    if (!initialData || accountOptions.length === 0) return;
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+
       setAmount(initialData.amount ? initialData.amount.toString() : "");
+
       setSelectedCurrency(initialData.currency || currency);
+
       setType(initialData.type || TransactionType.Expense);
+
       setSelectedAccountId(
         initialData.fromAccountId || initialData.toAccountId || null,
       );
+
       setSelectedCategoryId(initialData.categoryId || null);
+
       setTransactionFromDate(
         initialData.transactionFromDate
           ? toLocalInput(initialData.transactionFromDate)
@@ -291,74 +417,129 @@ export default function TransactionForm({
             ? toLocalInput(initialData.transactionDate)
             : getNowLocal(),
       );
-      setTransactionToDate(
-        initialData.transactionToDate
-          ? toLocalInput(initialData.transactionToDate)
-          : initialData.loan?.dueDate
-            ? toLocalInput(initialData.loan.dueDate)
-            : "",
-      );
+
       if (initialData.imageUrls) {
         setExistingImages(initialData.imageUrls);
-      }
-      // fallback nếu API cũ
-      else if (initialData.transactionImages) {
+      } else if (initialData.transactionImages) {
         const urls = initialData.transactionImages.map((i) => i.imageUrl);
         setExistingImages(urls);
       }
 
       if (initialData.loan) {
-        setPerson(initialData.loan.counterPartyName || "");
-        setInterestRate(initialData.loan.interestRate?.toString() || "");
-        setInterestUnit(
-          initialData.loan.interestUnit || InterestUnit.PercentPerMonth,
-        );
-        setInterestCalculationType(
-          initialData.loan.interestCalculationType ??
-            InterestCalculationType.ReducingBalance,
+        const loan = initialData.loan;
+
+        setPerson(loan.counterPartyName || "");
+
+        setCounterPartyType(
+          loan.counterPartyType ?? LoanCounterPartyType.Personal,
         );
 
-        if (initialData.loan.startDate && initialData.loan.dueDate) {
-          const start = new Date(initialData.loan.startDate);
-          const end = new Date(initialData.loan.dueDate);
+        setInterestRate(
+          loan.interestRate !== undefined && loan.interestRate !== null
+            ? loan.interestRate.toString()
+            : "",
+        );
 
-          const totalMonths =
-            (end.getFullYear() - start.getFullYear()) * 12 +
-            (end.getMonth() - start.getMonth());
+        setInterestUnit(loan.interestUnit ?? InterestUnit.PercentPerMonth);
 
-          if (totalMonths > 0) {
-            setLoanDuration(totalMonths.toString());
-            setDurationUnit(DurationUnit.Month);
-          }
-        }
-        setIsRecurringReminder(initialData.loan.isRecurringReminder || false);
+        setLoanDuration(
+          loan.duration !== undefined && loan.duration !== null
+            ? loan.duration.toString()
+            : "",
+        );
+
+        setDurationUnit(loan.durationUnit ?? DurationUnit.Month);
+
+        setRepaymentMethod(loan.repaymentMethod ?? RepaymentMethod.NoInterest);
+
+        setPrepaymentPolicy(
+          loan.prepaymentPolicy ?? PrepaymentPolicy.NotAllowed,
+        );
+
+        setAllocationStrategy(loan.allocationStrategy ?? null);
+
+        setLateFeeRate(
+          loan.lateFeeRate !== undefined && loan.lateFeeRate !== null
+            ? loan.lateFeeRate.toString()
+            : "",
+        );
+
+        setPrepaymentFeeRate(
+          loan.prepaymentFeeRate !== undefined &&
+            loan.prepaymentFeeRate !== null
+            ? loan.prepaymentFeeRate.toString()
+            : "",
+        );
+
+        setPaymentDayOfMonth(
+          loan.paymentDayOfMonth !== undefined &&
+            loan.paymentDayOfMonth !== null
+            ? loan.paymentDayOfMonth.toString()
+            : "",
+        );
+
+        setIsInterestAccruedDaily(loan.isInterestAccruedDaily ?? false);
+
+        setIsRecurringReminder(loan.isRecurringReminder ?? false);
+
         setReminderBeforeDays(
-          initialData.loan.reminderBeforeDays?.toString() || "",
+          loan.reminderBeforeDays !== undefined &&
+            loan.reminderBeforeDays !== null
+            ? loan.reminderBeforeDays.toString()
+            : "",
         );
+
         setReminderFrequency(
-          initialData.loan.reminderFrequency || ReminderFrequency.Monthly,
+          loan.reminderFrequency ?? ReminderFrequency.Monthly,
         );
       }
-      setNote(initialData.note);
-    }
-  }, [initialData, accounts, categories, currency]);
+
+      setNote(initialData.note ?? "");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialData, accountOptions.length, currency]);
 
   //TODO Hàm resetForm
   const resetForm = () => {
     setAmount("");
     setPerson("");
     setNote("");
+
     setInterestRate("");
+    setInterestUnit(InterestUnit.PercentPerYear);
+
     setLoanDuration("");
     setDurationUnit(DurationUnit.Month);
-    setInterestCalculationType(InterestCalculationType.ReducingBalance);
+
+    setCounterPartyType(LoanCounterPartyType.Personal);
+
+    setRepaymentMethod(RepaymentMethod.NoInterest);
+    setPrepaymentPolicy(PrepaymentPolicy.NotAllowed);
+    setAllocationStrategy(null);
+
+    setLateFeeRate("");
+    setPrepaymentFeeRate("");
+    setPaymentDayOfMonth("");
+    setIsInterestAccruedDaily(false);
+
     setIsRecurringReminder(false);
     setReminderBeforeDays("");
     setReminderFrequency(ReminderFrequency.Monthly);
+
     setSelectedAccountId(null);
     setSelectedCategoryId(null);
+
+    setSearchTerm("");
+    setSearchAccTerm("");
+
     setTransactionFromDate(getNowLocal());
-    setTransactionToDate("");
+
+    setExistingImages([]);
+    setFiles([]);
+    setNewPreviews([]);
   };
 
   //TODO Validate dữ liệu
@@ -375,9 +556,66 @@ export default function TransactionForm({
       toast.error(t.transaction.errorSelectCategory);
       return false;
     }
-    if (isDebt && !person.trim()) {
-      toast.error(t.transaction.errorPerson);
-      return false;
+    if (isDebt) {
+      if (!person.trim()) {
+        toast.error("Vui lòng nhập tên đối tượng vay/cho vay");
+        return false;
+      }
+
+      if (!loanDuration || Number(loanDuration) <= 0) {
+        toast.error("Vui lòng nhập kỳ hạn hợp lệ");
+        return false;
+      }
+
+      if (
+        durationUnit === DurationUnit.Day &&
+        repaymentMethod !== RepaymentMethod.NoInterest &&
+        repaymentMethod !== RepaymentMethod.SinglePayment
+      ) {
+        toast.error(
+          "Kỳ hạn theo ngày chỉ hỗ trợ khoản vay không lãi hoặc trả một lần cuối kỳ",
+        );
+        return false;
+      }
+
+      if (
+        repaymentMethod !== RepaymentMethod.NoInterest &&
+        Number(interestRate || 0) < 0
+      ) {
+        toast.error("Lãi suất không hợp lệ");
+        return false;
+      }
+
+      if (
+        repaymentMethod !== RepaymentMethod.NoInterest &&
+        interestRate === ""
+      ) {
+        toast.error("Vui lòng nhập lãi suất");
+        return false;
+      }
+
+      if (
+        paymentDayOfMonth !== "" &&
+        (Number(paymentDayOfMonth) < 1 || Number(paymentDayOfMonth) > 31)
+      ) {
+        toast.error("Ngày trả nợ trong tháng phải từ 1 đến 31");
+        return false;
+      }
+
+      if (lateFeeRate !== "" && Number(lateFeeRate) < 0) {
+        toast.error("Phí/phạt trả chậm không hợp lệ");
+        return false;
+      }
+
+      if (prepaymentFeeRate !== "" && Number(prepaymentFeeRate) < 0) {
+        toast.error("Phí trả trước hạn không hợp lệ");
+        return false;
+      }
+
+      if (reminderBeforeDays !== "" && Number(reminderBeforeDays) < 0) {
+        toast.error("Số ngày nhắc trước không hợp lệ");
+        return false;
+      }
     }
     const from = new Date(transactionFromDate);
     if (Number.isNaN(from.getTime())) {
@@ -385,20 +623,15 @@ export default function TransactionForm({
       return false;
     }
 
-    if (isDebt && transactionToDate) {
-      const to = new Date(transactionToDate);
-
-      if (Number.isNaN(to.getTime())) {
-        toast.error("Ngày kết thúc khoản vay không hợp lệ.");
-        return false;
-      }
-
-      if (to < from) {
-        toast.error("Ngày kết thúc khoản vay phải sau ngày bắt đầu.");
-        return false;
-      }
-    }
     return true;
+  };
+
+  const handleRepaymentMethodChange = (value: RepaymentMethodValue) => {
+    setRepaymentMethod(value);
+
+    if (value === RepaymentMethod.NoInterest) {
+      setInterestRate("0");
+    }
   };
 
   // TODO Handle chọn file và preview
@@ -450,28 +683,60 @@ export default function TransactionForm({
     };
   }, []);
 
+  function upsertById<T extends { id: number | string }>(items: T[], item: T) {
+    const exists = items.some((x) => x.id === item.id);
+
+    if (exists) {
+      return items.map((x) => (x.id === item.id ? item : x));
+    }
+
+    return [item, ...items];
+  }
+
+  /**
+   * TODO Hàm thay đổi loại giao dịch
+   * @param nextType
+   */
+  const handleTransactionTypeChange = (nextType: TransactionTypeValue) => {
+    const nextIsDebt =
+      nextType === TransactionType.Lend || nextType === TransactionType.Borrow;
+
+    setType(nextType);
+
+    if (nextIsDebt) {
+      setSelectedCategoryId(null);
+      setSearchTerm("");
+      setIsDropdownOpen(false);
+    } else {
+      setPerson("");
+    }
+  };
+
   //TODO Hàm thêm category thành công
   const handleAddCategorySuccess = async (newCategory?: Category) => {
-    await onMetaChange?.();
-
     if (newCategory?.id) {
+      setCategoryOptions((prev) => upsertById(prev, newCategory));
+
       setSelectedCategoryId(newCategory.id);
       setSearchTerm(newCategory.name);
     }
 
     setShowAddCategory(false);
+    await onMetaChange?.();
   };
 
   // TODO Hàm thêm account thành công
   const handleAddAccountSuccess = async (newAccount?: Account) => {
-    await onMetaChange?.();
-
     if (newAccount?.id) {
+      setAccountOptions((prev) => upsertById(prev, newAccount));
+
       setSelectedAccountId(newAccount.id);
+      setSelectedCurrency(newAccount.currency);
       setSearchAccTerm(newAccount.name);
     }
 
     setShowAddAccount(false);
+    await onMetaChange?.();
   };
   // TODO Hàm lưu
   const handleSave = async () => {
@@ -515,10 +780,7 @@ export default function TransactionForm({
         note: note.trim(),
 
         transactionFromDate: new Date(transactionFromDate).toISOString(),
-        transactionToDate:
-          isDebt && transactionToDate
-            ? new Date(transactionToDate).toISOString()
-            : null,
+        transactionToDate: null,
         categoryId: !isDebt ? (selectedCategoryId ?? undefined) : undefined,
 
         // Thêm imageUrls - lọc bỏ các blob URLs tạm thời, giữ lại URL thật
@@ -526,12 +788,29 @@ export default function TransactionForm({
 
         loan: isDebt
           ? {
+              counterPartyType,
               counterPartyName: person.trim(),
-              interestRate: interestRate !== "" ? Number(interestRate) : 0,
+
+              interestRate:
+                repaymentMethod === RepaymentMethod.NoInterest
+                  ? 0
+                  : Number(interestRate || 0),
               interestUnit,
-              duration: Number(loanDuration),
-              durationUnit: loanDuration !== "" ? durationUnit : undefined,
-              interestCalculationType,
+
+              duration: Number(loanDuration || 0),
+              durationUnit,
+
+              repaymentMethod,
+              prepaymentPolicy,
+              allocationStrategy,
+              lateFeeRate: lateFeeRate !== "" ? Number(lateFeeRate) : null,
+              prepaymentFeeRate:
+                prepaymentFeeRate !== "" ? Number(prepaymentFeeRate) : null,
+              paymentDayOfMonth:
+                paymentDayOfMonth !== "" ? Number(paymentDayOfMonth) : null,
+
+              isInterestAccruedDaily,
+
               isRecurringReminder,
               reminderBeforeDays:
                 reminderBeforeDays !== "" ? Number(reminderBeforeDays) : 0,
@@ -572,7 +851,7 @@ export default function TransactionForm({
               <button
                 key={id}
                 type="button"
-                onClick={() => setType(id)}
+                onClick={() => handleTransactionTypeChange(id)}
                 className={`flex-1 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 active:scale-95 ${
                   isActive
                     ? activeClass
@@ -690,7 +969,9 @@ export default function TransactionForm({
 
         <div className="space-y-6">
           {/* Account + Category / Person */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            className={`grid grid-cols-1 gap-4 ${isDebt ? "" : "md:grid-cols-2"}`}
+          >
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase flex items-center gap-2 ml-2 text-[#6F8F72] dark:text-[#D6B56D] tracking-wider">
                 <Landmark size={12} />
@@ -698,13 +979,14 @@ export default function TransactionForm({
               </label>
 
               <SearchableSelect
-                items={accounts}
+                items={accountOptions}
                 value={selectedAccount || null}
                 placeholder={t.common.select}
                 onChange={(acc) => {
                   setSelectedAccountId(acc.id);
                   setSelectedCurrency(acc.currency);
                   setAmount("");
+                  setSearchAccTerm(acc.name);
                 }}
                 getLabel={(acc) => acc.name}
                 getKey={(acc) => acc.id}
@@ -714,7 +996,11 @@ export default function TransactionForm({
                 setIsFocused={setIsAccFocused}
                 isOpen={isAccDropdownOpen}
                 setIsOpen={setIsAccDropdownOpen}
-                onAdd={() => setShowAddAccount(true)}
+                onAdd={(searchText) => {
+                  setSearchAccTerm(searchText);
+                  setShowAddAccount(true);
+                  return null;
+                }}
                 renderIcon={(acc) =>
                   acc?.type === "Bank" ? (
                     acc.logo ? (
@@ -779,36 +1065,20 @@ export default function TransactionForm({
                       : "text-[#6F8F72] dark:text-[#D6B56D]"
                   }`}
                 >
-                  {isDebt ? <Landmark size={12} /> : <Tag size={12} />}
-                  {isDebt
-                    ? type === TransactionType.Lend
-                      ? t.common.lendWho
-                      : t.common.borrowWho
-                    : t.common.categories}
+                  {!isDebt && <Tag size={12} />}
+                  {!isDebt && t.common.categories}
                 </label>
 
                 {isDebt ? (
-                  <input
-                    type="text"
-                    value={person}
-                    onChange={(e) => setPerson(e.target.value)}
-                    placeholder={t.common["lend/borrowWho"]}
-                    className="w-full
-                  bg-[#FFF9E8] dark:bg-[#263B2B]/80
-                  text-[#263B2B] dark:text-[#F4E7C5]
-                  border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
-                  p-4 rounded-2xl text-sm font-bold outline-none
-                  focus:ring-2 focus:ring-[#C86B3C]/35
-                  placeholder:text-[#8B7A4B]/60
-                  shadow-sm transition-all"
-                  />
+                  <></>
                 ) : (
                   <SearchableSelect
-                    items={categories}
+                    items={categoryOptions}
                     value={selectedCategory || null}
                     placeholder={t.common.select}
                     onChange={(cat) => {
                       setSelectedCategoryId(cat.id);
+                      setSearchTerm(cat.name);
                     }}
                     getLabel={(cat) => cat.name}
                     getKey={(cat) => cat.id}
@@ -818,7 +1088,11 @@ export default function TransactionForm({
                     setIsFocused={setIsFocused}
                     isOpen={isDropdownOpen}
                     setIsOpen={setIsDropdownOpen}
-                    onAdd={() => setShowAddCategory(true)}
+                    onAdd={(searchText) => {
+                      setSearchTerm(searchText);
+                      setShowAddCategory(true);
+                      return null;
+                    }}
                     renderIcon={(cat) =>
                       cat ? (
                         <DynamicIcon
@@ -949,31 +1223,12 @@ export default function TransactionForm({
             />
           </div>
 
-          {/* To Date */}
-          {isDebt && (
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-[#C86B3C] flex items-center gap-2 ml-2 tracking-wider">
-                <CalendarDays size={12} />
-                {t.filter.toDate}
-              </label>
-
-              <input
-                type="datetime-local"
-                value={transactionToDate}
-                onChange={(e) => setTransactionToDate(e.target.value)}
-                className="w-full
-              bg-[#FFF9E8] dark:bg-[#263B2B]/80
-              text-[#263B2B] dark:text-[#F4E7C5]
-              border border-[#D6B56D]/45 dark:border-[#F4E7C5]/10
-              p-4 rounded-2xl text-sm font-bold outline-none
-              focus:ring-2 focus:ring-[#C86B3C]/35
-              shadow-sm transition-all"
-              />
-            </div>
-          )}
-
           {isDebt && (
             <LoanSection
+              person={person}
+              setPerson={setPerson}
+              counterPartyType={counterPartyType}
+              setCounterPartyType={setCounterPartyType}
               interestRate={interestRate}
               setInterestRate={setInterestRate}
               interestUnit={interestUnit}
@@ -982,8 +1237,20 @@ export default function TransactionForm({
               setLoanDuration={setLoanDuration}
               durationUnit={durationUnit}
               setDurationUnit={setDurationUnit}
-              interestCalculationType={interestCalculationType}
-              setInterestCalculationType={setInterestCalculationType}
+              repaymentMethod={repaymentMethod}
+              setRepaymentMethod={handleRepaymentMethodChange}
+              prepaymentPolicy={prepaymentPolicy}
+              setPrepaymentPolicy={setPrepaymentPolicy}
+              allocationStrategy={allocationStrategy}
+              setAllocationStrategy={setAllocationStrategy}
+              lateFeeRate={lateFeeRate}
+              setLateFeeRate={setLateFeeRate}
+              prepaymentFeeRate={prepaymentFeeRate}
+              setPrepaymentFeeRate={setPrepaymentFeeRate}
+              paymentDayOfMonth={paymentDayOfMonth}
+              setPaymentDayOfMonth={setPaymentDayOfMonth}
+              isInterestAccruedDaily={isInterestAccruedDaily}
+              setIsInterestAccruedDaily={setIsInterestAccruedDaily}
               isRecurringReminder={isRecurringReminder}
               setIsRecurringReminder={setIsRecurringReminder}
               reminderBeforeDays={reminderBeforeDays}
